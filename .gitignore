@@ -115,7 +115,7 @@ AutoTest.Net/
 .sass-cache/
 
 # Installshield output folder
-[Ee]xpress/
+# [Ee]xpress/
 
 # DocProject is a documentation generator add-in
 DocProject/buildhelp/
@@ -205,6 +205,9 @@ FakesAssemblies/
 
 # Visual Studio 6 workspace options file
 *.opt
+
+# TypeScript Map Files
+*.map
 
 # LightSwitch generated files
 GeneratedArtifacts/
