@@ -55,25 +55,31 @@ var Store = (function () {
     };
     // STATE CHECK METHODS
     // --------------------------------------------------------------------------------------------
-    Store.prototype.isNew = function (model) {
-        assert(Model_1.isModel(model), 'Cannot check a model: the model is invalid');
-        var item = this.getStoreItem(model);
-        return item ? (item.original === undefined) : false;
-    };
-    Store.prototype.isDestroyed = function (model) {
-        assert(Model_1.isModel(model), 'Cannot check a model: the model is invalid');
-        var item = this.getStoreItem(model);
-        return item ? (item.current === undefined) : false;
-    };
-    Store.prototype.isModified = function (model) {
-        assert(Model_1.isModel(model), 'Cannot check a model: the model is invalid');
-        var item = this.getStoreItem(model);
-        return item ? (item.original !== item.current) : false;
-    };
     Store.prototype.isRegistered = function (model) {
-        assert(Model_1.isModel(model), 'Cannot check a model: the model is invalid');
         var item = this.getStoreItem(model);
         return (item !== undefined);
+    };
+    Store.prototype.getModelState = function (model) {
+        var item = this.getStoreItem(model, true);
+        if (item.original === undefined) {
+            if (item.current) {
+                return Model_1.ModelState.created;
+            }
+            else {
+                return Model_1.ModelState.invalid;
+            }
+        }
+        else if (item.current === undefined) {
+            return Model_1.ModelState.destroyed;
+        }
+        else {
+            return (item.original === item.current) ? Model_1.ModelState.synchronized : Model_1.ModelState.modified;
+        }
+    };
+    Store.prototype.isSaved = function (model) {
+        var item = this.getStoreItem(model, true);
+        var serialized = JSON.stringify(model);
+        return (item.current === serialized);
     };
     Object.defineProperty(Store.prototype, "hasChanges", {
         // STORE STATE METHODS
@@ -127,10 +133,15 @@ var Store = (function () {
         }
         return modelMap;
     };
-    Store.prototype.getStoreItem = function (model) {
+    Store.prototype.getStoreItem = function (model, errorOnAbsent) {
+        if (errorOnAbsent === void 0) { errorOnAbsent = false; }
         var handler = Model_1.getModelHandler(model);
         var modelMap = this.cache.get(handler.id);
-        return modelMap ? modelMap.get(model.id) : undefined;
+        var item = modelMap ? modelMap.get(model.id) : undefined;
+        if (errorOnAbsent) {
+            assert(item, 'Model is not registered with Dao');
+        }
+        return item;
     };
     return Store;
 })();

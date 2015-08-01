@@ -8,12 +8,20 @@ import { ResultHandler, Query  } from './Query';
 // ================================================================================================
 export var symHandler = Symbol();
 
-// INTERFACES
+// ENUMS A ND INTERFACES
 // ================================================================================================
 export interface Model {
     id          : number;
     updatedOn   : Date;
     createdOn   : Date;
+}
+
+export enum ModelState {
+    synchronized = 1,
+    modified,
+    created,
+    destroyed,
+    invalid
 }
 
 export interface ModelHandler<T extends Model> extends ResultHandler<T> {

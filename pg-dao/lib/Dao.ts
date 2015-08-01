@@ -6,7 +6,7 @@ import * as pg from 'pg';
 
 import { Query, ResultQuery, ModelQuery, ResultHandler, ResultMask } from './Query';
 import { Store, SyncInfo } from './Store';
-import { Model, ModelHandler, symHandler } from './Model';
+import { Model, ModelState, ModelHandler, symHandler } from './Model';
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -181,10 +181,9 @@ export class Dao {
         this.store.destroy(model);
     }
 
-    isNew(model: Model): boolean { return this.store.isNew(model); }
-    isModified(model: Model): boolean { return this.store.isModified(model); }
-    isDestroyed(model: Model): boolean { return this.store.isDestroyed(model); }
     isRegistered(model: Model): boolean { return this.store.isRegistered(model); }
+    getModelState(model: Model): ModelState { return this.store.getModelState(model); }
+    isSaved(model: Model): boolean { return this.store.isSaved(model); }
 
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------

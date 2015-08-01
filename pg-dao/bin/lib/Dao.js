@@ -166,10 +166,9 @@ var Dao = (function () {
     Dao.prototype.destroy = function (model) {
         this.store.destroy(model);
     };
-    Dao.prototype.isNew = function (model) { return this.store.isNew(model); };
-    Dao.prototype.isModified = function (model) { return this.store.isModified(model); };
-    Dao.prototype.isDestroyed = function (model) { return this.store.isDestroyed(model); };
     Dao.prototype.isRegistered = function (model) { return this.store.isRegistered(model); };
+    Dao.prototype.getModelState = function (model) { return this.store.getModelState(model); };
+    Dao.prototype.isSaved = function (model) { return this.store.isSaved(model); };
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     Dao.prototype.buildQueryList = function (queryOrQueries) {

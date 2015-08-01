@@ -2,7 +2,7 @@
 // ================================================================================================
 import * as assert from 'assert';
 
-import { Model, isModel, ModelHandler, getModelHandler, isModelHandler, symHandler } from './Model';
+import { Model, ModelState, isModel, ModelHandler, getModelHandler, isModelHandler, symHandler } from './Model';
 
 // INTERFACES
 // ================================================================================================
@@ -76,30 +76,35 @@ export class Store {
 
     // STATE CHECK METHODS
     // --------------------------------------------------------------------------------------------
-    isNew(model: Model): boolean {
-        assert(isModel(model), 'Cannot check a model: the model is invalid');
-        var item = this.getStoreItem(model);
-        return item ? (item.original === undefined) : false;
-    }
-
-    isDestroyed(model: Model): boolean {
-        assert(isModel(model), 'Cannot check a model: the model is invalid');
-        var item = this.getStoreItem(model);
-        return item ? (item.current === undefined) : false;
-    }
-
-    isModified(model: Model): boolean {
-        assert(isModel(model), 'Cannot check a model: the model is invalid');
-        var item = this.getStoreItem(model);
-        return item ? (item.original !== item.current) : false;
-    }
-
     isRegistered(model: Model): boolean {
-        assert(isModel(model), 'Cannot check a model: the model is invalid');
         var item = this.getStoreItem(model);
         return (item !== undefined);
     }
+
+    getModelState(model: Model): ModelState {
+        var item = this.getStoreItem(model, true);
+        if (item.original === undefined) {
+            if (item.current) {
+                return ModelState.created;
+            }
+            else {
+                return ModelState.invalid;
+            }
+        }
+        else if (item.current === undefined) {
+            return ModelState.destroyed;
+        }
+        else {
+            return (item.original === item.current) ? ModelState.synchronized : ModelState.modified;
+        }
+    }
     
+    isSaved(model: Model): boolean {
+        var item = this.getStoreItem(model, true);
+        var serialized = JSON.stringify(model);
+        return (item.current === serialized);
+    }
+
     // STORE STATE METHODS
     // --------------------------------------------------------------------------------------------
     get hasChanges(): boolean {
@@ -149,10 +154,14 @@ export class Store {
         return modelMap;
     }
 
-    private getStoreItem(model: Model) {
+    private getStoreItem(model: Model, errorOnAbsent = false) {
         var handler = getModelHandler(model);
         var modelMap = this.cache.get(handler.id);
-        return modelMap ? modelMap.get(model.id) : undefined;
+        var item = modelMap ? modelMap.get(model.id) : undefined;
+        if (errorOnAbsent) {
+            assert(item, 'Model is not registered with Dao');
+        }
+        return item;
     }
 }
 

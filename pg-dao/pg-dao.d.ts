@@ -35,10 +35,9 @@
         save(model: Model, setUpdatedOn?: boolean): boolean;
         destroy(model: Model);
 
-        isNew(model: Model)         : boolean;
-        isModified(model: Model)    : boolean;
-        isDestroyed(model: Model)   : boolean;
         isRegistered(model: Model)  : boolean;
+        getModelState(model: Model) : ModelState;
+        isSaved(model: Model)       : boolean;
     }
 
     export interface SyncInfo {
@@ -52,6 +51,14 @@
         id          : number;
         updatedOn   : Date;
         createdOn   : Date;
+    }
+
+    export enum ModelState {
+        synchronized = 1,
+        modified,
+        created,
+        destroyed,
+        invalid
     }
 
     // RESULT HANDLER DEFINITIONS
@@ -75,11 +82,7 @@
         text: string;
         name?: string;
     }
-
-    export interface ResultHandler<T> {
-        parse(row: any): T;
-    }
-
+    
     export interface ResultQuery<T> extends Query {
         mask: ResultMask;
         handler?: ResultHandler<T>;
