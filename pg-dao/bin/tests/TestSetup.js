@@ -96,7 +96,7 @@ var qUpdateToken = (function () {
 })();
 var qSelectAccountTokens = (function () {
     function qSelectAccountTokens(accountId, lock) {
-        this.type = Query_1.ResultType.list;
+        this.mask = Query_1.ResultMask.list;
         this.handler = tokenHandler;
         this.mutableModels = lock;
         this.text = "\n                SELECT\n                    id,\n                    account_id as \"accountId\",\n                    status,\n                    method,\n                    activation_token as \"activationToken\",\n                    expires_at as \"expiresAt\",\n                    validation_code as \"validationCode\",\n                    created_on as \"createdOn\",\n                    updated_on as \"updatedOn\"\n                FROM\n                    tokens\n                WHERE\n                    account_id = " + accountId + ";\n            ";

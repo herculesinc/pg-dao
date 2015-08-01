@@ -1,7 +1,7 @@
 // ENUMS
 // ================================================================================================
-(function (ResultType) {
-    ResultType[ResultType["list"] = 1] = "list";
-})(exports.ResultType || (exports.ResultType = {}));
-var ResultType = exports.ResultType;
+(function (ResultMask) {
+    ResultMask[ResultMask["list"] = 1] = "list";
+})(exports.ResultMask || (exports.ResultMask = {}));
+var ResultMask = exports.ResultMask;
 //# sourceMappingURL=Query.js.map

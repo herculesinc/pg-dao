@@ -7,7 +7,7 @@ import { Model, ModelHandler, isModelHandler } from './Model';
 
 // ENUMS
 // ================================================================================================
-export enum ResultType {
+export enum ResultMask {
     list = 1
 }
 
@@ -23,7 +23,7 @@ export interface ResultHandler<T> {
 }
 
 export interface ResultQuery<T> extends Query {
-    type: ResultType;
+    mask: ResultMask;
     handler?: ResultHandler<T>;
 }
 

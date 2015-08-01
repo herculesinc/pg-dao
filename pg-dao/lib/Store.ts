@@ -8,7 +8,7 @@ import { Model, isModel, ModelHandler, getModelHandler, isModelHandler, symHandl
 // ================================================================================================
 export interface SyncInfo {
     original: Model;
-    current : Model;
+    saved : Model;
 }
 
 interface StoreItem {
@@ -25,7 +25,7 @@ export class Store {
 
     // STATE CHANGE METHODS
     // --------------------------------------------------------------------------------------------
-    save(model: Model): boolean {
+    save(model: Model, setUpdatedOn: boolean): boolean {
         assert(isModel(model), 'Cannot save a model: the model is invalid');
         var handler = getModelHandler(model);
 
@@ -36,6 +36,10 @@ export class Store {
             var serialized = JSON.stringify(model);
             var updateCurrent = (serialized !== item.current);
             if (updateCurrent) {
+                if (setUpdatedOn) {
+                    model.updatedOn = new Date();
+                    serialized = JSON.stringify(model);
+                }
                 item.current = serialized;
             }
             return updateCurrent;
@@ -116,7 +120,7 @@ export class Store {
                     syncInfo.push({
                         [symHandler]: item.handler,
                         original: parse(item.original, item.handler),
-                        current: parse(item.current, item.handler)
+                        saved: parse(item.current, item.handler)
                     });
                 }
             });

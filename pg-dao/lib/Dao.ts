@@ -4,7 +4,7 @@ import * as debug from 'debug';
 import * as assert from 'assert';
 import * as pg from 'pg';
 
-import { Query, ResultQuery, ModelQuery, ResultHandler, ResultType } from './Query';
+import { Query, ResultQuery, ModelQuery, ResultHandler, ResultMask } from './Query';
 import { Store, SyncInfo } from './Store';
 import { Model, ModelHandler, symHandler } from './Model';
 
@@ -74,7 +74,6 @@ export class Dao {
         log(`Syncing ${changes.length} model(s); Dao is in (${State[this.state]})`);
         
         if (commit) {
-            assert(this.inTransaction, 'Cannot commit transaction: Dao is currently not in transaction');
             if (queries.length > 0 || this.state === State.transaction) {
                 queries.push(COMMIT_TRANSACTION);
             }
@@ -83,6 +82,7 @@ export class Dao {
 
         if (queries.length === 0) {
             this.state = state;
+            log(`Sync completed; Dao is in (${State[this.state]})`);
             return Promise.resolve(changes);
         }
 
@@ -173,8 +173,13 @@ export class Dao {
 
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
-    save(model: Model): boolean { return this.store.save(model); }
-    destroy(model: Model)       { this.store.destroy(model); }
+    save(model: Model, setUpdatedOn = true): boolean {
+        return this.store.save(model, setUpdatedOn);
+    }
+
+    destroy(model: Model) {
+        this.store.destroy(model);
+    }
 
     isNew(model: Model): boolean { return this.store.isNew(model); }
     isModified(model: Model): boolean { return this.store.isModified(model); }
@@ -212,7 +217,7 @@ export class Dao {
             
             if ('type' in query) {
                 let resultQuery = <ResultQuery<any>> query;
-                if (resultQuery.type === ResultType.list) {
+                if (resultQuery.mask === ResultMask.list) {
                     var processedResult = processListResult(resultQuery, result);
                 }
                 else {
@@ -299,7 +304,7 @@ function getSyncQueries(changes: SyncInfo[]): Query[]{
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
         var handler: ModelHandler<any> = change[symHandler];
-        queries = queries.concat(handler.getSyncQueries(change.original, change.current));
+        queries = queries.concat(handler.getSyncQueries(change.original, change.saved));
     }
     return queries;
 }

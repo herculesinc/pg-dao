@@ -32,7 +32,7 @@
         execute(query: Query)               : Promise<void>
         execute(queries: Query[])           : Promise<any>;
 
-        save(model: Model): boolean;
+        save(model: Model, setUpdatedOn?: boolean): boolean;
         destroy(model: Model);
 
         isNew(model: Model)         : boolean;
@@ -67,7 +67,7 @@
 
     // QUERY DEFINITIONS
     // --------------------------------------------------------------------------------------------
-    export enum ResultType {
+    export enum ResultMask {
         list = 1
     }
 
@@ -81,7 +81,7 @@
     }
 
     export interface ResultQuery<T> extends Query {
-        type: ResultType;
+        mask: ResultMask;
         handler?: ResultHandler<T>;
     }
 

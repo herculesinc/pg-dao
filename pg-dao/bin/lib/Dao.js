@@ -71,7 +71,6 @@ var Dao = (function () {
         var queries = getSyncQueries(changes);
         log("Syncing " + changes.length + " model(s); Dao is in (" + State[this.state] + ")");
         if (commit) {
-            assert(this.inTransaction, 'Cannot commit transaction: Dao is currently not in transaction');
             if (queries.length > 0 || this.state === State.transaction) {
                 queries.push(COMMIT_TRANSACTION);
             }
@@ -79,6 +78,7 @@ var Dao = (function () {
         }
         if (queries.length === 0) {
             this.state = state;
+            log("Sync completed; Dao is in (" + State[this.state] + ")");
             return Promise.resolve(changes);
         }
         return this.execute(queries)
@@ -159,8 +159,13 @@ var Dao = (function () {
     };
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
-    Dao.prototype.save = function (model) { return this.store.save(model); };
-    Dao.prototype.destroy = function (model) { this.store.destroy(model); };
+    Dao.prototype.save = function (model, setUpdatedOn) {
+        if (setUpdatedOn === void 0) { setUpdatedOn = true; }
+        return this.store.save(model, setUpdatedOn);
+    };
+    Dao.prototype.destroy = function (model) {
+        this.store.destroy(model);
+    };
     Dao.prototype.isNew = function (model) { return this.store.isNew(model); };
     Dao.prototype.isModified = function (model) { return this.store.isModified(model); };
     Dao.prototype.isDestroyed = function (model) { return this.store.isDestroyed(model); };
@@ -190,7 +195,7 @@ var Dao = (function () {
             var result = results[i];
             if ('type' in query) {
                 var resultQuery = query;
-                if (resultQuery.type === Query_1.ResultType.list) {
+                if (resultQuery.mask === Query_1.ResultMask.list) {
                     var processedResult = processListResult(resultQuery, result);
                 }
                 else {
@@ -269,7 +274,7 @@ function getSyncQueries(changes) {
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
         var handler = change[Model_1.symHandler];
-        queries = queries.concat(handler.getSyncQueries(change.original, change.current));
+        queries = queries.concat(handler.getSyncQueries(change.original, change.saved));
     }
     return queries;
 }

@@ -10,7 +10,7 @@ var Store = (function () {
     }
     // STATE CHANGE METHODS
     // --------------------------------------------------------------------------------------------
-    Store.prototype.save = function (model) {
+    Store.prototype.save = function (model, setUpdatedOn) {
         assert(Model_1.isModel(model), 'Cannot save a model: the model is invalid');
         var handler = Model_1.getModelHandler(model);
         var modelMap = this.getModelMap(handler, true);
@@ -20,6 +20,10 @@ var Store = (function () {
             var serialized = JSON.stringify(model);
             var updateCurrent = (serialized !== item.current);
             if (updateCurrent) {
+                if (setUpdatedOn) {
+                    model.updatedOn = new Date();
+                    serialized = JSON.stringify(model);
+                }
                 item.current = serialized;
             }
             return updateCurrent;
@@ -94,7 +98,7 @@ var Store = (function () {
                     syncInfo.push((_a = {},
                         _a[Model_1.symHandler] = item.handler,
                         _a.original = parse(item.original, item.handler),
-                        _a.current = parse(item.current, item.handler),
+                        _a.saved = parse(item.current, item.handler),
                         _a
                     ));
                 }

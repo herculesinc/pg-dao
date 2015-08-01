@@ -2,7 +2,7 @@
 // ================================================================================================
 import * as pgdao from './../index';
 import { Model, ModelHandler } from './../lib/Model';
-import { Query, ModelQuery, ResultType } from './../lib/Query';
+import { Query, ModelQuery, ResultMask } from './../lib/Query';
 
 // TOKEN MODEL DEFINITION
 // ================================================================================================
@@ -135,7 +135,7 @@ class qUpdateToken implements Query {
 
 export class qSelectAccountTokens implements ModelQuery<Token> {
 
-    type = ResultType.list;
+    mask = ResultMask.list;
     text: string;
     mutableModels: boolean;
     handler = tokenHandler;

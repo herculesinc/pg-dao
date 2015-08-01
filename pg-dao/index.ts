@@ -7,7 +7,7 @@ import { symHandler } from './lib/Model';
 
 // INTERFACES
 // ================================================================================================
-interface Settings {
+export interface Settings {
     host        : string;
     port?       : number;
     user        : string;
