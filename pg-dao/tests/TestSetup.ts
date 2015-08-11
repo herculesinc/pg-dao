@@ -47,9 +47,17 @@ export class Token extends ModelBase implements IToken {
 }
 
 class TokenHandler implements ModelHandler<Token> {
-    id = Symbol();
-
+    
     parse(seed: IToken): Token { return new Token(seed); }
+    clone(token: Token): Token { return new Token(token); }
+
+    areEqual(token1: Token, token2: Token): boolean {
+        if (token1 === undefined || token2 === undefined) {
+            return false;
+        }
+
+        return JSON.stringify(token1) === JSON.stringify(token2);
+    }
 
     getSyncQueries(original: Token, current: Token): Query[] {
         var queries = [];

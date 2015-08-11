@@ -94,9 +94,11 @@ var account = {
     updatedOn: 1438238834735
 };
 
-var start = process.hrtime();
-for (let i = 0; i < 100; i++) {
-    account.score = i;
-    var x = JSON.parse(JSON.stringify(account));
+export function runTest(count: number) {
+    var start = process.hrtime();
+    for (let i = 0; i < count; i++) {
+        account.score = i;
+        var x = JSON.parse(JSON.stringify(account));
+    }
+    console.log(since(start));
 }
-console.log(since(start));

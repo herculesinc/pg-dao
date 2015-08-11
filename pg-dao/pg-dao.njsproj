@@ -46,17 +46,28 @@
     <TypeScriptCompile Include="pg-dao.d.ts" />
     <TypeScriptCompile Include="tests\TestSetup.ts" />
     <TypeScriptCompile Include="tests\serialization.ts" />
+    <TypeScriptCompile Include="tests\unit\model.ts">
+      <SubType>Code</SubType>
+      <TestFramework>Mocha</TestFramework>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="tests\unit\setup.ts" />
+    <TypeScriptCompile Include="tests\unit\store.ts">
+      <TestFramework>Mocha</TestFramework>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="typings\debug\debug.d.ts" />
     <TypeScriptCompile Include="typings\es6\es6.d.ts" />
+    <TypeScriptCompile Include="typings\mocha\mocha.d.ts" />
     <TypeScriptCompile Include="typings\node\node.d.ts" />
     <TypeScriptCompile Include="typings\pg\pg.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="lib\" />
     <Folder Include="tests\" />
+    <Folder Include="tests\unit\" />
     <Folder Include="typings\" />
     <Folder Include="typings\debug\" />
     <Folder Include="typings\es6\" />
+    <Folder Include="typings\mocha\" />
     <Folder Include="typings\node\" />
     <Folder Include="typings\pg\" />
   </ItemGroup>

@@ -159,16 +159,12 @@ var Dao = (function () {
     };
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
-    Dao.prototype.save = function (model, setUpdatedOn) {
-        if (setUpdatedOn === void 0) { setUpdatedOn = true; }
-        return this.store.save(model, setUpdatedOn);
-    };
-    Dao.prototype.destroy = function (model) {
-        this.store.destroy(model);
-    };
+    Dao.prototype.insert = function (model) { this.store.insert(model); };
+    Dao.prototype.destroy = function (model) { this.store.destroy(model); };
     Dao.prototype.isRegistered = function (model) { return this.store.isRegistered(model); };
-    Dao.prototype.getModelState = function (model) { return this.store.getModelState(model); };
-    Dao.prototype.isSaved = function (model) { return this.store.isSaved(model); };
+    Dao.prototype.isNew = function (model) { return this.store.isNew(model); };
+    Dao.prototype.isDestroyed = function (model) { return this.store.isDestroyed(model); };
+    Dao.prototype.isModified = function (model) { return this.store.isModified(model); };
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     Dao.prototype.buildQueryList = function (queryOrQueries) {
@@ -273,7 +269,7 @@ function getSyncQueries(changes) {
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
         var handler = change[Model_1.symHandler];
-        queries = queries.concat(handler.getSyncQueries(change.original, change.saved));
+        queries = queries.concat(handler.getSyncQueries(change.original, change.current));
     }
     return queries;
 }

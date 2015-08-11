@@ -1,7 +1,5 @@
 ﻿// IMPORTS
 // ================================================================================================
-import * as assert from 'assert';
-
 import { ResultHandler, Query  } from './Query';
 
 // MODULE VARIABLES
@@ -16,16 +14,9 @@ export interface Model {
     createdOn   : Date;
 }
 
-export enum ModelState {
-    synchronized = 1,
-    modified,
-    created,
-    destroyed,
-    invalid
-}
-
 export interface ModelHandler<T extends Model> extends ResultHandler<T> {
-    id: symbol;
+    clone: (model: T) => T;
+    areEqual: (model1: T, model2: T) => boolean;
     getSyncQueries: (original: T, current: T) => Query[];
 }
 
@@ -38,13 +29,12 @@ export function isModel(model: any): boolean {
 
 export function getModelHandler(model: Model): ModelHandler<any> {
     var handler = model[symHandler];
-    assert(handler, 'Model handler is undefined');
-    assert(isModelHandler(handler), 'Model handler is invalid');
-    return handler;
+    return isModelHandler(handler) ? handler : undefined;
 }
 
 export function isModelHandler(handler: any): boolean {
-    return (handler !== undefined)
-        && (typeof handler.id === 'symbol')        
+    return (handler !== undefined)     
+        && (typeof handler.clone === 'function')
+        && (typeof handler.areEqual === 'function')
         && (typeof handler.getSyncQueries === 'function');
 }

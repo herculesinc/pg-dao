@@ -90,10 +90,13 @@ var account = {
     createdOn: 1437369193261,
     updatedOn: 1438238834735
 };
-var start = process.hrtime();
-for (var i = 0; i < 100; i++) {
-    account.score = i;
-    var x = JSON.parse(JSON.stringify(account));
+function runTest(count) {
+    var start = process.hrtime();
+    for (var i = 0; i < count; i++) {
+        account.score = i;
+        var x = JSON.parse(JSON.stringify(account));
+    }
+    console.log(since(start));
 }
-console.log(since(start));
+exports.runTest = runTest;
 //# sourceMappingURL=serialization.js.map

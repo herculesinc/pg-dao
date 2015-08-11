@@ -4,6 +4,8 @@ import * as pgdao from './../index';
 import { Dao } from './../lib/Dao';
 import { qSelectAccountTokens, Token } from './TestSetup';
 
+import { runTest } from './serialization';
+
 // TEST
 // ================================================================================================
 var cnSettings = {
@@ -14,10 +16,25 @@ var cnSettings = {
     database: 'credo_dev'
 };
 
-var selectAccountTokens = new qSelectAccountTokens(1, true);
+runTest(100);
+runTest(10);
+runTest(100);
+runTest(1000);
+runTest(10000);
+runTest(100000);
+
+/*
+var selectAccountTokens = new qSelectAccountTokens(5, false);
 
 console.log('Getting connection');
 pgdao.connect(cnSettings).then(function (dao) {
+
+    return dao.execute([selectAccountTokens, selectAccountTokens, selectAccountTokens])
+        .then((tokens) => {
+            console.log('query executed: ' + JSON.stringify(tokens));
+        });
+
+    /*
     return dao.startTransaction()
         .then(() => updateToken(dao))
         .then(() => dao.release());
@@ -39,3 +56,4 @@ function updateToken(dao: Dao) {
         });
     });
 }
+*/

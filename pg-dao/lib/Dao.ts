@@ -6,7 +6,7 @@ import * as pg from 'pg';
 
 import { Query, ResultQuery, ModelQuery, ResultHandler, ResultMask } from './Query';
 import { Store, SyncInfo } from './Store';
-import { Model, ModelState, ModelHandler, symHandler } from './Model';
+import { Model, ModelHandler, symHandler } from './Model';
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -173,17 +173,14 @@ export class Dao {
 
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
-    save(model: Model, setUpdatedOn = true): boolean {
-        return this.store.save(model, setUpdatedOn);
-    }
+    insert(model: Model)    { this.store.insert(model); }
+    destroy(model: Model)   { this.store.destroy(model); }
 
-    destroy(model: Model) {
-        this.store.destroy(model);
-    }
+    hasModel(model: Model)      : boolean { return this.store.isRegistered(model); }
 
-    isRegistered(model: Model): boolean { return this.store.isRegistered(model); }
-    getModelState(model: Model): ModelState { return this.store.getModelState(model); }
-    isSaved(model: Model): boolean { return this.store.isSaved(model); }
+    isNew(model: Model)         : boolean { return this.store.isNew(model); }
+    isDestroyed(model: Model)   : boolean { return this.store.isDestroyed(model); }
+    isModified(model: Model)    : boolean { return this.store.isModified(model); }
 
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
@@ -303,7 +300,7 @@ function getSyncQueries(changes: SyncInfo[]): Query[]{
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
         var handler: ModelHandler<any> = change[symHandler];
-        queries = queries.concat(handler.getSyncQueries(change.original, change.saved));
+        queries = queries.concat(handler.getSyncQueries(change.original, change.current));
     }
     return queries;
 }

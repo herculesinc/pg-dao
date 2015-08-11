@@ -37,9 +37,15 @@ var Token = (function (_super) {
 exports.Token = Token;
 var TokenHandler = (function () {
     function TokenHandler() {
-        this.id = Symbol();
     }
     TokenHandler.prototype.parse = function (seed) { return new Token(seed); };
+    TokenHandler.prototype.clone = function (token) { return new Token(token); };
+    TokenHandler.prototype.areEqual = function (token1, token2) {
+        if (token1 === undefined || token2 === undefined) {
+            return false;
+        }
+        return JSON.stringify(token1) === JSON.stringify(token2);
+    };
     TokenHandler.prototype.getSyncQueries = function (original, current) {
         var queries = [];
         if (original === undefined && current !== undefined) {

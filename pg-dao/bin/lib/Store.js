@@ -10,36 +10,25 @@ var Store = (function () {
     }
     // STATE CHANGE METHODS
     // --------------------------------------------------------------------------------------------
-    Store.prototype.save = function (model, setUpdatedOn) {
-        assert(Model_1.isModel(model), 'Cannot save a model: the model is invalid');
+    Store.prototype.insert = function (model) {
+        assert(Model_1.isModel(model), 'Cannot insert a model: the model is invalid');
         var handler = Model_1.getModelHandler(model);
         var modelMap = this.getModelMap(handler, true);
-        var item = modelMap.get(model.id);
-        if (item) {
-            assert(item.current, 'Cannot save a model: the model was destroyed');
-            var serialized = JSON.stringify(model);
-            var updateCurrent = (serialized !== item.current);
-            if (updateCurrent) {
-                if (setUpdatedOn) {
-                    model.updatedOn = new Date();
-                    serialized = JSON.stringify(model);
-                }
-                item.current = serialized;
-            }
-            return updateCurrent;
-        }
-        else {
-            var serialized = JSON.stringify(model);
-            modelMap.set(model.id, { handler: handler, original: undefined, current: serialized });
-            return true;
-        }
+        assert(!modelMap.has(model.id), 'Cannot insert a mode: the model is already registered');
+        modelMap.set(model.id, { handler: handler, original: undefined, current: model });
     };
     Store.prototype.destroy = function (model) {
         assert(Model_1.isModel(model), 'Cannot destroy a model: the model is invalid');
         var item = this.getStoreItem(model);
         assert(item, 'Cannot destroy a moadel: the model has not been registered with Dao');
         assert(item.current, 'Cannot destroy a model: the model has already been destroyed');
-        item.current = undefined;
+        if (item.original) {
+            item.current = undefined;
+        }
+        else {
+            var modelMap = this.getModelMap(Model_1.getModelHandler(model));
+            modelMap.delete(model.id);
+        }
     };
     Store.prototype.register = function (handler, modelOrModels) {
         assert(Model_1.isModelHandler(handler), 'Cannot register model: model handler is invalid');
@@ -49,8 +38,9 @@ var Store = (function () {
             var model = models[i];
             assert(model[Model_1.symHandler] === handler, 'Cannot registre model: inconsistent model handler');
             assert(!modelMap.has(model.id), 'Cannot register a model: the model has already been registered');
-            var serialized = JSON.stringify(model);
-            modelMap.set(model.id, { handler: handler, original: serialized, current: serialized });
+            var clone = handler.clone(model);
+            assert(model !== clone, 'Cannot register a model: model cloning returned the same model');
+            modelMap.set(model.id, { handler: handler, original: clone, current: model });
         }
     };
     // STATE CHECK METHODS
@@ -59,27 +49,18 @@ var Store = (function () {
         var item = this.getStoreItem(model);
         return (item !== undefined);
     };
-    Store.prototype.getModelState = function (model) {
+    Store.prototype.isNew = function (model) {
         var item = this.getStoreItem(model, true);
-        if (item.original === undefined) {
-            if (item.current) {
-                return Model_1.ModelState.created;
-            }
-            else {
-                return Model_1.ModelState.invalid;
-            }
-        }
-        else if (item.current === undefined) {
-            return Model_1.ModelState.destroyed;
-        }
-        else {
-            return (item.original === item.current) ? Model_1.ModelState.synchronized : Model_1.ModelState.modified;
-        }
+        return (item.original === undefined && item.current !== undefined);
     };
-    Store.prototype.isSaved = function (model) {
+    Store.prototype.isDestroyed = function (model) {
         var item = this.getStoreItem(model, true);
-        var serialized = JSON.stringify(model);
-        return (item.current === serialized);
+        return (item.original !== undefined && item.current === undefined);
+    };
+    Store.prototype.isModified = function (model) {
+        var item = this.getStoreItem(model, true);
+        return (item.original !== undefined && item.current !== undefined
+            && item.handler.areEqual(item.original, item.current) === false);
     };
     Object.defineProperty(Store.prototype, "hasChanges", {
         // STORE STATE METHODS
@@ -88,7 +69,7 @@ var Store = (function () {
             var changed = false;
             this.cache.forEach(function (modelMap) {
                 modelMap.forEach(function (item) {
-                    changed = changed || (item.current !== item.original);
+                    changed = changed || (item.handler.areEqual(item.original, item.current) === false);
                 });
             });
             return changed;
@@ -100,15 +81,9 @@ var Store = (function () {
         var syncInfo = [];
         this.cache.forEach(function (modelMap) {
             modelMap.forEach(function (item) {
-                if (item.original != item.current) {
-                    syncInfo.push((_a = {},
-                        _a[Model_1.symHandler] = item.handler,
-                        _a.original = parse(item.original, item.handler),
-                        _a.saved = parse(item.current, item.handler),
-                        _a
-                    ));
+                if (item.handler.areEqual(item.original, item.current) === false) {
+                    syncInfo.push(item);
                 }
-                var _a;
             });
         });
         return syncInfo;
@@ -116,8 +91,13 @@ var Store = (function () {
     Store.prototype.applyChanges = function () {
         this.cache.forEach(function (modelMap) {
             modelMap.forEach(function (item) {
-                if (item.original != item.current) {
-                    item.original = item.current;
+                if (item.handler.areEqual(item.original, item.current) === false) {
+                    if (item.current) {
+                        item.original = item.handler.clone(item.current);
+                    }
+                    else {
+                        modelMap.delete(item.original.id);
+                    }
                 }
             });
         });
@@ -126,17 +106,17 @@ var Store = (function () {
     // --------------------------------------------------------------------------------------------
     Store.prototype.getModelMap = function (handler, create) {
         if (create === void 0) { create = false; }
-        var modelMap = this.cache.get(handler.id);
+        var modelMap = this.cache.get(handler);
         if (create && modelMap === undefined) {
             modelMap = new Map();
-            this.cache.set(handler.id, modelMap);
+            this.cache.set(handler, modelMap);
         }
         return modelMap;
     };
     Store.prototype.getStoreItem = function (model, errorOnAbsent) {
         if (errorOnAbsent === void 0) { errorOnAbsent = false; }
         var handler = Model_1.getModelHandler(model);
-        var modelMap = this.cache.get(handler.id);
+        var modelMap = this.cache.get(handler);
         var item = modelMap ? modelMap.get(model.id) : undefined;
         if (errorOnAbsent) {
             assert(item, 'Model is not registered with Dao');
@@ -146,15 +126,4 @@ var Store = (function () {
     return Store;
 })();
 exports.Store = Store;
-// HELPER FUNCTIONS
-// ================================================================================================
-function parse(json, handler) {
-    if (json === undefined)
-        return undefined;
-    var model = JSON.parse(json);
-    if (typeof handler.parse === 'function') {
-        model = handler.parse(model);
-    }
-    return model;
-}
 //# sourceMappingURL=Store.js.map

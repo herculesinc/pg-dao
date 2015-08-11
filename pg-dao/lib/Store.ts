@@ -2,53 +2,36 @@
 // ================================================================================================
 import * as assert from 'assert';
 
-import { Model, ModelState, isModel, ModelHandler, getModelHandler, isModelHandler, symHandler } from './Model';
+import { Model, isModel, ModelHandler, getModelHandler, isModelHandler, symHandler } from './Model';
 
 // INTERFACES
 // ================================================================================================
 export interface SyncInfo {
     original: Model;
-    saved : Model;
+    current : Model;
 }
 
 interface StoreItem {
     handler : ModelHandler<any>;
-    original: string;
-    current : string;
+    original: Model;
+    current : Model;
 }
 
 // STORE CLASS DEFINITION
 // ================================================================================================
 export class Store {
 
-    private cache = new Map<symbol, Map<number, StoreItem>>();
+    private cache = new Map<ModelHandler<any>, Map<number, StoreItem>>();
 
     // STATE CHANGE METHODS
     // --------------------------------------------------------------------------------------------
-    save(model: Model, setUpdatedOn: boolean): boolean {
-        assert(isModel(model), 'Cannot save a model: the model is invalid');
+    insert(model: Model) {
+        assert(isModel(model), 'Cannot insert a model: the model is invalid');
         var handler = getModelHandler(model);
 
         var modelMap = this.getModelMap(handler, true);
-        var item = modelMap.get(model.id);
-        if (item) {
-            assert(item.current, 'Cannot save a model: the model was destroyed');
-            var serialized = JSON.stringify(model);
-            var updateCurrent = (serialized !== item.current);
-            if (updateCurrent) {
-                if (setUpdatedOn) {
-                    model.updatedOn = new Date();
-                    serialized = JSON.stringify(model);
-                }
-                item.current = serialized;
-            }
-            return updateCurrent;
-        }
-        else {
-            var serialized = JSON.stringify(model);
-            modelMap.set(model.id, { handler: handler, original: undefined, current: serialized });
-            return true;
-        }
+        assert(!modelMap.has(model.id), 'Cannot insert a mode: the model is already registered');
+        modelMap.set(model.id, { handler: handler, original: undefined, current: model });
     }
 
     destroy(model: Model) {
@@ -57,20 +40,28 @@ export class Store {
         var item = this.getStoreItem(model);
         assert(item, 'Cannot destroy a moadel: the model has not been registered with Dao');
         assert(item.current, 'Cannot destroy a model: the model has already been destroyed');
-        item.current = undefined;
+
+        if (item.original) {
+            item.current = undefined;
+        }
+        else {
+            var modelMap = this.getModelMap(getModelHandler(model));
+            modelMap.delete(model.id);
+        }
     }
 
     register(handler: ModelHandler<any>, modelOrModels: Model | Model[]) {
         assert(isModelHandler(handler), 'Cannot register model: model handler is invalid');
         var models = <Model[]> (Array.isArray(modelOrModels) ? modelOrModels : [modelOrModels]);
-
+        
         var modelMap = this.getModelMap(handler, true);
         for (var i = 0; i < models.length; i++) {
             var model = models[i];
             assert(model[symHandler] === handler, 'Cannot registre model: inconsistent model handler');
             assert(!modelMap.has(model.id), 'Cannot register a model: the model has already been registered');
-            var serialized = JSON.stringify(model);
-            modelMap.set(model.id, { handler: handler, original: serialized, current: serialized });
+            var clone = handler.clone(model);
+            assert(model !== clone, 'Cannot register a model: model cloning returned the same model');
+            modelMap.set(model.id, { handler: handler, original: clone, current: model });
         }
     }
 
@@ -81,28 +72,20 @@ export class Store {
         return (item !== undefined);
     }
 
-    getModelState(model: Model): ModelState {
+    isNew(model: Model): boolean {
         var item = this.getStoreItem(model, true);
-        if (item.original === undefined) {
-            if (item.current) {
-                return ModelState.created;
-            }
-            else {
-                return ModelState.invalid;
-            }
-        }
-        else if (item.current === undefined) {
-            return ModelState.destroyed;
-        }
-        else {
-            return (item.original === item.current) ? ModelState.synchronized : ModelState.modified;
-        }
+        return (item.original === undefined && item.current !== undefined);
     }
-    
-    isSaved(model: Model): boolean {
+
+    isDestroyed(model: Model): boolean {
         var item = this.getStoreItem(model, true);
-        var serialized = JSON.stringify(model);
-        return (item.current === serialized);
+        return (item.original !== undefined && item.current === undefined);
+    }
+
+    isModified(model: Model): boolean {
+        var item = this.getStoreItem(model, true);
+        return (item.original !== undefined && item.current !== undefined
+            && item.handler.areEqual(item.original, item.current) === false);
     }
 
     // STORE STATE METHODS
@@ -111,7 +94,7 @@ export class Store {
         var changed = false;
         this.cache.forEach(function (modelMap) {
             modelMap.forEach(function (item) {
-                changed = changed || (item.current !== item.original);
+                changed = changed || (item.handler.areEqual(item.original, item.current) === false);
             });
         });
         return changed;
@@ -121,12 +104,8 @@ export class Store {
         var syncInfo: SyncInfo[] = [];
         this.cache.forEach(function (modelMap) {
             modelMap.forEach(function (item) {
-                if (item.original != item.current) {
-                    syncInfo.push({
-                        [symHandler]: item.handler,
-                        original: parse(item.original, item.handler),
-                        saved: parse(item.current, item.handler)
-                    });
+                if (item.handler.areEqual(item.original, item.current) === false) {
+                    syncInfo.push(item);
                 }
             });
         });
@@ -136,8 +115,13 @@ export class Store {
     applyChanges() {
         this.cache.forEach(function (modelMap) {
             modelMap.forEach(function (item) {
-                if (item.original != item.current) {
-                    item.original = item.current;
+                if (item.handler.areEqual(item.original, item.current) === false) {
+                    if (item.current) {
+                        item.original = item.handler.clone(item.current);
+                    }
+                    else {
+                        modelMap.delete(item.original.id);
+                    }
                 }
             });
         });
@@ -146,33 +130,21 @@ export class Store {
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     private getModelMap(handler: ModelHandler<any>, create = false) {
-        var modelMap = this.cache.get(handler.id);
+        var modelMap = this.cache.get(handler);
         if (create && modelMap === undefined) {
             modelMap = new Map<number, StoreItem>();
-            this.cache.set(handler.id, modelMap);
+            this.cache.set(handler, modelMap);
         }
         return modelMap;
     }
 
     private getStoreItem(model: Model, errorOnAbsent = false) {
         var handler = getModelHandler(model);
-        var modelMap = this.cache.get(handler.id);
+        var modelMap = this.cache.get(handler);
         var item = modelMap ? modelMap.get(model.id) : undefined;
         if (errorOnAbsent) {
             assert(item, 'Model is not registered with Dao');
         }
         return item;
     }
-}
-
-// HELPER FUNCTIONS
-// ================================================================================================
-function parse(json: string, handler: ModelHandler<any>): Model {
-    if (json === undefined) return undefined;
-
-    var model = JSON.parse(json);
-    if (typeof handler.parse === 'function') {
-        model = handler.parse(model);
-    }
-    return model;
 }

@@ -32,17 +32,19 @@
         execute(query: Query)               : Promise<void>
         execute(queries: Query[])           : Promise<any>;
 
-        save(model: Model, setUpdatedOn?: boolean): boolean;
+        create(model: Model);
         destroy(model: Model);
 
-        isRegistered(model: Model)  : boolean;
-        getModelState(model: Model) : ModelState;
-        isSaved(model: Model)       : boolean;
+        hasModel(model: Model)  : boolean;
+
+        isNew(model: Model): boolean;
+        isDestroyed(model: Model): boolean;
+        isModified(model: Model): boolean;
     }
 
     export interface SyncInfo {
         original: Model;
-        saved: Model;
+        current: Model;
     }
 
     // MODEL DEFINITIONS
@@ -53,14 +55,6 @@
         createdOn   : Date;
     }
 
-    export enum ModelState {
-        synchronized = 1,
-        modified,
-        created,
-        destroyed,
-        invalid
-    }
-
     // RESULT HANDLER DEFINITIONS
     // --------------------------------------------------------------------------------------------
     export interface ResultHandler<T> {
@@ -68,14 +62,16 @@
     }
 
     export interface ModelHandler<T extends Model> extends ResultHandler<T> {
-        id: symbol;
+        clone: (model: T) => T;
+        areEqual: (model1: T, model2: T) => boolean;
         getSyncQueries: (original: T, current: T) => Query[];
     }
 
     // QUERY DEFINITIONS
     // --------------------------------------------------------------------------------------------
-    export enum ResultMask {
-        list = 1
+    export const enum ResultMask {
+        list = 1,
+        object = 2
     }
 
     export interface Query {
