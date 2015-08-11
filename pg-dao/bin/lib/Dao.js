@@ -141,19 +141,23 @@ var Dao = (function () {
             });
         }).catch(function (reason) {
             log("Failed to execute queries; rolling back transaction");
-            return _this.execute(ROLLBACK_TRANSACTION)
-                .catch(function (error) {
-                _this.done(error);
-                _this.state = State.released;
-                log("Transaction rolledback failed; Connection terminated");
-                logPoolState(_this.pool);
-                return Promise.reject(reason);
-            }).then(function () {
-                _this.done();
-                _this.state = State.released;
-                log("Transaction rolled back; Connection released to the pool");
-                logPoolState(_this.pool);
-                return Promise.reject(reason);
+            return new Promise(function (resolve, reject) {
+                _this.client.query(ROLLBACK_TRANSACTION.text, function (error, results) {
+                    if (error) {
+                        _this.done(error);
+                        _this.state = State.released;
+                        log("Transaction rolledback failed; Connection terminated");
+                        logPoolState(_this.pool);
+                        reject(reason);
+                    }
+                    else {
+                        _this.done();
+                        _this.state = State.released;
+                        log("Transaction rolled back; Connection released to the pool");
+                        logPoolState(_this.pool);
+                        reject(reason);
+                    }
+                });
             });
         });
     };
@@ -161,7 +165,7 @@ var Dao = (function () {
     // --------------------------------------------------------------------------------------------
     Dao.prototype.insert = function (model) { this.store.insert(model); };
     Dao.prototype.destroy = function (model) { this.store.destroy(model); };
-    Dao.prototype.isRegistered = function (model) { return this.store.isRegistered(model); };
+    Dao.prototype.hasModel = function (model) { return this.store.isRegistered(model); };
     Dao.prototype.isNew = function (model) { return this.store.isNew(model); };
     Dao.prototype.isDestroyed = function (model) { return this.store.isDestroyed(model); };
     Dao.prototype.isModified = function (model) { return this.store.isModified(model); };
@@ -188,7 +192,7 @@ var Dao = (function () {
         for (var i = 0; i < results.length; i++) {
             var query = queries[i];
             var result = results[i];
-            if ('type' in query) {
+            if ('mask' in query) {
                 var resultQuery = query;
                 if (resultQuery.mask === Query_1.ResultMask.list) {
                     var processedResult = processListResult(resultQuery, result);
@@ -200,7 +204,7 @@ var Dao = (function () {
             else {
                 var processedResult = undefined;
             }
-            if ('mutableModels' in query && processedResult) {
+            if (query['mutableModels'] === true && processedResult) {
                 var modelQuery = query;
                 this.store.register(modelQuery.handler, processedResult);
             }

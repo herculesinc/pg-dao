@@ -154,20 +154,24 @@ export class Dao {
             });
         }).catch((reason) => {
             log(`Failed to execute queries; rolling back transaction`);
-            return this.execute(ROLLBACK_TRANSACTION)
-                .catch((error) => {
-                    this.done(error);
-                    this.state = State.released;
-                    log(`Transaction rolledback failed; Connection terminated`);
-                    logPoolState(this.pool);
-                    return Promise.reject(reason);
-                }).then(() => {
-                    this.done();
-                    this.state = State.released;
-                    log(`Transaction rolled back; Connection released to the pool`);
-                    logPoolState(this.pool);
-                    return Promise.reject(reason);
+            return new Promise((resolve, reject) => {
+                this.client.query(ROLLBACK_TRANSACTION.text, (error, results) => {
+                    if (error) {
+                        this.done(error);
+                        this.state = State.released;
+                        log(`Transaction rolledback failed; Connection terminated`);
+                        logPoolState(this.pool);
+                        reject(reason);
+                    }
+                    else {
+                        this.done();
+                        this.state = State.released;
+                        log(`Transaction rolled back; Connection released to the pool`);
+                        logPoolState(this.pool);
+                        reject(reason);
+                    }
                 });
+            });
         });
     }
 
@@ -211,7 +215,7 @@ export class Dao {
             let query = queries[i];
             let result = results[i];
             
-            if ('type' in query) {
+            if ('mask' in query) {
                 let resultQuery = <ResultQuery<any>> query;
                 if (resultQuery.mask === ResultMask.list) {
                     var processedResult = processListResult(resultQuery, result);
@@ -224,7 +228,7 @@ export class Dao {
                 var processedResult = undefined;
             }
 
-            if ('mutableModels' in query && processedResult) {
+            if (query['mutableModels'] === true && processedResult) {
                 let modelQuery = <ModelQuery<any>> query;
                 this.store.register(modelQuery.handler, processedResult);
             }

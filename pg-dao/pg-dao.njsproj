@@ -35,6 +35,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="tsd.json" />
+    <TypeScriptCompile Include="tests\integration\dao.ts">
+      <SubType>Code</SubType>
+      <TestFramework>Mocha</TestFramework>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="tests\integration\setup.ts" />
     <TypeScriptCompile Include="tests\run.ts" />
     <Content Include="package.json" />
     <Content Include="README.md" />
@@ -45,7 +50,6 @@
     <TypeScriptCompile Include="lib\Store.ts" />
     <TypeScriptCompile Include="pg-dao.d.ts" />
     <TypeScriptCompile Include="tests\TestSetup.ts" />
-    <TypeScriptCompile Include="tests\serialization.ts" />
     <TypeScriptCompile Include="tests\unit\model.ts">
       <SubType>Code</SubType>
       <TestFramework>Mocha</TestFramework>
@@ -63,6 +67,7 @@
   <ItemGroup>
     <Folder Include="lib\" />
     <Folder Include="tests\" />
+    <Folder Include="tests\integration\" />
     <Folder Include="tests\unit\" />
     <Folder Include="typings\" />
     <Folder Include="typings\debug\" />
