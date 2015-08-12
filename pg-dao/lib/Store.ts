@@ -105,7 +105,11 @@ export class Store {
         this.cache.forEach(function (modelMap) {
             modelMap.forEach(function (item) {
                 if (item.handler.areEqual(item.original, item.current) === false) {
-                    syncInfo.push(item);
+                    syncInfo.push({
+                        current: item.current,
+                        original: item.original,
+                        [symHandler]: item.handler
+                    });
                 }
             });
         });

@@ -4,6 +4,7 @@ var debug = require('debug');
 var assert = require('assert');
 var pg = require('pg');
 var Store_1 = require('./Store');
+var Model_1 = require('./Model');
 // MODULE VARIABLES
 // ================================================================================================
 var log = debug('pg:dao');
@@ -297,7 +298,7 @@ function getSyncQueries(changes) {
     var queries = [];
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
-        var handler = change.handler;
+        var handler = change[Model_1.symHandler];
         queries = queries.concat(handler.getSyncQueries(change.original, change.current));
     }
     return queries;

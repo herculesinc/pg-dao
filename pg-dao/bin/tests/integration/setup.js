@@ -44,7 +44,7 @@ var UserHandler = (function () {
         }
         else if (original !== undefined && current === undefined) {
             queries.push({
-                text: "DELETE FROM tmp_users WHERE id = " + original.id
+                text: "DELETE FROM tmp_users WHERE id = " + original.id + ";"
             });
         }
         else if (original !== undefined && current !== undefined) {
@@ -57,11 +57,11 @@ var UserHandler = (function () {
     return UserHandler;
 })();
 exports.UserHandler = UserHandler;
-var userHandler = new UserHandler();
+exports.userHandler = new UserHandler();
 var qFetchUserById = (function () {
     function qFetchUserById(userId, lock) {
         if (lock === void 0) { lock = false; }
-        this.handler = userHandler;
+        this.handler = exports.userHandler;
         this.mask = 'object';
         this.mutableModels = lock;
         this.text = "\n            SELECT id, username, created_on AS \"createdOn\", updated_on AS \"updatedOn\"\n            FROM tmp_users WHERE id = " + userId + ";";
@@ -75,10 +75,12 @@ var qFetchUserById = (function () {
 })();
 exports.qFetchUserById = qFetchUserById;
 var qFetchUsersByIdList = (function () {
-    function qFetchUsersByIdList(userIdList) {
-        this.handler = userHandler;
+    function qFetchUsersByIdList(userIdList, lock) {
+        if (lock === void 0) { lock = false; }
+        this.handler = exports.userHandler;
         this.mask = 'list';
-        this.text = "\n            SELECT id, username, created_on AS \"createdOn\", updated_on AS \"updatedOn\"\n            FROM tmp_users WHERE id in (" + userIdList.join(',') + ");";
+        this.mutableModels = lock;
+        this.text = "\n            SELECT id, username, created_on AS \"createdOn\", updated_on AS \"updatedOn\"\n            FROM tmp_users WHERE id in (" + userIdList.join(',') + ")\n            ORDER BY id;";
     }
     Object.defineProperty(qFetchUsersByIdList.prototype, "name", {
         get: function () { return this.constructor.name; },

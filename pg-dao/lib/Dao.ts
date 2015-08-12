@@ -329,7 +329,7 @@ function getSyncQueries(changes: SyncInfo[]): Query[]{
     var queries: Query[] = [];
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
-        var handler: ModelHandler<any> = (<any>change).handler;
+        var handler: ModelHandler<any> = change[symHandler];
         queries = queries.concat(handler.getSyncQueries(change.original, change.current));
     }
     return queries;

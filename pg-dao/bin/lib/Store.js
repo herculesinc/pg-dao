@@ -82,8 +82,15 @@ var Store = (function () {
         this.cache.forEach(function (modelMap) {
             modelMap.forEach(function (item) {
                 if (item.handler.areEqual(item.original, item.current) === false) {
-                    syncInfo.push(item);
+                    syncInfo.push((_a = {
+                            current: item.current,
+                            original: item.original
+                        },
+                        _a[Model_1.symHandler] = item.handler,
+                        _a
+                    ));
                 }
+                var _a;
             });
         });
         return syncInfo;

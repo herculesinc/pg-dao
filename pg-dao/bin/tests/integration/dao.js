@@ -285,6 +285,106 @@ describe('Data fetching tests', function () {
         });
     });
 });
+// INSERTING TESTS
+// ================================================================================================
+describe('Data inserting tests', function () {
+    test('Inserting a model should add it to the database', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                var user = setup_1.userHandler.parse({
+                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                });
+                dao.insert(user);
+                assert.strictEqual(dao.isSynchronized, false);
+                assert.strictEqual(dao.hasModel(user), true);
+                assert.strictEqual(dao.isNew(user), true);
+                assert.strictEqual(dao.isUpdated(user), false);
+                assert.strictEqual(dao.isDestroyed(user), false);
+                return dao.sync().then(function (changes) {
+                    assert.strictEqual(dao.hasModel(user), true);
+                    assert.strictEqual(dao.isSynchronized, true);
+                    assert.strictEqual(dao.isNew(user), false);
+                    assert.strictEqual(dao.isUpdated(user), false);
+                    assert.strictEqual(dao.isDestroyed(user), false);
+                    assert.strictEqual(changes.length, 1);
+                    assert.deepEqual(changes[0].current, user);
+                    assert.strictEqual(changes[0].original, undefined);
+                    var query = new setup_1.qFetchUserById(4);
+                    return dao.execute(query).then(function (newUser) {
+                        assert.deepEqual(user, newUser);
+                    });
+                });
+            }).then(function () { return dao.release(); });
+        });
+    });
+    test('Inserting multiple models should add them to the database', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                var user1 = setup_1.userHandler.parse({
+                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                });
+                var user2 = setup_1.userHandler.parse({
+                    id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date()
+                });
+                dao.insert(user1);
+                dao.insert(user2);
+                assert.strictEqual(dao.isSynchronized, false);
+                return dao.sync().then(function (changes) {
+                    assert.strictEqual(dao.isSynchronized, true);
+                    assert.strictEqual(changes.length, 2);
+                    assert.deepEqual(changes[0].current, user1);
+                    assert.strictEqual(changes[0].original, undefined);
+                    assert.deepEqual(changes[1].current, user2);
+                    assert.strictEqual(changes[1].original, undefined);
+                    var query = new setup_1.qFetchUsersByIdList([4, 5]);
+                    return dao.execute(query).then(function (users) {
+                        assert.strictEqual(users.length, 2);
+                        assert.deepEqual(users[0], user1);
+                        assert.deepEqual(users[1], user2);
+                    });
+                });
+            }).then(function () { return dao.release(); });
+        });
+    });
+    test('Inserting a non-model should throw an error', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                var userSeed = {
+                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                };
+                assert.throws(function () {
+                    dao.insert(userSeed);
+                }, assert.AssertionError);
+            }).then(function () { return dao.release(); });
+        });
+    });
+    test('Inserting the same model twice should thrown an error', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                var user = setup_1.userHandler.parse({
+                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                });
+                assert.throws(function () {
+                    dao.insert(user);
+                    dao.insert(user);
+                }, assert.AssertionError);
+            }).then(function () { return dao.release(true); });
+        });
+    });
+    test('Inserting a deleted model should throw an error', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                var query = new setup_1.qFetchUserById(1, true);
+                return dao.execute(query).then(function (user) {
+                    dao.destroy(user);
+                    assert.throws(function () {
+                        dao.insert(user);
+                    }, assert.AssertionError);
+                });
+            }).then(function () { return dao.release(true); });
+        });
+    });
+});
 // DELETING TESTS
 // ================================================================================================
 describe('Data deleting tests', function () {
@@ -300,12 +400,38 @@ describe('Data deleting tests', function () {
                     assert.strictEqual(dao.isNew(user), false);
                     assert.strictEqual(dao.isUpdated(user), false);
                     return dao.sync().then(function (changes) {
+                        assert.strictEqual(dao.hasModel(user), false);
+                        assert.strictEqual(dao.isSynchronized, true);
                         assert.strictEqual(changes.length, 1);
-                        var change = changes[0];
-                        assert.strictEqual(change.current, undefined);
-                        assert.deepEqual(change.original, user);
+                        assert.strictEqual(changes[0].current, undefined);
+                        assert.deepEqual(changes[0].original, user);
                         return dao.execute(query).then(function (newUser) {
                             assert.strictEqual(newUser, undefined);
+                        });
+                    });
+                });
+            }).then(function () { return dao.release(); });
+        });
+    });
+    test('Deleting multiple models should remove them from the database', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                var query1 = new setup_1.qFetchUsersByIdList([1, 2, 3], true);
+                return dao.execute(query1).then(function (users) {
+                    dao.destroy(users[0]);
+                    dao.destroy(users[2]);
+                    assert.strictEqual(dao.isSynchronized, false);
+                    return dao.sync().then(function (changes) {
+                        assert.strictEqual(dao.isSynchronized, true);
+                        assert.strictEqual(changes.length, 2);
+                        assert.strictEqual(changes[0].current, undefined);
+                        assert.deepEqual(changes[0].original, users[0]);
+                        assert.strictEqual(changes[1].current, undefined);
+                        assert.deepEqual(changes[1].original, users[2]);
+                        var query2 = new setup_1.qFetchUsersByIdList([1, 2, 3]);
+                        return dao.execute(query2).then(function (newUsers) {
+                            assert.strictEqual(newUsers.length, 1);
+                            assert.deepEqual(newUsers[0], users[1]);
                         });
                     });
                 });
@@ -337,10 +463,24 @@ describe('Data deleting tests', function () {
             }).then(function () { return dao.release(true); });
         });
     });
+    test('Deleting an inserted model should result in no changes', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                var user = setup_1.userHandler.parse({
+                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                });
+                dao.insert(user);
+                dao.destroy(user);
+                assert.strictEqual(dao.hasModel(user), false);
+                assert.strictEqual(dao.isSynchronized, true);
+                dao.sync().then(function (changes) {
+                    assert.strictEqual(changes.length, 0);
+                });
+            }).then(function () { return dao.release(true); });
+        });
+    });
 });
 // UPDATING TESTS
-// ================================================================================================
-// INSERTING TESTS
 // ================================================================================================
 // TRANSACTION TESTS
 // ================================================================================================ 

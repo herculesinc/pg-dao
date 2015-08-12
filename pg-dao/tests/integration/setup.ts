@@ -56,7 +56,7 @@ export class UserHandler implements ModelHandler<User> {
         }
         else if (original !== undefined && current === undefined) {
             queries.push({
-                text: `DELETE FROM tmp_users WHERE id = ${original.id}`
+                text: `DELETE FROM tmp_users WHERE id = ${original.id};`
             });
         }
         else if (original !== undefined && current !== undefined) {
@@ -72,13 +72,13 @@ export class UserHandler implements ModelHandler<User> {
     }
 }
 
-var userHandler = new UserHandler();
+export var userHandler = new UserHandler();
 
 export class qFetchUserById implements ModelQuery<User> {
     text: string;
     handler = userHandler;
     mask = 'object';
-    mutableModels: boolean
+    mutableModels: boolean;
 
     constructor(userId: number, lock = false) {
         this.mutableModels = lock;
@@ -94,11 +94,14 @@ export class qFetchUsersByIdList implements ModelQuery<User> {
     text: string;
     handler = userHandler;
     mask = 'list';
+    mutableModels: boolean;
 
-    constructor(userIdList: number[]) {
+    constructor(userIdList: number[], lock = false) {
+        this.mutableModels = lock;
         this.text = `
             SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
-            FROM tmp_users WHERE id in (${userIdList.join(',')});`;
+            FROM tmp_users WHERE id in (${userIdList.join(',') })
+            ORDER BY id;`;
     }
 
     get name(): string { return (<any> this).constructor.name; }
