@@ -6,7 +6,7 @@ import { User, UserHandler } from './setup';
 
 // TESTS
 // ================================================================================================
-describe('', function () {
+describe('Model function tests', function () {
     test('Model handler is identified correctly', () => {
         var testHandler: any = new UserHandler();
         testHandler.clone = undefined;

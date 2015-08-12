@@ -3,9 +3,7 @@
 var debug = require('debug');
 var assert = require('assert');
 var pg = require('pg');
-var Query_1 = require('./Query');
 var Store_1 = require('./Store');
-var Model_1 = require('./Model');
 // MODULE VARIABLES
 // ================================================================================================
 var log = debug('pg:dao');
@@ -136,7 +134,7 @@ var Dao = (function () {
                         reject(reason);
                         return;
                     }
-                    resolve(query ? collector[query.name] : collector);
+                    resolve(query && collector ? collector[query.name] : collector);
                 }
             });
         }).catch(function (reason) {
@@ -168,7 +166,7 @@ var Dao = (function () {
     Dao.prototype.hasModel = function (model) { return this.store.isRegistered(model); };
     Dao.prototype.isNew = function (model) { return this.store.isNew(model); };
     Dao.prototype.isDestroyed = function (model) { return this.store.isDestroyed(model); };
-    Dao.prototype.isModified = function (model) { return this.store.isModified(model); };
+    Dao.prototype.isUpdated = function (model) { return this.store.isModified(model); };
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     Dao.prototype.buildQueryList = function (queryOrQueries) {
@@ -188,14 +186,17 @@ var Dao = (function () {
     };
     Dao.prototype.processResults = function (queries, results) {
         assert(queries.length === results.length, "Cannot process query results: expected (" + queries.length + ") results but recieved (" + results.length + ")");
-        var collector = {};
+        var collector;
         for (var i = 0; i < results.length; i++) {
             var query = queries[i];
             var result = results[i];
             if ('mask' in query) {
                 var resultQuery = query;
-                if (resultQuery.mask === Query_1.ResultMask.list) {
+                if (resultQuery.mask === 'list') {
                     var processedResult = processListResult(resultQuery, result);
+                }
+                else if (resultQuery.mask === 'object') {
+                    var processedResult = processObjectResult(resultQuery, result);
                 }
                 else {
                     assert.fail('Query result type is not supported');
@@ -208,7 +209,11 @@ var Dao = (function () {
                 var modelQuery = query;
                 this.store.register(modelQuery.handler, processedResult);
             }
-            saveResult(collector, processedResult, query);
+            if (processedResult !== undefined) {
+                if (collector === undefined)
+                    collector = {};
+                saveResult(collector, processedResult, query);
+            }
         }
         return collector;
     };
@@ -247,7 +252,19 @@ function processListResult(query, queryResult) {
         }
     }
     else {
-        processedResult = queryResult[i].rows;
+        processedResult = queryResult.rows;
+    }
+    return processedResult;
+}
+function processObjectResult(query, queryResult) {
+    if (queryResult.rows.length === 0)
+        return;
+    var processedResult;
+    if (query.handler && typeof query.handler.parse === 'function') {
+        processedResult = query.handler.parse(queryResult.rows[0]);
+    }
+    else {
+        processedResult = queryResult.rows[0];
     }
     return processedResult;
 }
@@ -272,7 +289,7 @@ function getSyncQueries(changes) {
     var queries = [];
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
-        var handler = change[Model_1.symHandler];
+        var handler = change.handler;
         queries = queries.concat(handler.getSyncQueries(change.original, change.current));
     }
     return queries;

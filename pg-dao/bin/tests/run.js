@@ -1,7 +1,3 @@
-// IMPORTS
-// ================================================================================================
-var pgdao = require('./../index');
-var TestSetup_1 = require('./TestSetup');
 // TEST
 // ================================================================================================
 var cnSettings = {
@@ -11,16 +7,20 @@ var cnSettings = {
     password: 'e64FB=%KWL-]',
     database: 'credo_dev'
 };
-var selectAccountTokens = new TestSetup_1.qSelectAccountTokens(5, false);
+/*
+var selectAccountTokens = new qSelectAccountTokens(5, false);
+
 console.log('Getting connection');
 pgdao.connect(cnSettings).then(function (dao) {
+
     return dao.execute([selectAccountTokens, selectAccountTokens, selectAccountTokens])
-        .then(function (tokens) {
-        console.log('query executed: ' + JSON.stringify(tokens));
-    });
+        .then((tokens) => {
+            console.log('query executed: ' + JSON.stringify(tokens));
+        });
 }).catch(function (reason) {
     console.log(reason.message);
 });
+*/
 /*
 return dao.startTransaction()
     .then(() => updateToken(dao))

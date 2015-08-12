@@ -5,12 +5,6 @@ import * as pg from 'pg';
 
 import { Model, ModelHandler, isModelHandler } from './Model';
 
-// ENUMS
-// ================================================================================================
-export enum ResultMask {
-    list = 1
-}
-
 // INTERFACES
 // ================================================================================================
 export interface Query {
@@ -23,7 +17,7 @@ export interface ResultHandler<T> {
 }
 
 export interface ResultQuery<T> extends Query {
-    mask: ResultMask;
+    mask: string;
     handler?: ResultHandler<T>;
 }
 

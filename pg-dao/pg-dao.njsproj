@@ -49,7 +49,6 @@
     <TypeScriptCompile Include="lib\Query.ts" />
     <TypeScriptCompile Include="lib\Store.ts" />
     <TypeScriptCompile Include="pg-dao.d.ts" />
-    <TypeScriptCompile Include="tests\TestSetup.ts" />
     <TypeScriptCompile Include="tests\unit\model.ts">
       <SubType>Code</SubType>
       <TestFramework>Mocha</TestFramework>

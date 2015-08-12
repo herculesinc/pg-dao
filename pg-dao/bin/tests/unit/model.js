@@ -5,7 +5,7 @@ var Model_1 = require('./../../lib/Model');
 var setup_1 = require('./setup');
 // TESTS
 // ================================================================================================
-describe('', function () {
+describe('Model function tests', function () {
     test('Model handler is identified correctly', function () {
         var testHandler = new setup_1.UserHandler();
         testHandler.clone = undefined;

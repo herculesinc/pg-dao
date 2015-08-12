@@ -4,7 +4,7 @@ import * as debug from 'debug';
 import * as assert from 'assert';
 import * as pg from 'pg';
 
-import { Query, ResultQuery, ModelQuery, ResultHandler, ResultMask } from './Query';
+import { Query, ResultQuery, ModelQuery, ResultHandler } from './Query';
 import { Store, SyncInfo } from './Store';
 import { Model, ModelHandler, symHandler } from './Model';
 
@@ -124,7 +124,7 @@ export class Dao {
 
     // EXECUTE METHOD
     // --------------------------------------------------------------------------------------------
-    execute<T>(query: ResultQuery<T>): Promise<T[]>
+    execute<T>(query: ResultQuery<T>): Promise<any>
     execute(query: Query): Promise<void>
     execute(queries: Query[]): Promise<any>
     execute(queryOrQueries: Query | Query[]): Promise<any> {
@@ -149,7 +149,7 @@ export class Dao {
                         reject(reason);
                         return;
                     }
-                    resolve(query ? collector[query.name] : collector);
+                    resolve(query && collector ? collector[query.name] : collector);
                 }
             });
         }).catch((reason) => {
@@ -184,7 +184,7 @@ export class Dao {
 
     isNew(model: Model)         : boolean { return this.store.isNew(model); }
     isDestroyed(model: Model)   : boolean { return this.store.isDestroyed(model); }
-    isModified(model: Model)    : boolean { return this.store.isModified(model); }
+    isUpdated(model: Model)     : boolean { return this.store.isModified(model); }
 
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
@@ -209,7 +209,7 @@ export class Dao {
     private processResults(queries: Query[], results: pg.QueryResult[]): any {
         assert(queries.length === results.length, `Cannot process query results: expected (${queries.length}) results but recieved (${results.length})`);
 
-        var collector: any = {};
+        var collector: any;
 
         for (let i = 0; i < results.length; i++) {
             let query = queries[i];
@@ -217,8 +217,11 @@ export class Dao {
             
             if ('mask' in query) {
                 let resultQuery = <ResultQuery<any>> query;
-                if (resultQuery.mask === ResultMask.list) {
+                if (resultQuery.mask === 'list') {
                     var processedResult = processListResult(resultQuery, result);
+                }
+                else if (resultQuery.mask === 'object') {
+                    var processedResult = processObjectResult(resultQuery, result);
                 }
                 else {
                     assert.fail('Query result type is not supported')
@@ -232,8 +235,11 @@ export class Dao {
                 let modelQuery = <ModelQuery<any>> query;
                 this.store.register(modelQuery.handler, processedResult);
             }
-                
-            saveResult(collector, processedResult, query);
+
+            if (processedResult !== undefined) {
+                if (collector === undefined) collector = {};
+                saveResult(collector, processedResult, query);
+            }
         }
 
         return collector;
@@ -276,7 +282,20 @@ function processListResult(query: ResultQuery<any>, queryResult: pg.QueryResult)
         }
     }
     else {
-        processedResult = queryResult[i].rows;
+        processedResult = queryResult.rows;
+    }
+    return processedResult;
+}
+
+function processObjectResult(query: ResultQuery<any>, queryResult: pg.QueryResult) {
+    if (queryResult.rows.length === 0) return;
+
+    var processedResult;
+    if (query.handler && typeof query.handler.parse === 'function') {
+        processedResult = query.handler.parse(queryResult.rows[0]);
+    }
+    else {
+        processedResult = queryResult.rows[0];
     }
     return processedResult;
 }
@@ -303,7 +322,7 @@ function getSyncQueries(changes: SyncInfo[]): Query[]{
     var queries: Query[] = [];
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
-        var handler: ModelHandler<any> = change[symHandler];
+        var handler: ModelHandler<any> = (<any>change).handler;
         queries = queries.concat(handler.getSyncQueries(change.original, change.current));
     }
     return queries;

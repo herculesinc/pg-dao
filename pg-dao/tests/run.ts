@@ -2,7 +2,6 @@
 // ================================================================================================
 import * as pgdao from './../index';
 import { Dao } from './../lib/Dao';
-import { qSelectAccountTokens, Token } from './TestSetup';
 
 // TEST
 // ================================================================================================
@@ -14,6 +13,7 @@ var cnSettings = {
     database: 'credo_dev'
 };
 
+/*
 var selectAccountTokens = new qSelectAccountTokens(5, false);
 
 console.log('Getting connection');
@@ -26,7 +26,7 @@ pgdao.connect(cnSettings).then(function (dao) {
 }).catch(function (reason) {
     console.log(reason.message);
 });
-
+*/
     /*
     return dao.startTransaction()
         .then(() => updateToken(dao))
