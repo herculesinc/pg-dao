@@ -98,21 +98,17 @@ export class Dao {
             });
     }
 
-    release(): Promise<any> {
+    release(rollback = false): Promise<any> {
         assert(this.state !== State.released, 'Cannot release: Dao has already been released');
         
         log(`Releasing Dao back to the pool; Dao is in (${State[this.state]})`);
         return Promise.resolve().then(() => {
-            if (this.isSynchronized === false) {
+            if (rollback) {
+                return this.rollbackTransaction();
+            }
+            else if (this.isSynchronized === false) {
                 log(`Dao has not been synchronized! Rolling back changes`);
-                return this.execute(ROLLBACK_TRANSACTION)
-                    .then(() => {
-                        this.done();
-                        this.state = State.released;
-                        log(`Transaction rolled back; Connection released to the pool`);
-                        logPoolState(this.pool);
-                        return Promise.reject(new Error('Unsynchronized Dao detected during connection release'));
-                    });
+                return this.rollbackTransaction(new Error('Unsynchronized Dao detected during connection release'));
             }
         }).then(() => {
             this.done();
@@ -154,24 +150,7 @@ export class Dao {
             });
         }).catch((reason) => {
             log(`Failed to execute queries; rolling back transaction`);
-            return new Promise((resolve, reject) => {
-                this.client.query(ROLLBACK_TRANSACTION.text, (error, results) => {
-                    if (error) {
-                        this.done(error);
-                        this.state = State.released;
-                        log(`Transaction rolledback failed; Connection terminated`);
-                        logPoolState(this.pool);
-                        reject(reason);
-                    }
-                    else {
-                        this.done();
-                        this.state = State.released;
-                        log(`Transaction rolled back; Connection released to the pool`);
-                        logPoolState(this.pool);
-                        reject(reason);
-                    }
-                });
-            });
+            return this.rollbackTransaction(reason);
         });
     }
 
@@ -243,6 +222,34 @@ export class Dao {
         }
 
         return collector;
+    }
+
+    private rollbackTransaction(reason?: any): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.client.query(ROLLBACK_TRANSACTION.text, (error, results) => {
+                if (error) {
+                    this.done(error);
+                    this.state = State.released;
+                    log(`Transaction rolledback failed; Connection terminated`);
+                    logPoolState(this.pool);
+                    reason ? reject(reason) : reject(error);
+                }
+                else {
+                    if (reason) {
+                        this.done();
+                        this.state = State.released;
+                        log(`Transaction rolled back; Connection released to the pool`);
+                        logPoolState(this.pool);
+                        reject(reason);
+                    }
+                    else {
+                        this.state = State.connection;
+                        log(`Transaction rolled back; Dao is in (${State[this.state]})`);
+                        resolve();
+                    }
+                }
+            });
+        });
     }
 }
 

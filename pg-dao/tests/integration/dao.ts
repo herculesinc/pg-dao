@@ -26,7 +26,7 @@ describe('Data fetching tests', function () {
                     assert(user.id === 1);
                     assert(user.username === 'Irakliy');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -37,7 +37,7 @@ describe('Data fetching tests', function () {
                 return dao.execute(query).then((user) => {
                     assert(user === undefined);
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -52,7 +52,7 @@ describe('Data fetching tests', function () {
                     assert(users[1].id === 3);
                     assert(users[1].username === 'George');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -63,7 +63,7 @@ describe('Data fetching tests', function () {
                 return dao.execute(query).then((users) => {
                     assert(users.length === 0);
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -84,7 +84,7 @@ describe('Data fetching tests', function () {
                     assert(users[1].id === 3);
                     assert(users[1].username === 'George');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -100,7 +100,7 @@ describe('Data fetching tests', function () {
                     assert(users[1].id === 2);
                     assert(users[1].username === 'Yason');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -123,7 +123,7 @@ describe('Data fetching tests', function () {
                     assert(users2[0].id === 3);
                     assert(users2[0].username === 'George');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -139,7 +139,7 @@ describe('Data fetching tests', function () {
                     assert(user.id === 1);
                     assert(user.username === 'Irakliy');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -158,7 +158,7 @@ describe('Data fetching tests', function () {
                     assert(users[1].id === 2);
                     assert(users[1].username === 'Yason');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -183,7 +183,7 @@ describe('Data fetching tests', function () {
                     assert(users[1].id === 3);
                     assert(users[1].username === 'George');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -213,7 +213,7 @@ describe('Data fetching tests', function () {
                     assert(users[1].id === 3);
                     assert(users[1].username === 'George');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -229,7 +229,7 @@ describe('Data fetching tests', function () {
                     assert(users[1].id === 3);
                     assert(users[1].username === 'George');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -255,7 +255,7 @@ describe('Data fetching tests', function () {
                     assert(users3[0].id === 3);
                     assert(users3[0].username === 'George');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -268,7 +268,7 @@ describe('Data fetching tests', function () {
                 return dao.execute(query).then((result) => {
                     assert.equal(result, undefined);
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 
@@ -281,7 +281,7 @@ describe('Data fetching tests', function () {
                 return dao.execute([query, query]).then((results) => {
                     assert.equal(results, undefined);
                 });
-            });
+            }).then(() => dao.release());;
         });
     });
 
@@ -315,7 +315,7 @@ describe('Data fetching tests', function () {
                     assert(users[1].id === 3);
                     assert(users[1].username === 'George');
                 });
-            });
+            }).then(() => dao.release());
         });
     });
 });
@@ -374,7 +374,7 @@ describe('Data deleting tests', function () {
                         dao.destroy(user);
                     }, assert.AssertionError);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.release(true));
         });
     });
 });

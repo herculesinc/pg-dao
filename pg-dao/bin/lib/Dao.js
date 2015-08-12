@@ -90,21 +90,18 @@ var Dao = (function () {
             return Promise.reject(new Error("Sync failed: " + reason.message));
         });
     };
-    Dao.prototype.release = function () {
+    Dao.prototype.release = function (rollback) {
         var _this = this;
+        if (rollback === void 0) { rollback = false; }
         assert(this.state !== State.released, 'Cannot release: Dao has already been released');
         log("Releasing Dao back to the pool; Dao is in (" + State[this.state] + ")");
         return Promise.resolve().then(function () {
-            if (_this.isSynchronized === false) {
+            if (rollback) {
+                return _this.rollbackTransaction();
+            }
+            else if (_this.isSynchronized === false) {
                 log("Dao has not been synchronized! Rolling back changes");
-                return _this.execute(ROLLBACK_TRANSACTION)
-                    .then(function () {
-                    _this.done();
-                    _this.state = State.released;
-                    log("Transaction rolled back; Connection released to the pool");
-                    logPoolState(_this.pool);
-                    return Promise.reject(new Error('Unsynchronized Dao detected during connection release'));
-                });
+                return _this.rollbackTransaction(new Error('Unsynchronized Dao detected during connection release'));
             }
         }).then(function () {
             _this.done();
@@ -139,24 +136,7 @@ var Dao = (function () {
             });
         }).catch(function (reason) {
             log("Failed to execute queries; rolling back transaction");
-            return new Promise(function (resolve, reject) {
-                _this.client.query(ROLLBACK_TRANSACTION.text, function (error, results) {
-                    if (error) {
-                        _this.done(error);
-                        _this.state = State.released;
-                        log("Transaction rolledback failed; Connection terminated");
-                        logPoolState(_this.pool);
-                        reject(reason);
-                    }
-                    else {
-                        _this.done();
-                        _this.state = State.released;
-                        log("Transaction rolled back; Connection released to the pool");
-                        logPoolState(_this.pool);
-                        reject(reason);
-                    }
-                });
-            });
+            return _this.rollbackTransaction(reason);
         });
     };
     // STORE PASS THROUGH METHODS
@@ -216,6 +196,34 @@ var Dao = (function () {
             }
         }
         return collector;
+    };
+    Dao.prototype.rollbackTransaction = function (reason) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            _this.client.query(ROLLBACK_TRANSACTION.text, function (error, results) {
+                if (error) {
+                    _this.done(error);
+                    _this.state = State.released;
+                    log("Transaction rolledback failed; Connection terminated");
+                    logPoolState(_this.pool);
+                    reason ? reject(reason) : reject(error);
+                }
+                else {
+                    if (reason) {
+                        _this.done();
+                        _this.state = State.released;
+                        log("Transaction rolled back; Connection released to the pool");
+                        logPoolState(_this.pool);
+                        reject(reason);
+                    }
+                    else {
+                        _this.state = State.connection;
+                        log("Transaction rolled back; Dao is in (" + State[_this.state] + ")");
+                        resolve();
+                    }
+                }
+            });
+        });
     };
     return Dao;
 })();

@@ -24,22 +24,22 @@
         inTransaction   : boolean;
         isSynchronized  : boolean;
 
-        startTransaction()      : Promise<void>;
-        sync(commit?: boolean)  : Promise<SyncInfo[]>;
-        release()               : Promise<void>;
+        startTransaction()          : Promise<void>;
+        sync(commit?: boolean)      : Promise<SyncInfo[]>;
+        release(rollback?: boolean) : Promise<void>;
 
-        execute<T>(query: ResultQuery<T>)   : Promise<T[]>
+        execute<T>(query: ResultQuery<T>)   : Promise<any>
         execute(query: Query)               : Promise<void>
         execute(queries: Query[])           : Promise<any>;
 
-        create(model: Model);
+        insert(model: Model);
         destroy(model: Model);
 
         hasModel(model: Model)  : boolean;
 
         isNew(model: Model): boolean;
         isDestroyed(model: Model): boolean;
-        isModified(model: Model): boolean;
+        isUpdated(model: Model): boolean;
     }
 
     export interface SyncInfo {
@@ -69,18 +69,13 @@
 
     // QUERY DEFINITIONS
     // --------------------------------------------------------------------------------------------
-    export const enum ResultMask {
-        list = 1,
-        object = 2
-    }
-
     export interface Query {
         text: string;
         name?: string;
     }
     
     export interface ResultQuery<T> extends Query {
-        mask: ResultMask;
+        mask: string;
         handler?: ResultHandler<T>;
     }
 
