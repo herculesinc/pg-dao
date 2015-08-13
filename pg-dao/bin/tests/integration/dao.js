@@ -553,6 +553,81 @@ describe('Data update tests', function () {
         });
     });
 });
-// TRANSACTION TESTS
-// ================================================================================================ 
+// LIFECYCLE TESTS
+// ================================================================================================
+describe('Lifecycle tests', function () {
+    test('Starting a transaction should put Dao in transaction state', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                assert.strictEqual(dao.isActive, true);
+                assert.strictEqual(dao.inTransaction, false);
+                assert.strictEqual(dao.isSynchronized, true);
+                return dao.startTransaction()
+                    .then(function () {
+                    assert.strictEqual(dao.isActive, true);
+                    assert.strictEqual(dao.inTransaction, true);
+                    assert.strictEqual(dao.isSynchronized, true);
+                });
+            }).then(function () { return dao.release('rollback'); });
+        });
+    });
+    test('Releasing an uncommitted Dao should throw an error', function () {
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                return dao.startTransaction().then(function () {
+                    return dao.release()
+                        .then(function () {
+                        assert.fail();
+                    })
+                        .catch(function (error) {
+                        assert.strictEqual(dao.isActive, false);
+                        assert.strictEqual(dao.inTransaction, false);
+                        assert.strictEqual(dao.isSynchronized, true);
+                        assert.strictEqual(pg.getPoolState(settings).size, 1);
+                        assert.strictEqual(pg.getPoolState(settings).available, 1);
+                    });
+                });
+            });
+        });
+    });
+    test('Syncing a Dao with commiting should put Dao in syncrhonized state', function () {
+        assert.strictEqual(pg.getPoolState(settings).size, 0);
+        assert.strictEqual(pg.getPoolState(settings).available, 0);
+        return pg.connect(settings).then(function (dao) {
+            return setup_1.prepareDatabase(dao).then(function () {
+                assert.strictEqual(dao.isActive, true);
+                assert.strictEqual(dao.inTransaction, false);
+                assert.strictEqual(dao.isSynchronized, true);
+                return dao.startTransaction().then(function () {
+                    assert.strictEqual(dao.isActive, true);
+                    assert.strictEqual(dao.inTransaction, true);
+                    assert.strictEqual(dao.isSynchronized, true);
+                    var query1 = new setup_1.qFetchUserById(1, true);
+                    return dao.execute(query1).then(function (user) {
+                        user.username = 'Test';
+                        assert.strictEqual(dao.isActive, true);
+                        assert.strictEqual(dao.inTransaction, true);
+                        assert.strictEqual(dao.isSynchronized, false);
+                        return dao.sync(true).then(function (changes) {
+                            assert.strictEqual(changes.length, 1);
+                            assert.strictEqual(dao.isActive, true);
+                            assert.strictEqual(dao.inTransaction, false);
+                            assert.strictEqual(dao.isSynchronized, true);
+                            assert.strictEqual(pg.getPoolState(settings).size, 1);
+                            assert.strictEqual(pg.getPoolState(settings).available, 0);
+                            return dao.release().then(function (changes) {
+                                assert.strictEqual(changes, undefined);
+                                assert.strictEqual(dao.isActive, false);
+                                assert.strictEqual(dao.inTransaction, false);
+                                assert.strictEqual(dao.isSynchronized, true);
+                                assert.strictEqual(pg.getPoolState(settings).size, 1);
+                                assert.strictEqual(pg.getPoolState(settings).available, 1);
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+});
 //# sourceMappingURL=dao.js.map

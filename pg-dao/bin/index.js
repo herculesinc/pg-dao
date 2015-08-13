@@ -23,4 +23,12 @@ function connect(settings) {
     });
 }
 exports.connect = connect;
+function getPoolState(settings) {
+    var pool = pg.pools.getOrCreate(settings);
+    return {
+        size: pool.getPoolSize(),
+        available: pool.availableObjectsCount()
+    };
+}
+exports.getPoolState = getPoolState;
 //# sourceMappingURL=index.js.map

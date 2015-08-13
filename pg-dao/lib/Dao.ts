@@ -12,7 +12,7 @@ import { Model, ModelHandler, symHandler } from './Model';
 // ================================================================================================
 var log = debug('pg:dao');
 
-// ENUMS
+// INTERFACES AND ENUMS
 // ================================================================================================
 enum State {
     connection = 1,
@@ -52,9 +52,9 @@ export class Dao {
     }
 
     get isSynchronized(): boolean {
-        return (this.store.hasChanges === false && this.inTransaction === false);
+        return (this.store.hasChanges === false);
     }
-    
+
     // LIFECYCLE METHODS
     // --------------------------------------------------------------------------------------------
     startTransaction(): Promise<void> {
@@ -110,8 +110,12 @@ export class Dao {
                 log(`Rolling back changes`);
                 return this.rollbackTransaction();
             }
+            else if (this.inTransaction) {
+                log(`Dao transaction has not been committed! Rolling back transaction`);
+                return this.rollbackTransaction(new Error('Uncommitted transaction detected during connection release'));
+            }
             else if (this.isSynchronized === false) {
-                log(`Dao has not been synchronized! Rolling back changes`);
+                log(`Dao has not been synchronized! Rolling back transaction`);
                 return this.rollbackTransaction(new Error('Unsynchronized Dao detected during connection release'));
             }
         }).then((changes) => {

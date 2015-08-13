@@ -16,6 +16,11 @@ export interface Settings {
     poolSize?   : number;
 };
 
+export interface PoolState {
+    size: number;
+    available: number;
+}
+
 // GLOBALS
 // ================================================================================================
 pg.defaults.parseInt8 = true;
@@ -34,4 +39,12 @@ export function connect(settings: Settings): Promise<Dao> {
             resolve(dao);
         });
     });
+}
+
+export function getPoolState(settings: Settings): PoolState {
+    var pool = pg.pools.getOrCreate(settings);
+    return {
+        size: pool.getPoolSize(),
+        available: pool.availableObjectsCount()
+    };
 }

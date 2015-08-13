@@ -11,19 +11,25 @@
         poolSize?   : number;
     }
 
+    export interface PoolState {
+        size: number;
+        available: number;
+    }
+
     export function connect(settings: ConnectionSettings): Promise<Dao>;
-    
+    export function getPoolState(settings: ConnectionSettings): PoolState;
+
     export var symbols: {
         handler: symbol;
     };
 
-    // DAO DEFINITIONS
+    // DAO DEFINITION
     // --------------------------------------------------------------------------------------------
     export interface Dao {
         isActive        : boolean;
         inTransaction   : boolean;
         isSynchronized  : boolean;
-
+        
         startTransaction()          : Promise<void>;
         sync(commit?: boolean)      : Promise<SyncInfo[]>;
         
@@ -38,16 +44,16 @@
         insert(model: Model);
         destroy(model: Model);
 
-        hasModel(model: Model)  : boolean;
+        hasModel(model: Model)      : boolean;
 
-        isNew(model: Model): boolean;
-        isDestroyed(model: Model): boolean;
-        isUpdated(model: Model): boolean;
+        isNew(model: Model)         : boolean;
+        isDestroyed(model: Model)   : boolean;
+        isUpdated(model: Model)     : boolean;
     }
 
     export interface SyncInfo {
         original: Model;
-        current: Model;
+        current : Model;
     }
 
     // MODEL DEFINITIONS

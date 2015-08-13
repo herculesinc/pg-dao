@@ -8,7 +8,7 @@ var Model_1 = require('./Model');
 // MODULE VARIABLES
 // ================================================================================================
 var log = debug('pg:dao');
-// ENUMS
+// INTERFACES AND ENUMS
 // ================================================================================================
 var State;
 (function (State) {
@@ -47,7 +47,7 @@ var Dao = (function () {
     });
     Object.defineProperty(Dao.prototype, "isSynchronized", {
         get: function () {
-            return (this.store.hasChanges === false && this.inTransaction === false);
+            return (this.store.hasChanges === false);
         },
         enumerable: true,
         configurable: true
@@ -103,8 +103,12 @@ var Dao = (function () {
                 log("Rolling back changes");
                 return _this.rollbackTransaction();
             }
+            else if (_this.inTransaction) {
+                log("Dao transaction has not been committed! Rolling back transaction");
+                return _this.rollbackTransaction(new Error('Uncommitted transaction detected during connection release'));
+            }
             else if (_this.isSynchronized === false) {
-                log("Dao has not been synchronized! Rolling back changes");
+                log("Dao has not been synchronized! Rolling back transaction");
                 return _this.rollbackTransaction(new Error('Unsynchronized Dao detected during connection release'));
             }
         }).then(function (changes) {
