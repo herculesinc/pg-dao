@@ -64,7 +64,7 @@ export class UserHandler implements ModelHandler<User> {
                 text: `UPDATE tmp_users SET
                         username = '${current.username}',
                         updated_on = '${current.updatedOn.toISOString() }'
-                        WHERE id = ${current.id}`
+                        WHERE id = ${current.id};`
             });
         }
 

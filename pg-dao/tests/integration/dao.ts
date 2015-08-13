@@ -553,5 +553,88 @@ describe('Data deleting tests', function () {
 // UPDATING TESTS
 // ================================================================================================
 
+describe('Data update tests', function () {
+
+    test('Updating a model should update it in the database', () => {
+        return pg.connect(settings).then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                var query1 = new qFetchUserById(1, true);
+                return dao.execute(query1).then((user) => {
+
+                    user.username = 'Test';
+                    assert.strictEqual(dao.isSynchronized, false);
+                    assert.strictEqual(dao.hasModel(user), true);
+                    assert.strictEqual(dao.isDestroyed(user), false);
+                    assert.strictEqual(dao.isNew(user), false);
+                    assert.strictEqual(dao.isUpdated(user), true);
+
+                    return dao.sync().then((changes) => {
+                        assert.strictEqual(dao.hasModel(user), true);
+                        assert.strictEqual(dao.isSynchronized, true);
+
+                        assert.strictEqual(changes.length, 1);
+                        assert.strictEqual(changes[0].current, user);
+                        assert.strictEqual(changes[0].current['username'], 'Test');
+                        assert.strictEqual(changes[0].original.id, user.id);
+                        assert.strictEqual(changes[0].original['username'], 'Irakliy');
+
+                        var query2 = new qFetchUserById(1);
+                        return dao.execute(query2).then((newUser) => {
+                            assert.deepEqual(newUser, user);
+                            assert.strictEqual(newUser.username, 'Test');
+                        });
+                    });
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    test('Updating a model should change updatedOn date', () => {
+        return pg.connect(settings).then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                var query1 = new qFetchUserById(1, true);
+                return dao.execute(query1).then((user) => {
+                    user.username = 'Test';
+                    return dao.sync().then((changes) => {
+                        var original = changes[0].original;
+                        var current = changes[0].current;
+                        assert.ok(original.updatedOn.valueOf() < current.updatedOn.valueOf());
+                    });
+                });
+            }).then(() => dao.release());
+        });
+    });
+
+    test('Multiple changes should be persisted in the database', () => {
+        return pg.connect(settings).then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                var query1 = new qFetchUsersByIdList([1, 2, 3], true);
+                return dao.execute(query1).then((users) => {
+                    dao.destroy(users[0])
+                    dao.destroy(users[2]);
+
+                    var user = userHandler.parse({
+                        id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                    });
+                    dao.insert(user);
+
+                    users[1].username = 'Test';
+
+                    return dao.sync().then((changes) => {
+                        assert.strictEqual(changes.length, 4);
+                        var query2 = new qFetchUsersByIdList([1, 2, 3, 4, 5]);
+                        return dao.execute(query2).then((users2) => {
+                            assert.strictEqual(users2.length, 2);
+                            assert.strictEqual(users2[0].username, 'Test');
+                            assert.strictEqual(users2[1].username, 'Katie');
+                        });
+                    });
+                });
+            }).then(() => dao.release());
+        });
+    });
+});
+
+
 // TRANSACTION TESTS
 // ================================================================================================

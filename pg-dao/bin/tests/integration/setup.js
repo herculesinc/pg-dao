@@ -49,7 +49,7 @@ var UserHandler = (function () {
         }
         else if (original !== undefined && current !== undefined) {
             queries.push({
-                text: "UPDATE tmp_users SET\n                        username = '" + current.username + "',\n                        updated_on = '" + current.updatedOn.toISOString() + "'\n                        WHERE id = " + current.id
+                text: "UPDATE tmp_users SET\n                        username = '" + current.username + "',\n                        updated_on = '" + current.updatedOn.toISOString() + "'\n                        WHERE id = " + current.id + ";"
             });
         }
         return queries;

@@ -298,6 +298,9 @@ function getSyncQueries(changes) {
     var queries = [];
     for (var i = 0; i < changes.length; i++) {
         var change = changes[i];
+        if (change.original !== undefined && change.current !== undefined) {
+            change.current.updatedOn = new Date();
+        }
         var handler = change[Model_1.symHandler];
         queries = queries.concat(handler.getSyncQueries(change.original, change.current));
     }
