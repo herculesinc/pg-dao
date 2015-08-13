@@ -66,7 +66,7 @@ var Dao = (function () {
         if (commit === void 0) { commit = false; }
         assert(this.isActive, 'Cannot snyc: Dao is currently not active');
         var state = this.state;
-        var changes = this.store.hasChanges ? this.store.getChanges() : [];
+        var changes = this.store.getChanges();
         var queries = getSyncQueries(changes);
         log("Syncing " + changes.length + " model(s); Dao is in (" + State[this.state] + ")");
         if (commit) {
@@ -77,7 +77,7 @@ var Dao = (function () {
         }
         if (queries.length === 0) {
             this.state = state;
-            log("Sync completed; Dao is in (" + State[this.state] + ")");
+            log("No changes to sync; Dao is in (" + State[this.state] + ")");
             return Promise.resolve(changes);
         }
         return this.execute(queries)
@@ -91,24 +91,28 @@ var Dao = (function () {
             return Promise.reject(new Error("Sync failed: " + reason.message));
         });
     };
-    Dao.prototype.release = function (rollback) {
+    Dao.prototype.release = function (action) {
         var _this = this;
-        if (rollback === void 0) { rollback = false; }
         assert(this.state !== State.released, 'Cannot release: Dao has already been released');
         log("Releasing Dao back to the pool; Dao is in (" + State[this.state] + ")");
         return Promise.resolve().then(function () {
-            if (rollback) {
+            if (action === 'commit') {
+                return _this.sync(true);
+            }
+            else if (action === 'rollback') {
+                log("Rolling back changes");
                 return _this.rollbackTransaction();
             }
             else if (_this.isSynchronized === false) {
                 log("Dao has not been synchronized! Rolling back changes");
                 return _this.rollbackTransaction(new Error('Unsynchronized Dao detected during connection release'));
             }
-        }).then(function () {
+        }).then(function (changes) {
             _this.done();
             _this.state = State.released;
             log("Dao released back to the pool; Dao is in (" + State[_this.state] + ")");
             logPoolState(_this.pool);
+            return changes;
         });
     };
     Dao.prototype.execute = function (queryOrQueries) {

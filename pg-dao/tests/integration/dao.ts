@@ -419,7 +419,7 @@ describe('Data inserting tests', function () {
                     dao.insert(user);
                     dao.insert(user);
                 }, assert.AssertionError);
-            }).then(() => dao.release(true));
+            }).then(() => dao.release('rollback'));
         });
     });
 
@@ -433,7 +433,7 @@ describe('Data inserting tests', function () {
                         dao.insert(user);
                     }, assert.AssertionError);
                 });
-            }).then(() => dao.release(true));
+            }).then(() => dao.release('rollback'));
         });
     });
 });
@@ -524,7 +524,7 @@ describe('Data deleting tests', function () {
                         dao.destroy(user);
                     }, assert.AssertionError);
                 });
-            }).then(() => dao.release(true));
+            }).then(() => dao.release('rollback'));
         });
     });
 
@@ -545,7 +545,7 @@ describe('Data deleting tests', function () {
                     assert.strictEqual(changes.length, 0);
                 });
                 
-            }).then(() => dao.release(true));
+            }).then(() => dao.release('rollback'));
         });
     });
 });

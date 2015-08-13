@@ -368,7 +368,7 @@ describe('Data inserting tests', function () {
                     dao.insert(user);
                     dao.insert(user);
                 }, assert.AssertionError);
-            }).then(function () { return dao.release(true); });
+            }).then(function () { return dao.release('rollback'); });
         });
     });
     test('Inserting a deleted model should throw an error', function () {
@@ -381,7 +381,7 @@ describe('Data inserting tests', function () {
                         dao.insert(user);
                     }, assert.AssertionError);
                 });
-            }).then(function () { return dao.release(true); });
+            }).then(function () { return dao.release('rollback'); });
         });
     });
 });
@@ -460,7 +460,7 @@ describe('Data deleting tests', function () {
                         dao.destroy(user);
                     }, assert.AssertionError);
                 });
-            }).then(function () { return dao.release(true); });
+            }).then(function () { return dao.release('rollback'); });
         });
     });
     test('Deleting an inserted model should result in no changes', function () {
@@ -476,7 +476,7 @@ describe('Data deleting tests', function () {
                 dao.sync().then(function (changes) {
                     assert.strictEqual(changes.length, 0);
                 });
-            }).then(function () { return dao.release(true); });
+            }).then(function () { return dao.release('rollback'); });
         });
     });
 });

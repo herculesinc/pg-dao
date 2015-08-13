@@ -26,10 +26,13 @@
 
         startTransaction()          : Promise<void>;
         sync(commit?: boolean)      : Promise<SyncInfo[]>;
-        release(rollback?: boolean) : Promise<void>;
+        
+        release(action: 'commit')   : Promise<SyncInfo[]>;
+        release(action: 'rollback') : Promise<void>;
+        release(action?: string)    : Promise<any>;
 
-        execute<T>(query: ResultQuery<T>)   : Promise<any>
-        execute(query: Query)               : Promise<void>
+        execute<T>(query: ResultQuery<T>)   : Promise<any>;
+        execute(query: Query)               : Promise<void>;
         execute(queries: Query[])           : Promise<any>;
 
         insert(model: Model);

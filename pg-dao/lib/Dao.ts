@@ -69,7 +69,7 @@ export class Dao {
     sync(commit = false): Promise<SyncInfo[]> {
         assert(this.isActive, 'Cannot snyc: Dao is currently not active');
         var state = this.state;
-        var changes = this.store.hasChanges ? this.store.getChanges() : [];
+        var changes = this.store.getChanges();
         var queries = getSyncQueries(changes);
         log(`Syncing ${changes.length} model(s); Dao is in (${State[this.state]})`);
         
@@ -82,7 +82,7 @@ export class Dao {
 
         if (queries.length === 0) {
             this.state = state;
-            log(`Sync completed; Dao is in (${State[this.state]})`);
+            log(`No changes to sync; Dao is in (${State[this.state]})`);
             return Promise.resolve(changes);
         }
 
@@ -98,23 +98,28 @@ export class Dao {
             });
     }
 
-    release(rollback = false): Promise<any> {
+    release(action?: string): Promise<any> {
         assert(this.state !== State.released, 'Cannot release: Dao has already been released');
         
         log(`Releasing Dao back to the pool; Dao is in (${State[this.state]})`);
         return Promise.resolve().then(() => {
-            if (rollback) {
+            if (action === 'commit') {
+                return this.sync(true);
+            }
+            else if (action === 'rollback') {
+                log(`Rolling back changes`);
                 return this.rollbackTransaction();
             }
             else if (this.isSynchronized === false) {
                 log(`Dao has not been synchronized! Rolling back changes`);
                 return this.rollbackTransaction(new Error('Unsynchronized Dao detected during connection release'));
             }
-        }).then(() => {
+        }).then((changes) => {
             this.done();
             this.state = State.released;
             log(`Dao released back to the pool; Dao is in (${State[this.state]})`);
             logPoolState(this.pool);
+            return changes;
         });
     }
 
