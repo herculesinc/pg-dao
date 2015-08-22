@@ -291,7 +291,7 @@ describe('Data inserting tests', function () {
     test('Inserting a model should add it to the database', function () {
         return pg.connect(settings).then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
-                var user = setup_1.userHandler.parse({
+                var user = setup_1.User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
                 dao.insert(user);
@@ -320,10 +320,10 @@ describe('Data inserting tests', function () {
     test('Inserting multiple models should add them to the database', function () {
         return pg.connect(settings).then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
-                var user1 = setup_1.userHandler.parse({
+                var user1 = setup_1.User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
-                var user2 = setup_1.userHandler.parse({
+                var user2 = setup_1.User.parse({
                     id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date()
                 });
                 dao.insert(user1);
@@ -361,7 +361,7 @@ describe('Data inserting tests', function () {
     test('Inserting the same model twice should thrown an error', function () {
         return pg.connect(settings).then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
-                var user = setup_1.userHandler.parse({
+                var user = setup_1.User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
                 assert.throws(function () {
@@ -466,7 +466,7 @@ describe('Data deleting tests', function () {
     test('Deleting an inserted model should result in no changes', function () {
         return pg.connect(settings).then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
-                var user = setup_1.userHandler.parse({
+                var user = setup_1.User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
                 dao.insert(user);
@@ -534,7 +534,7 @@ describe('Data update tests', function () {
                 return dao.execute(query1).then(function (users) {
                     dao.destroy(users[0]);
                     dao.destroy(users[2]);
-                    var user = setup_1.userHandler.parse({
+                    var user = setup_1.User.parse({
                         id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                     });
                     dao.insert(user);

@@ -47,6 +47,7 @@ declare module "pg" {
         text: string;
         values?: any[];
         multiResult?: boolean;
+        rowMode?: string;
     }
 
     export interface QueryResult {

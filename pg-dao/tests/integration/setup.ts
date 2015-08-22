@@ -5,78 +5,103 @@ import { Dao } from './../../lib/Dao';
 import { Model, ModelHandler } from './../../lib/Model';
 import { Query, ModelQuery } from './../../lib/Query';
 
+var InsertQuery = Symbol();
+var UpdateQuery = Symbol();
+var DeleteQuery = Symbol();
+
 // SETUP
 // ================================================================================================
-export class User implements Model {
+class AbstractModel implements Model {
     id          : number;
-    username    : string;
     createdOn   : Date;
     updatedOn   : Date;
 
     constructor(seed: any) {
         this.id = seed.id;
-        this.username = seed.username;
         this.createdOn = seed.createdOn;
         this.updatedOn = seed.updatedOn;
     }
-}
 
-export class UserHandler implements ModelHandler<User> {
-    
-    parse(row: any): User {
-        var user = new User(row);
-        user[symbols.handler] = this;
-        return user;
+    static parse(row: any): any {
+        var model = new this(row);
+        model[symbols.handler] = this;
+        return model;
     }
 
-    clone(user: User): User {
-        var user = new User(user);
-        user[symbols.handler] = this;
-        return user;
+    static clone(model: AbstractModel): any {
+        var clone = new this(model);
+        clone[symbols.handler] = this;
+        return clone;
     }
 
-    areEqual(user1: User, user2: User): boolean {
-        if (user1 === undefined || user2 === undefined) {
-            return false;
-        }
-
-        return (user1.id === user2.id
-            && user1.username === user2.username
-            && user1.createdOn.valueOf() === user2.createdOn.valueOf()
-            && user1.updatedOn.valueOf() === user2.updatedOn.valueOf());
-    }
-    
-    getSyncQueries(original: User, current: User): Query[]{
+    static getSyncQueries(original: any, current: any): Query[] {
         var queries: Query[] = [];
         if (original === undefined && current !== undefined) {
-            queries.push({
-                text: `INSERT INTO tmp_users (id, username, created_on, updated_on)
-                        SELECT ${current.id}, '${current.username}', '${current.createdOn.toISOString() }', '${current.updatedOn.toISOString()}';`
-            });
+            let qInsertModel = this[InsertQuery];
+            queries.push(new qInsertModel(current));
         }
         else if (original !== undefined && current === undefined) {
-            queries.push({
-                text: `DELETE FROM tmp_users WHERE id = ${original.id};`
-            });
+            let qDeleteModel = this[DeleteQuery];
+            queries.push(new qDeleteModel(original));
         }
         else if (original !== undefined && current !== undefined) {
-            queries.push({
-                text: `UPDATE tmp_users SET
-                        username = '${current.username}',
-                        updated_on = '${current.updatedOn.toISOString() }'
-                        WHERE id = ${current.id};`
-            });
+            let qUpdateModel = this[UpdateQuery];
+            queries.push(new qUpdateModel(current));
         }
 
         return queries;
     }
 }
 
-export var userHandler = new UserHandler();
+interface QueryContstructor {
+    new (model: any): Query;
+}
+
+function ModelDecorator(insertQuery: QueryContstructor, updateQuery: QueryContstructor, deleteQuery: QueryContstructor) {
+    return function (target: any) {
+        target[InsertQuery] = insertQuery;
+        target[UpdateQuery] = updateQuery;
+        target[DeleteQuery] = deleteQuery;
+
+        console.log(deleteQuery);
+    }
+}
+
+// QUERIES
+// ================================================================================================
+class AbstractQuery implements Query {
+    text: string;
+    get name(): string { return (<any> this).constructor.name; }
+}
+
+class qInsertUser extends AbstractQuery {
+    constructor(user: User) {
+        super();
+        this.text = `INSERT INTO tmp_users (id, username, created_on, updated_on)
+            SELECT ${user.id}, '${user.username}', '${user.createdOn.toISOString() }', '${user.updatedOn.toISOString() }';`;
+    }
+}
+
+class qDeleteUser extends AbstractQuery {
+    constructor(user: User) {
+        super();
+        this.text = `DELETE FROM tmp_users WHERE id = ${user.id};`;
+    }
+}
+
+class qUpdateUser extends AbstractQuery {
+    constructor(user: User) {
+        super();
+        this.text = `UPDATE tmp_users SET
+                        username = '${user.username}',
+                        updated_on = '${user.updatedOn.toISOString() }'
+                        WHERE id = ${user.id};`;
+    }
+}
 
 export class qFetchUserById implements ModelQuery<User> {
     text: string;
-    handler = userHandler;
+    handler = User;
     mask = 'object';
     mutableModels: boolean;
 
@@ -92,7 +117,7 @@ export class qFetchUserById implements ModelQuery<User> {
 
 export class qFetchUsersByIdList implements ModelQuery<User> {
     text: string;
-    handler = userHandler;
+    handler = User;
     mask = 'list';
     mutableModels: boolean;
 
@@ -118,4 +143,27 @@ export function prepareDatabase(dao: Dao): Promise<void> {
 	            ) AS q (id, username, created_on, updated_on);`
         }
     ]);
+}
+
+// USER MODEL
+// ================================================================================================
+@ModelDecorator(qInsertUser, qUpdateUser, qDeleteUser)
+export class User extends AbstractModel {
+    username: string;
+
+    constructor(seed: any) {
+        super(seed);
+        this.username = seed.username;
+    }
+
+    static areEqual(user1: User, user2: User): boolean {
+        if (user1 === undefined || user2 === undefined) {
+            return false;
+        }
+
+        return (user1.id === user2.id
+            && user1.username === user2.username
+            && user1.createdOn.valueOf() === user2.createdOn.valueOf()
+            && user1.updatedOn.valueOf() === user2.updatedOn.valueOf());
+    }
 }

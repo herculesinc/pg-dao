@@ -2,7 +2,7 @@
 // ================================================================================================
 import * as assert from 'assert';
 import * as pg from './../../index';
-import { User, userHandler, prepareDatabase, qFetchUserById, qFetchUsersByIdList } from './setup';
+import { User, prepareDatabase, qFetchUserById, qFetchUsersByIdList } from './setup';
 
 // CONNECTION SETTINGS
 // ================================================================================================
@@ -328,7 +328,7 @@ describe('Data inserting tests', function () {
         return pg.connect(settings).then((dao) => {
             return prepareDatabase(dao).then(() => {
 
-                var user = userHandler.parse({
+                var user = User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
 
@@ -364,11 +364,11 @@ describe('Data inserting tests', function () {
         return pg.connect(settings).then((dao) => {
             return prepareDatabase(dao).then(() => {
 
-                var user1 = userHandler.parse({
+                var user1 = User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
 
-                var user2 = userHandler.parse({
+                var user2 = User.parse({
                     id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date()
                 });
 
@@ -412,7 +412,7 @@ describe('Data inserting tests', function () {
     test('Inserting the same model twice should thrown an error', () => {
         return pg.connect(settings).then((dao) => {
             return prepareDatabase(dao).then(() => {
-                var user = userHandler.parse({
+                var user = User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
                 assert.throws(() => {
@@ -531,7 +531,7 @@ describe('Data deleting tests', function () {
     test('Deleting an inserted model should result in no changes', () => {
         return pg.connect(settings).then((dao) => {
             return prepareDatabase(dao).then(() => {
-                var user = userHandler.parse({
+                var user = User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
 
@@ -612,7 +612,7 @@ describe('Data update tests', function () {
                     dao.destroy(users[0])
                     dao.destroy(users[2]);
 
-                    var user = userHandler.parse({
+                    var user = User.parse({
                         id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                     });
                     dao.insert(user);
