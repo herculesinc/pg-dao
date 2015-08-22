@@ -29,22 +29,43 @@ export var symbols = {
     handler: symHandler
 };
 
-// CONNECT FUNCTION
-// ================================================================================================
-export function connect(settings: Settings): Promise<Dao> {
-    return new Promise(function (resolve, reject) {
-        pg.connect(settings, function (err, client, done) {
-            if (err) return reject(err);
-            var dao = new Dao(settings, client, done);
-            resolve(dao);
-        });
-    });
+var databases = new Map<string, Database>();
+
+export function db(settings: Settings): Database {
+    var db = databases.get(JSON.stringify(settings));
+    if (db === undefined) {
+        db = new Database(settings);
+        databases.set(JSON.stringify(settings), db);
+    }
+    return db;
 }
 
-export function getPoolState(settings: Settings): PoolState {
-    var pool = pg.pools.getOrCreate(settings);
-    return {
-        size: pool.getPoolSize(),
-        available: pool.availableObjectsCount()
-    };
+// DATABASE CLASS
+// ================================================================================================
+class Database {
+
+    settings: Settings;
+    
+    constructor(settings: Settings) {
+        this.settings = settings;
+    }
+
+    connect(options?: any): Promise<Dao> {
+        // TODO: merge options
+        return new Promise((resolve, reject) => {
+            pg.connect(this.settings, (err, client, done) => {
+                if (err) return reject(err);
+                var dao = new Dao(this.settings, client, done);
+                resolve(dao);
+            });
+        });
+    }
+
+    getPoolState() {
+        var pool = pg.pools.getOrCreate(this.settings);
+        return {
+            size: pool.getPoolSize(),
+            available: pool.availableObjectsCount()
+        };
+    }
 }

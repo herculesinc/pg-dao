@@ -19,7 +19,7 @@ var settings = {
 describe('Data fetching tests', function () {
 
     test('Object query should return a single object', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1);
                 return dao.execute(query).then((user) => {
@@ -31,7 +31,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Object query should return undefined on no rows', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(0);
                 return dao.execute(query).then((user) => {
@@ -42,7 +42,7 @@ describe('Data fetching tests', function () {
     });
 
     test('List query should return an array of objects', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUsersByIdList([1,3]);
                 return dao.execute(query).then((users) => {
@@ -57,7 +57,7 @@ describe('Data fetching tests', function () {
     });
 
     test('List query should return an empty array on no rows', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUsersByIdList([0]);
                 return dao.execute(query).then((users) => {
@@ -68,7 +68,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Multiple queries should produce a named result object', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUserById(2);
                 var query2 = new qFetchUsersByIdList([1,3]);
@@ -89,7 +89,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Multiple object queries should produce an array of objects', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUserById(1);
                 var query2 = new qFetchUserById(2);
@@ -105,7 +105,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Multiple list queries should produce an array of arrays', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUsersByIdList([1, 2]);
                 var query2 = new qFetchUsersByIdList([3]);
@@ -128,7 +128,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Object query without handler should produce an object', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = {
                     text: 'SELECT id, username FROM tmp_users WHERE id = 1;',
@@ -144,7 +144,7 @@ describe('Data fetching tests', function () {
     });
 
     test('List query without handler should produce an array of objects', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = {
                     text: 'SELECT id, username FROM tmp_users WHERE id IN (1,2);',
@@ -163,7 +163,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Unnamed object queries should aggregate into undefined result', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = {
                     text: 'SELECT id, username FROM tmp_users WHERE id = 1;',
@@ -188,7 +188,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Unnamed mixed queries should aggregate into undefined result', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = {
                     text: 'SELECT id, username FROM tmp_users WHERE id = 1;',
@@ -218,7 +218,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Multiple object queries should not produce an array with holes', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUserById(1);
                 var query2 = new qFetchUserById(0);
@@ -234,7 +234,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Multiple list queries should produce an array for every query', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUsersByIdList([1, 2]);
                 var query2 = new qFetchUsersByIdList([0]);
@@ -260,7 +260,7 @@ describe('Data fetching tests', function () {
     });
 
     test('A non-result query should produce no results', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = {
                     text: `UPDATE tmp_users SET username = 'irakliy' WHERE username = 'irakliy';`
@@ -273,7 +273,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Multiple non-result queries should produce no results', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = {
                     text: `UPDATE tmp_users SET username = 'irakliy' WHERE username = 'irakliy';`
@@ -286,7 +286,7 @@ describe('Data fetching tests', function () {
     });
 
     test('Un-named non-result queries should not produce holes in result array', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = {
                     text: 'SELECT id, username FROM tmp_users WHERE id = 1;',
@@ -325,7 +325,7 @@ describe('Data fetching tests', function () {
 describe('Data inserting tests', function () {
 
     test('Inserting a model should add it to the database', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
 
                 var user = User.parse({
@@ -361,7 +361,7 @@ describe('Data inserting tests', function () {
     });
     
     test('Inserting multiple models should add them to the database', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
 
                 var user1 = User.parse({
@@ -397,7 +397,7 @@ describe('Data inserting tests', function () {
     });
 
     test('Inserting a non-model should throw an error', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var userSeed = {
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
@@ -410,7 +410,7 @@ describe('Data inserting tests', function () {
     });
 
     test('Inserting the same model twice should thrown an error', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var user = User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
@@ -424,7 +424,7 @@ describe('Data inserting tests', function () {
     });
 
     test('Inserting a deleted model should throw an error', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1, true);
                 return dao.execute(query).then((user) => {
@@ -443,7 +443,7 @@ describe('Data inserting tests', function () {
 describe('Data deleting tests', function () {
 
     test('Deleting a model should remove it from the database', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1, true);
                 return dao.execute(query).then((user) => {
@@ -472,7 +472,7 @@ describe('Data deleting tests', function () {
     });
 
     test('Deleting multiple models should remove them from the database', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUsersByIdList([1,2,3], true);
                 return dao.execute(query1).then((users) => {
@@ -502,7 +502,7 @@ describe('Data deleting tests', function () {
     });
 
     test('Deleting a non-mutable model should throw an error', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1);
                 return dao.execute(query).then((user) => {
@@ -515,7 +515,7 @@ describe('Data deleting tests', function () {
     });
 
     test('Deleting a model twice should throw an error', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1, true);
                 return dao.execute(query).then((user) => {
@@ -529,7 +529,7 @@ describe('Data deleting tests', function () {
     });
 
     test('Deleting an inserted model should result in no changes', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var user = User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
@@ -555,7 +555,7 @@ describe('Data deleting tests', function () {
 describe('Data update tests', function () {
 
     test('Updating a model should update it in the database', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUserById(1, true);
                 return dao.execute(query1).then((user) => {
@@ -589,7 +589,7 @@ describe('Data update tests', function () {
     });
     
     test('Updating a model should change updatedOn date', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUserById(1, true);
                 return dao.execute(query1).then((user) => {
@@ -605,7 +605,7 @@ describe('Data update tests', function () {
     });
 
     test('Multiple changes should be persisted in the database', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUsersByIdList([1, 2, 3], true);
                 return dao.execute(query1).then((users) => {
@@ -640,7 +640,7 @@ describe('Data update tests', function () {
 describe('Lifecycle tests', function () {
 
     test('Starting a transaction should put Dao in transaction state', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
 
                 assert.strictEqual(dao.isActive, true);
@@ -658,7 +658,7 @@ describe('Lifecycle tests', function () {
     });
 
     test('Releasing an uncommitted Dao should throw an error', () => {
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.startTransaction().then(() => {
                     return dao.release()
@@ -669,8 +669,8 @@ describe('Lifecycle tests', function () {
                             assert.strictEqual(dao.isActive, false);
                             assert.strictEqual(dao.inTransaction, false);
                             assert.strictEqual(dao.isSynchronized, true);
-                            assert.strictEqual(pg.getPoolState(settings).size, 1);
-                            assert.strictEqual(pg.getPoolState(settings).available, 1);
+                            assert.strictEqual(pg.db(settings).getPoolState().size, 1);
+                            assert.strictEqual(pg.db(settings).getPoolState().available, 1);
                         });
                 });
             });
@@ -679,10 +679,10 @@ describe('Lifecycle tests', function () {
 
     test('Syncing a Dao with commiting should put Dao in syncrhonized state', () => {
 
-        assert.strictEqual(pg.getPoolState(settings).size, 0);
-        assert.strictEqual(pg.getPoolState(settings).available, 0);
+        assert.strictEqual(pg.db(settings).getPoolState().size, 0);
+        assert.strictEqual(pg.db(settings).getPoolState().available, 0);
 
-        return pg.connect(settings).then((dao) => {
+        return pg.db(settings).connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
 
                 assert.strictEqual(dao.isActive, true);
@@ -710,8 +710,8 @@ describe('Lifecycle tests', function () {
                             assert.strictEqual(dao.inTransaction, false);
                             assert.strictEqual(dao.isSynchronized, true);
 
-                            assert.strictEqual(pg.getPoolState(settings).size, 1);
-                            assert.strictEqual(pg.getPoolState(settings).available, 0);
+                            assert.strictEqual(pg.db(settings).getPoolState().size, 1);
+                            assert.strictEqual(pg.db(settings).getPoolState().available, 0);
 
                             return dao.release().then((changes) => {
                                 assert.strictEqual(changes, undefined);
@@ -720,8 +720,8 @@ describe('Lifecycle tests', function () {
                                 assert.strictEqual(dao.inTransaction, false);
                                 assert.strictEqual(dao.isSynchronized, true);
 
-                                assert.strictEqual(pg.getPoolState(settings).size, 1);
-                                assert.strictEqual(pg.getPoolState(settings).available, 1);
+                                assert.strictEqual(pg.db(settings).getPoolState().size, 1);
+                                assert.strictEqual(pg.db(settings).getPoolState().available, 1);
                             });
                         });
                     });

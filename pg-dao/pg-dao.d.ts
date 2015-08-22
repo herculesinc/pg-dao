@@ -11,14 +11,23 @@
         poolSize?   : number;
     }
 
+    export interface Database {
+        connect(options?: DaoOptions): Promise<Dao>;
+        getPoolState(): PoolState;
+    }
+
+    export interface DaoOptions {
+        registerAllModels: boolean;
+    }
+
     export interface PoolState {
         size: number;
         available: number;
     }
 
-    export function connect(settings: ConnectionSettings): Promise<Dao>;
-    export function getPoolState(settings: ConnectionSettings): PoolState;
+    export function db(settings: ConnectionSettings): Database;
 
+    export var defaults: DaoOptions;
     export var symbols: {
         handler: symbol;
     };

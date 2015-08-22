@@ -16,7 +16,7 @@ var settings = {
 // ================================================================================================
 describe('Data fetching tests', function () {
     test('Object query should return a single object', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = new setup_1.qFetchUserById(1);
                 return dao.execute(query).then(function (user) {
@@ -27,7 +27,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Object query should return undefined on no rows', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = new setup_1.qFetchUserById(0);
                 return dao.execute(query).then(function (user) {
@@ -37,7 +37,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('List query should return an array of objects', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = new setup_1.qFetchUsersByIdList([1, 3]);
                 return dao.execute(query).then(function (users) {
@@ -51,7 +51,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('List query should return an empty array on no rows', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = new setup_1.qFetchUsersByIdList([0]);
                 return dao.execute(query).then(function (users) {
@@ -61,7 +61,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Multiple queries should produce a named result object', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUserById(2);
                 var query2 = new setup_1.qFetchUsersByIdList([1, 3]);
@@ -80,7 +80,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Multiple object queries should produce an array of objects', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUserById(1);
                 var query2 = new setup_1.qFetchUserById(2);
@@ -95,7 +95,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Multiple list queries should produce an array of arrays', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUsersByIdList([1, 2]);
                 var query2 = new setup_1.qFetchUsersByIdList([3]);
@@ -115,7 +115,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Object query without handler should produce an object', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = {
                     text: 'SELECT id, username FROM tmp_users WHERE id = 1;',
@@ -129,7 +129,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('List query without handler should produce an array of objects', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = {
                     text: 'SELECT id, username FROM tmp_users WHERE id IN (1,2);',
@@ -146,7 +146,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Unnamed object queries should aggregate into undefined result', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = {
                     text: 'SELECT id, username FROM tmp_users WHERE id = 1;',
@@ -168,7 +168,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Unnamed mixed queries should aggregate into undefined result', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = {
                     text: 'SELECT id, username FROM tmp_users WHERE id = 1;',
@@ -194,7 +194,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Multiple object queries should not produce an array with holes', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUserById(1);
                 var query2 = new setup_1.qFetchUserById(0);
@@ -209,7 +209,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Multiple list queries should produce an array for every query', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUsersByIdList([1, 2]);
                 var query2 = new setup_1.qFetchUsersByIdList([0]);
@@ -231,7 +231,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('A non-result query should produce no results', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = {
                     text: "UPDATE tmp_users SET username = 'irakliy' WHERE username = 'irakliy';"
@@ -243,7 +243,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Multiple non-result queries should produce no results', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = {
                     text: "UPDATE tmp_users SET username = 'irakliy' WHERE username = 'irakliy';"
@@ -256,7 +256,7 @@ describe('Data fetching tests', function () {
         });
     });
     test('Un-named non-result queries should not produce holes in result array', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = {
                     text: 'SELECT id, username FROM tmp_users WHERE id = 1;',
@@ -289,7 +289,7 @@ describe('Data fetching tests', function () {
 // ================================================================================================
 describe('Data inserting tests', function () {
     test('Inserting a model should add it to the database', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var user = setup_1.User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
@@ -318,7 +318,7 @@ describe('Data inserting tests', function () {
         });
     });
     test('Inserting multiple models should add them to the database', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var user1 = setup_1.User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
@@ -347,7 +347,7 @@ describe('Data inserting tests', function () {
         });
     });
     test('Inserting a non-model should throw an error', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var userSeed = {
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
@@ -359,7 +359,7 @@ describe('Data inserting tests', function () {
         });
     });
     test('Inserting the same model twice should thrown an error', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var user = setup_1.User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
@@ -372,7 +372,7 @@ describe('Data inserting tests', function () {
         });
     });
     test('Inserting a deleted model should throw an error', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = new setup_1.qFetchUserById(1, true);
                 return dao.execute(query).then(function (user) {
@@ -389,7 +389,7 @@ describe('Data inserting tests', function () {
 // ================================================================================================
 describe('Data deleting tests', function () {
     test('Deleting a model should remove it from the database', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = new setup_1.qFetchUserById(1, true);
                 return dao.execute(query).then(function (user) {
@@ -414,7 +414,7 @@ describe('Data deleting tests', function () {
         });
     });
     test('Deleting multiple models should remove them from the database', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUsersByIdList([1, 2, 3], true);
                 return dao.execute(query1).then(function (users) {
@@ -439,7 +439,7 @@ describe('Data deleting tests', function () {
         });
     });
     test('Deleting a non-mutable model should throw an error', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = new setup_1.qFetchUserById(1);
                 return dao.execute(query).then(function (user) {
@@ -451,7 +451,7 @@ describe('Data deleting tests', function () {
         });
     });
     test('Deleting a model twice should throw an error', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query = new setup_1.qFetchUserById(1, true);
                 return dao.execute(query).then(function (user) {
@@ -464,7 +464,7 @@ describe('Data deleting tests', function () {
         });
     });
     test('Deleting an inserted model should result in no changes', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var user = setup_1.User.parse({
                     id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
@@ -484,7 +484,7 @@ describe('Data deleting tests', function () {
 // ================================================================================================
 describe('Data update tests', function () {
     test('Updating a model should update it in the database', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUserById(1, true);
                 return dao.execute(query1).then(function (user) {
@@ -513,7 +513,7 @@ describe('Data update tests', function () {
         });
     });
     test('Updating a model should change updatedOn date', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUserById(1, true);
                 return dao.execute(query1).then(function (user) {
@@ -528,7 +528,7 @@ describe('Data update tests', function () {
         });
     });
     test('Multiple changes should be persisted in the database', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 var query1 = new setup_1.qFetchUsersByIdList([1, 2, 3], true);
                 return dao.execute(query1).then(function (users) {
@@ -557,7 +557,7 @@ describe('Data update tests', function () {
 // ================================================================================================
 describe('Lifecycle tests', function () {
     test('Starting a transaction should put Dao in transaction state', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 assert.strictEqual(dao.isActive, true);
                 assert.strictEqual(dao.inTransaction, false);
@@ -572,7 +572,7 @@ describe('Lifecycle tests', function () {
         });
     });
     test('Releasing an uncommitted Dao should throw an error', function () {
-        return pg.connect(settings).then(function (dao) {
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 return dao.startTransaction().then(function () {
                     return dao.release()
@@ -583,17 +583,17 @@ describe('Lifecycle tests', function () {
                         assert.strictEqual(dao.isActive, false);
                         assert.strictEqual(dao.inTransaction, false);
                         assert.strictEqual(dao.isSynchronized, true);
-                        assert.strictEqual(pg.getPoolState(settings).size, 1);
-                        assert.strictEqual(pg.getPoolState(settings).available, 1);
+                        assert.strictEqual(pg.db(settings).getPoolState().size, 1);
+                        assert.strictEqual(pg.db(settings).getPoolState().available, 1);
                     });
                 });
             });
         });
     });
     test('Syncing a Dao with commiting should put Dao in syncrhonized state', function () {
-        assert.strictEqual(pg.getPoolState(settings).size, 0);
-        assert.strictEqual(pg.getPoolState(settings).available, 0);
-        return pg.connect(settings).then(function (dao) {
+        assert.strictEqual(pg.db(settings).getPoolState().size, 0);
+        assert.strictEqual(pg.db(settings).getPoolState().available, 0);
+        return pg.db(settings).connect().then(function (dao) {
             return setup_1.prepareDatabase(dao).then(function () {
                 assert.strictEqual(dao.isActive, true);
                 assert.strictEqual(dao.inTransaction, false);
@@ -613,15 +613,15 @@ describe('Lifecycle tests', function () {
                             assert.strictEqual(dao.isActive, true);
                             assert.strictEqual(dao.inTransaction, false);
                             assert.strictEqual(dao.isSynchronized, true);
-                            assert.strictEqual(pg.getPoolState(settings).size, 1);
-                            assert.strictEqual(pg.getPoolState(settings).available, 0);
+                            assert.strictEqual(pg.db(settings).getPoolState().size, 1);
+                            assert.strictEqual(pg.db(settings).getPoolState().available, 0);
                             return dao.release().then(function (changes) {
                                 assert.strictEqual(changes, undefined);
                                 assert.strictEqual(dao.isActive, false);
                                 assert.strictEqual(dao.inTransaction, false);
                                 assert.strictEqual(dao.isSynchronized, true);
-                                assert.strictEqual(pg.getPoolState(settings).size, 1);
-                                assert.strictEqual(pg.getPoolState(settings).available, 1);
+                                assert.strictEqual(pg.db(settings).getPoolState().size, 1);
+                                assert.strictEqual(pg.db(settings).getPoolState().available, 1);
                             });
                         });
                     });
