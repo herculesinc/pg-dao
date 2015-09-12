@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "module": "commonjs",
+        "noEmitOnError": true,
+        "sourceMap": true,
+        "outDir": "bin",
+        "experimentalDecorators": true
+    }
+}

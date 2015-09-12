@@ -1,0 +1,22 @@
+{
+	"version": "0.1.0",
+	// List of configurations. Add new configurations or edit existing ones.
+	// ONLY "node" and "mono" are supported, change "type" to switch.
+	"configurations": [
+		{
+			"name": "Launch Test",
+			"type": "node",
+			"program": "bin/tests/run.js",
+			// Automatically stop program after launch.
+			"stopOnEntry": false,
+			"args": [],
+			"cwd": ".",
+			"runtimeExecutable": null,
+			"runtimeArgs": ["--nolazy"],
+			"env": { },
+			"sourceMaps": true,
+			// If JavaScript source maps are enabled, the generated code is expected in this directory.
+			"outDir": "bin"
+		}
+	]
+}

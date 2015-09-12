@@ -1,0 +1,51 @@
+// IMPORTS
+// ================================================================================================
+import { ResultHandler, Query, ResultQuery  } from 'pg-io';
+
+// MODULE VARIABLES
+// ================================================================================================
+export var symHandler = Symbol();
+
+// ENUMS A ND INTERFACES
+// ================================================================================================
+export interface Model {
+    id          : number;
+    updatedOn   : Date;
+    createdOn   : Date;
+}
+
+export interface ModelHandler<T extends Model> extends ResultHandler<T> {
+    clone(model: T): T;
+    infuse(target: T, source: T);
+    areEqual(model1: T, model2: T): boolean;
+    getSyncQueries(original: T, current: T): Query[];
+}
+
+export interface ModelQuery<T extends Model> extends ResultQuery<T> {
+    handler : ModelHandler<T>;
+    mutable?: boolean;
+}
+
+// PUBLIC FUNCTIONS
+// ================================================================================================
+export function isModel(model: any): boolean {
+    return (typeof model.id === 'number')
+        && (isModelHandler(model[symHandler]));
+}
+
+export function getModelHandler(model: Model): ModelHandler<any> {
+    var handler = model[symHandler];
+    return isModelHandler(handler) ? handler : undefined;
+}
+
+export function isModelHandler(handler: any): boolean {
+    return (handler !== undefined)     
+        && (typeof handler.clone === 'function')
+        && (typeof handler.infuse === 'function')
+        && (typeof handler.areEqual === 'function')
+        && (typeof handler.getSyncQueries === 'function');
+}
+
+export function isModelQuery(query: Query): boolean {
+    return ('handler' in query && isModelHandler(query['handler']));
+}

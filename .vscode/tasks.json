@@ -1,0 +1,45 @@
+{
+    "version": "0.1.0",
+    "command": "gulp",
+    "isShellCommand": true,
+    "args": [
+        "--no-color"
+    ],
+    "tasks": [
+        {
+            "taskName": "clean",
+            "args": [],
+            "isBuildCommand": false,
+            "isTestCommand": false,
+            "isWatching": false,
+            "showOutput": "silent"
+        },
+        {
+            "taskName": "build",
+            "args": [],
+            "isBuildCommand": true,
+            "isTestCommand": false,
+            "isWatching": false,
+            "problemMatcher": ["$tsc"],
+            "showOutput": "silent"
+        },
+        {
+            "taskName": "test",
+            "args": [],
+            "isBuildCommand": false,
+            "isTestCommand": true,
+            "isWatching": false,
+            "problemMatcher": ["$tsc"],
+            "showOutput": "always"
+        },
+        {
+            "taskName": "publish",
+            "args": [],
+            "isBuildCommand": false,
+            "isTestCommand": false,
+            "isWatching": false,
+            "problemMatcher": ["$tsc"],
+            "showOutput": "always"
+        }
+    ]
+}
