@@ -1,6 +1,6 @@
 ﻿# pg-dao
 
-Simple promise-based data access layer for PostgreSQL written on top of [pg-io].
+Simple promise-based data access layer for PostgreSQL written on top of [pg-io](https://github.com/herculesinc/pg-io).
 
 ## Use Case
 
@@ -8,7 +8,7 @@ Just as pg-io, pg-dao is best used when connection to the database is needed for
 
 pg-dao provides:
   * Ability to run raw queries against a database
-  * Simple transaction managment
+  * Simple transaction management
   * Ability to define managed models (for automated model syncing with the database)
 
 ## Install
@@ -51,7 +51,7 @@ pg.db(settings).connect().then((dao) => {
 ## API Reference
 
   * [Obtaining Database Connection](#obtaining-database-connection)
-  * [Managing Transactions](#obtaining-database-connection)
+  * [Managing Transactions](#managing-transactions)
   * [Querying the Database](#querying-the-database)
   * [Working with Models](#working-with-models)
     - [Defining Models](#defining-models)
@@ -145,7 +145,7 @@ pg.db(settings).connect({ stratTransaction: true }).then((dao) => {
 
 ### Exiting Transaction Mode
 
-DAO exits transaction mode when the transaction is either commited or rolled back.
+DAO exits transaction mode when the transaction is either committed or rolled back.
 
 Committing a transaction can be done via the following methods:
   * dao.sync(true) : Promise<any>;
@@ -154,7 +154,7 @@ Committing a transaction can be done via the following methods:
 Rolling back a transaction can be done via the following method:
   * dao.release('rollback'): Promise<void>;
 
-The `doa.sync(commitTransaction?: boolean)` method will actually synchonize all pending model changes with the database (more on this below), and when ture is passed for the optional `commitTransaction` parameter, will also commit the active transaction. Calling `dao.sync(true)` when no transactions are in progress will throw an error.
+The `doa.sync(commitTransaction?: boolean)` method will actually synchronize all pending model changes with the database (more on this below), and when true is passed for the optional `commitTransaction` parameter, will also commit the active transaction. Calling `dao.sync(true)` when no transactions are in progress will throw an error.
 
 The `dao.release(action?: string)` method must always be called once database connection is no longer needed. It will release the connection back to the pool and based on what is supplied for the `action` parameter will either commit or roll back the active transaction.
 
@@ -185,13 +185,13 @@ To check whether DAO is active, the following property can be used:
  ```JavaScript
 dao.isActive : boolean;
 ```
-DAO is considered to be active from the point it is created, and until the point it is released (or untill the point query execution error happens).
+DAO is considered to be active from the point it is created, and until the point it is released (or until the point query execution error happens).
 
 To check whether DAO is in transaction, the following property can be used:
 
  ```JavaScript
 dao.inTransaction : boolean;
 ```
-DAO is considered to be in transaction from the point `startTransaction()` method is called, and until the transaction is commited or rolled-back.
+DAO is considered to be in transaction from the point `startTransaction()` method is called, and until the transaction is committed or rolled-back.
 
 ## Querying the Database
