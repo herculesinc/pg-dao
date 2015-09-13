@@ -116,6 +116,38 @@ describe('DAO: Fetching Models', function () {
             }).then(() => dao.release());
         });
     });
+    
+    it('Fetching the same model multiple times should return the same object', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                var query = new qFetchUserById(1);
+                return dao.execute(query).then((user1) => {
+                    return  dao.execute(query).then((user2) => {
+                        assert.strictEqual(user1, user2);
+                    });
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    it('Re-fetching model as mutable should make it mutable', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                var query1 = new qFetchUserById(1);
+                var query2 = new qFetchUserById(1, true);
+                
+                return dao.execute(query1).then((user1) => {
+                    assert.strictEqual(dao.isMutable(user1), false);
+                    return  dao.execute(query2).then((user2) => {
+                        assert.strictEqual(user1, user2);
+                        assert.strictEqual(dao.isMutable(user1), true);
+                    });
+                });
+            }).then(() => dao.release());
+        });
+    });
 });
 
 // INSERTING TESTS
@@ -145,6 +177,7 @@ describe('DAO: inserting models', function () {
                     assert.strictEqual(dao.isNew(user), false);
                     assert.strictEqual(dao.isModified(user), false);
                     assert.strictEqual(dao.isDestroyed(user), false);
+                    assert.strictEqual(dao.isMutable(user), true);
 
                     assert.strictEqual(changes.length, 1);
                     assert.deepEqual(changes[0].current, user);
@@ -175,6 +208,10 @@ describe('DAO: inserting models', function () {
                 dao.insert(user1);
                 dao.insert(user2);
                 assert.strictEqual(dao.isSynchronized, false);
+                assert.strictEqual(dao.isMutable(user1), true);
+                assert.strictEqual(dao.isMutable(user2), true);
+                assert.strictEqual(dao.isNew(user1), true);
+                assert.strictEqual(dao.isNew(user2), true);
 
                 return dao.sync().then((changes) => {
                     assert.strictEqual(dao.isSynchronized, true);
@@ -184,6 +221,8 @@ describe('DAO: inserting models', function () {
                     assert.strictEqual(changes[0].original, undefined);
                     assert.deepEqual(changes[1].current, user2);
                     assert.strictEqual(changes[1].original, undefined);
+                    assert.strictEqual(dao.isNew(user1), false);
+                    assert.strictEqual(dao.isNew(user2), false);
 
                     var query = new qFetchUsersByIdList([4, 5]);
                     return dao.execute(query).then((users) => {
@@ -306,7 +345,7 @@ describe('DAO: Deleting Models', function () {
         });
     });
 
-    it('Deleting a non-mutable model should throw an error', () => {
+    it('Deleting a immutable model should throw an error', () => {
         var database: Database = pg.db(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
@@ -356,6 +395,8 @@ describe('DAO: Deleting Models', function () {
             }).then(() => dao.release('rollback'));
         });
     });
+    
+    
 });
 
 // UPDATING TESTS
@@ -441,6 +482,25 @@ describe('DAO: Updating Models', function () {
                     });
                 });
             }).then(() => dao.release());
+        });
+    });
+    
+    it('Syncing changes to immutable model should throw an error', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                var query = new qFetchUserById(1);
+                return dao.execute(query).then((user) => {
+                    user.username = 'Test123';
+                    return dao.sync()
+                        .then(() => {
+                            assert.fail();
+                        })
+                        .catch((reason) => {
+                            assert.ok(reason instanceof Error); 
+                        });
+                });
+            });
         });
     });
 });

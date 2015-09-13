@@ -48,7 +48,8 @@ var Dao = (function (_super) {
                 state = 1 /* connection */;
             }
             return queries;
-        }).catch(function (reason) { return _this.rollbackAndRelease(reason); })
+        })
+            .catch(function (reason) { return _this.rollbackAndRelease(reason); })
             .then(function (queries) {
             if (queries.length === 0) {
                 _this.state = state;

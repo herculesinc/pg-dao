@@ -50,7 +50,8 @@ export class Dao extends Connection {
                 state = ConnectionState.connection;
             }
             return queries;
-        }).catch((reason) => this.rollbackAndRelease(reason))
+        })
+        .catch((reason) => this.rollbackAndRelease(reason))
         .then((queries) => {
             if (queries.length === 0) {
                 this.state = state;

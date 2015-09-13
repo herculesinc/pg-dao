@@ -182,6 +182,13 @@ var Store = (function () {
                         syncInfo.push({ original: original, current: current });
                     }
                 }
+                else if (this.options.validateImmutability) {
+                    var original = model[symbols.original];
+                    var current = model[symbols.destroyed] ? undefined : model;
+                    if (handler.areEqual(original, current) === false) {
+                        throw new Error('Change to immutable model detected');
+                    }
+                }
             });
         });
         return syncInfo;
@@ -204,8 +211,10 @@ var Store = (function () {
                         syncInfo.push({ current: current, original: original });
                     }
                 }
-                else if (_this.options.validateImmutability && handler.areEqual(original, current) === false) {
-                    throw new Error('Change to immutable model detected');
+                else if (_this.options.validateImmutability) {
+                    if (handler.areEqual(original, current) === false) {
+                        throw new Error('Change to immutable model detected');
+                    }
                 }
             });
         });
