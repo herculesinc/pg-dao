@@ -52,15 +52,16 @@
         execute(query: Query)               : Promise<void>;
         execute(queries: Query[])           : Promise<Map<string,any>>;
 
-        insert(model: Model);
-        destroy(model: Model);
-        clean(model: Model);
+        insert<T extends Model>(model: T)   : T;
+        destroy<T extends Model>(model: T)  : T;
+        clean<T extends Model>(model: T)    : T;
 
-        hasModel(model: Model)      : boolean;
+        hasModel(model: Model)              : boolean;
 
-        isNew(model: Model)         : boolean;
-        isDestroyed(model: Model)   : boolean;
-        isUpdated(model: Model)     : boolean;
+        isNew(model: Model)                 : boolean;
+        isDestroyed(model: Model)           : boolean;
+        isModified(model: Model)            : boolean;
+        isMutable(model: Model)             : boolean;
     }
 
     export interface SyncInfo {
