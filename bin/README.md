@@ -463,7 +463,7 @@ For example, given the User model defined above, a query to retrieve a single us
 var userId = 1;
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
-          FROM tmp_users WHERE id = ${userId};`,
+          FROM users WHERE id = ${userId};`,
   mask: 'object',
   handler: userHandler,
   mutable: false
@@ -480,7 +480,7 @@ A query to retrieve multiple users by ID could look like this:
 var userIdList = [1, 2, 3];
 var qFetchUsersByIdList = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
-          FROM tmp_users WHERE id IN (${userIdList.join(',')});`,
+          FROM users WHERE id IN (${userIdList.join(',')});`,
   mask: 'list',
   handler: userHandler,
   mutable: false
@@ -497,7 +497,7 @@ Retriving the same model multiple times does not create a new model object - but
 var userId = 1;
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
-          FROM tmp_users WHERE id = ${userId};`,
+          FROM users WHERE id = ${userId};`,
   mask: 'object',
   handler: userHandler,
   mutable: false
@@ -510,15 +510,15 @@ dao.execute(qFetchUserById).then((user1) => {
 });
 ```
 
-The `mutable` property indicates whether the models retrieved by the query can be updated during the DAO session. Setting `mutable` to true instructs the DAO to monitor the model and detect if any changes take place. This has performance implications, so this should be done only if you are planning to modify the models during the session. 
+The `mutable` property indicates whether the models retrieved by the query can be updated during the DAO session. Setting `mutable` to true instructs DAO to monitor the model and detect if any changes take place. This has performance implications, so setting `mutable` to true should be done only if you are planning to modify the models during the session. 
 
-In some scenarios it might make sense to mark models as mutable only if `SELECT ... FOR UPDATE` statement was used to retrieve it from the database. For example, the following might be a query to select a user for update:
+In some scenarios it might make sense to mark models as mutable only if `SELECT ... FOR UPDATE` statement was used to retrieve it from the database. For example, the following might be a query to select a user model for update:
 
 ```JavaScript
 var userId = 1;
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
-          FROM tmp_users WHERE id = ${userId} FOR UPDATE;`,
+          FROM users WHERE id = ${userId} FOR UPDATE;`,
   mask: 'object',
   handler: userHandler,
   mutable: true
@@ -616,7 +616,7 @@ All pending model changes must be either committed or rolled-back upon DAO relea
   * `dao.release('commit')` - this will write out all pending model changes to the database, commit any active transactions, and release connection back to the pool
   * `dao.release('rollback')` - this will revert any pending model changes, rollback any active transaction, and release connection back to the pool
 
-If `dao.release()` is called without any parameters and there are pending model changes, the changes will be discarted, any active transaction will be rolled back, and an error will be throw. 
+If `dao.release()` is called without any parameters and there are pending model changes, the changes will be discarded, any active transaction will be rolled back, and an error will be thrown. 
 
 It is also possible to sync model changes with the database without releasing DAO connection by using `dao.sync()` method as follows:
 
@@ -632,7 +632,7 @@ It is also possible to sync model changes with the database without releasing DA
 }
 ```
 
-pg-dao does not actively enforce model immutability. This means that models retrieved as immutable can still be modified by the user. As pg-dao only observes mutable models, any changes to immutable models will be ignored. However, it is possible to force pg-dao to validate model immutability on syncing changes. This can be done via setting `validateImmutability` property for the connection to true. In such a case, if any changes to immutable models are detected during model synchronization, an error will be throw. There are performance implications to setting `validateImmutability` property to true - so, it might be a good idea to use it in development environments only.
+pg-dao does not actively enforce model immutability. This means that models retrieved as immutable can still be modified by the user. As pg-dao only observes mutable models, any changes to immutable models will be ignored. However, it is possible to force pg-dao to validate model immutability on syncing changes. This can be done via setting `validateImmutability` property for the connection to true. In such a case, if any changes to immutable models are detected during model synchronization, an error will be thrown. There are performance implications to setting `validateImmutability` property to true - so, it might be a good idea to use it in development environments only.
 
 #### Checking Model State
 
