@@ -355,7 +355,8 @@ Any object can be a model as long as the object has the following properties:
 }
 ```
 Model handler is an object which provides services needed by DAO to work with the model. Model handler must have the following form:
-```
+
+```JavaScript
 {
   parse(row: any): any;
   clone(model: any): any;
@@ -373,7 +374,7 @@ The meaning of the above methods is described below:
   * getSyncQueries(original, current) - given the original and the current state of the model, should produce an array of queries that should be run to synchronize the model with the database
   
 Below is an example of a very simple `User` model. For this model, the data is stored in the `users` table which has `id`, `username`, `created_on`, and `updated_on` fields.
-```
+```JavaScript
 // import symbols used by pg-dao
 import { symbols } from 'pg-dao';
 
@@ -458,7 +459,7 @@ Retrieving models from the database can be done via the regular `dao.execute()` 
 
 For example, given the User model defined above, a query to retrieve a single user by ID would look like this:
 
-```
+```JavaScript
 var userId = 1;
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
@@ -474,7 +475,8 @@ dao.execute(qFetchUserById).then((user) => {
 ```
 
 A query to retrieve multiple users by ID could look like this:
-```
+
+```JavaScript
 var userIdList = [1, 2, 3];
 var qFetchUsersByIdList = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
@@ -491,7 +493,7 @@ dao.execute(qFetchUsersByIdList).then((users) => {
 
 Retriving the same model multiple times does not create a new model object - but rather updates an existing model object with fresh data from the database:
 
-```
+```JavaScript
 var userId = 1;
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
@@ -512,7 +514,7 @@ The `mutable` property indicates whether the models retrieved by the query can b
 
 In some scenarios it might make sense to mark models as mutable only if `SELECT ... FOR UPDATE` statement was used to retrieve it from the database. For example, the following might be a query to select a user for update:
 
-```
+```JavaScript
 var userId = 1;
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
@@ -535,7 +537,7 @@ dao.startTransaction.then(() => {
 
 Checking whether the model was retrieved as mutable can be done as follows:
 
-```
+```JavaScript
 dao.isMutable(model) : boolean;
 ```
 
@@ -547,7 +549,7 @@ For models which were retrieved from the database as mutable, DAO observes the c
 
 Updating existing models is done simply by modifying model properties. No additional works is needed:
 
-```
+```JavaScript
 dao.startTransaction.then(() => {
   // retrieve user model from the database
   return dao.execute(qFetchUserById).then((user) => {
@@ -563,7 +565,8 @@ dao.startTransaction.then(() => {
 #### Deleting Models
 
 Deleting existing models can be done as follows:
-```
+
+```JavaScript
 dao.startTransaction.then(() => {
   // retrieve user model from the database
   return dao.execute(qFetchUserById).then((user) => {
@@ -579,7 +582,7 @@ dao.startTransaction.then(() => {
 
 pg-dao does not handle creation of model objects, but once a model object is created, it can be inserted into the database using `dao.insert()` method:
 
-```
+```JavaScript
 // create a new model object
 var user = userHandler.parse({
   id: 1, 
@@ -600,7 +603,8 @@ dao.startTransaction.then(() => {
 #### Reverting Changes
 
 It is possible to revert the changes made to a model by using the following method:
-```
+
+```JavaScript
 dao.clean(model);
 ```
 If this method is called on a new model, the model will be removed form DAO.
@@ -634,7 +638,7 @@ pg-dao does not actively enforce model immutability. This means that models retr
 
 It is possible to check the state of DAO as well as the state of a specific model using the following methods:
 
-```
+```JavaScript
 dao.isSynchronized() : boolean  // returns false if DAO has any pending changes
 dao.isModified(model): boolean  // returns true if the model has pending changes
 dao.isNew(model): boolean       // returns true if the new model has not yet been saved to the database
@@ -642,7 +646,8 @@ dao.isDestroyed(model): boolean // returns true if the deleted model has not yet
 ```
 
 To check whether a model is registered with DAO the following method can be used:
-```
+
+```JavaScript
 dao.hasModel(model) : boolean
 ```
 
