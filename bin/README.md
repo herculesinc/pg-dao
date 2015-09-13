@@ -57,7 +57,7 @@ pg.db(settings).connect().then((dao) => {
   * [Working with Models](#working-with-models)
     - [Defining Models](#defining-models)
     - [Retrieving Models](#retrieving-models)
-    - [Syncing Models](#syncing-models)
+    - [Modifying and Syncing Models](#modifying-and-syncing-models)
 	
 # API
 ## Obtaining Database Connection
@@ -183,7 +183,7 @@ dao.startTransaction()
   .then((query2Result) => dao.release('commit'));
 ```
 
-#### Checking DAO State
+### Checking DAO State
 To check whether DAO is active, the following property can be used:
  ```JavaScript
 dao.isActive : boolean;
@@ -341,11 +341,310 @@ If an error is thrown during query execution or query result parsing, DAO will b
 
 ## Working with Models
 
+pg-dao provides a very flexible mechanism for defining managed model. Once models are defined, pg-dao takes care of synchronizing models with the database whenever changes are made.
+
 ### Defining Models
+
+Any object can be a model as long as the object has the following properties:
+```
+{
+  id       : number,       // unique identifier for the model
+  createdOn: Date,         // date on which the model was created
+  updatedOn: Date          // date on which the model was last updated
+  [handler]: ModelHandler  // handler for the model (described below)
+}
+```
+Model handler is an object which provides services needed by DAO to work with the model. Model handler must have the following form:
+```
+{
+  parse(row: any): any;
+  clone(model: any): any;
+  areEqual(model1: any, model2: any): boolean;
+  infuse(target: any, source: any);
+  getSyncQueries(original: any, current: any): Query[];
+}
+```
+The meaning of the above methods is described below:
+
+  * parse(row) - should take a single database row as input and return a model object
+  * clone(model) - should take a model as an input and produce a new object identical to the original model
+  * areEqual(model1, model2) - should return true if both models are identical
+  * infuse(target, source) - should change the properties of the `target` to make it identical to the `source`
+  * getSyncQueries(original, current) - given the original and the current state of the model, should produce an array of queries that should be run to synchronize the model with the database
+  
+Below is an example of a very simple `User` model. For this model, the data is stored in the `users` table which has `id`, `username`, `created_on`, and `updated_on` fields.
+```
+// import symbols used by pg-dao
+import { symbols } from 'pg-dao';
+
+// define User class (TypeScript syntax is used)
+class User {
+    id          : number;
+    username    : string;
+    createdOn   : Date;
+    updatedOn   : Date;
+
+    constructor(row: any) {
+        this.id = row.id;
+        this.username = row.username;
+        this.createdOn = row.createdOn;
+        this.updatedOn = row.updatedOn;
+    }
+}
+
+// define User handler
+var userHandler = {
+  
+    parse: (row) => {
+        var user = new User(row);
+        user[symbols.handler] = this;
+        return user;
+    }
+
+    clone: (user) => {
+        var clone = new User(user);
+        clone[symbols.handler] = this;
+        return clone;
+    }
+    
+    areEqual: (user1, user2) => {
+        if (user1 === undefined || user2 === undefined) return false;
+        return (user1.id === user2.id
+            && user1.username === user2.username
+            && user1.createdOn.valueOf() === user2.createdOn.valueOf()
+            && user1.updatedOn.valueOf() === user2.updatedOn.valueOf());
+    }
+    
+    infuse: (target, source) => {
+        assert.equal(target.id, source.id);
+        target.username = source.username;
+        target.createdOn = source.createdOn;
+        target.updatedOn = source.updatedOn;
+    }
+    
+    getSyncQueries: (original, current) => {
+        var queries: Query[] = [];
+        if (original === undefined && current !== undefined) {
+            queries.push({
+              text: `INSERT INTO users (id, username, created_on, updated_on) 
+                      SELECT {{id}}, {{username}}, {{createdOn}}, {{updatedOn}};`,
+              params: current
+            });
+        }
+        else if (original !== undefined && current === undefined) {
+            queries.push({
+              text: `DELETE FROM users WHERE id = ${original.id};`
+            });
+        }
+        else if (original !== undefined && current !== undefined) {
+            queries.push({
+              text: `UPDATE users SET
+                        username = {{username}},
+                        updated_on = {{updatedOn}}
+                        WHERE id = ${user.id};`,
+              params: current
+            });
+        }
+
+        return queries;
+    }
+};
+
+```
 
 ### Retrieving Models
 
-### Syncing Models
+Retrieving models from the database can be done via the regular `dao.execute()` method. The main difference from executing regular queries is that model queries should have `ModelHandler` specified for the `handler` property and can have an additional `mutable` property to specify whether retrieved models can be updated.
+
+For example, given the User model defined above, a query to retrieve a single user by ID would look like this:
+
+```
+var userId = 1;
+var qFetchUserById = {
+  text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
+          FROM tmp_users WHERE id = ${userId};`,
+  mask: 'object',
+  handler: userHandler,
+  mutable: false
+};
+
+dao.execute(qFetchUserById).then((user) => {
+  // user is now User model retrieved from the database
+});
+```
+
+A query to retrieve multiple users by ID could look like this:
+```
+var userIdList = [1, 2, 3];
+var qFetchUsersByIdList = {
+  text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
+          FROM tmp_users WHERE id IN (${userIdList.join(',')});`,
+  mask: 'list',
+  handler: userHandler,
+  mutable: false
+};
+
+dao.execute(qFetchUsersByIdList).then((users) => {
+  // users is now an array of 3 User model retrieved from the database
+});
+```
+
+Retriving the same model multiple times does not create a new model object - but rather updates an existing model object with fresh data from the database:
+
+```
+var userId = 1;
+var qFetchUserById = {
+  text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
+          FROM tmp_users WHERE id = ${userId};`,
+  mask: 'object',
+  handler: userHandler,
+  mutable: false
+};
+
+dao.execute(qFetchUserById).then((user1) => {
+  return dao.execute(qFetchUserById).then((user2) => {
+    user1 === user2; // true
+  });
+});
+```
+
+The `mutable` property indicates whether the models retrieved by the query can be updated during the DAO session. Setting `mutable` to true instructs the DAO to monitor the model and detect if any changes take place. This has performance implications, so this should be done only if you are planning to modify the models during the session. 
+
+In some scenarios it might make sense to mark models as mutable only if `SELECT ... FOR UPDATE` statement was used to retrieve it from the database. For example, the following might be a query to select a user for update:
+
+```
+var userId = 1;
+var qFetchUserById = {
+  text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
+          FROM tmp_users WHERE id = ${userId} FOR UPDATE;`,
+  mask: 'object',
+  handler: userHandler,
+  mutable: true
+};
+
+dao.startTransaction.then(() => {
+  return dao.execute(qFetchUserById).then((user) => {
+    // user row with ID = 1 is now locked in the database - no other client 
+    // can modify the row until this transaction is committed.
+    // so, we can update the user model safely knowing that we have the most
+    // recent version of the user data
+  });
+}).then(() => dao.release('commit'));
+
+```
+
+Checking whether the model was retrieved as mutable can be done as follows:
+
+```
+dao.isMutable(model) : boolean;
+```
+
+### Modifying and Syncing Models
+
+For models which were retrieved from the database as mutable, DAO observes the changes and then writes changes out to the database on `dao.sync()` call or on `dao.release('commit')` call.
+
+#### Updating Models
+
+Updating existing models is done simply by modifying model properties. No additional works is needed:
+
+```
+dao.startTransaction.then(() => {
+  // retrieve user model from the database
+  return dao.execute(qFetchUserById).then((user) => {
+    // update the model
+    user.username = 'test';
+    dao.isModified(user); // true
+  });
+})
+// sync changes with the database and release connection
+.then(() => dao.release('commit'));
+```
+
+#### Deleting Models
+
+Deleting existing models can be done as follows:
+```
+dao.startTransaction.then(() => {
+  // retrieve user model from the database
+  return dao.execute(qFetchUserById).then((user) => {
+    dao.destroy(user);
+    dao.isDestroyed(user); // true
+  });
+})
+// sync changes with the database and release connection
+.then(() => dao.release('commit'));
+```
+
+#### Creating Models
+
+pg-dao does not handle creation of model objects, but once a model object is created, it can be inserted into the database using `dao.insert()` method:
+
+```
+// create a new model object
+var user = userHandler.parse({
+  id: 1, 
+  username: 'test', 
+  createdOn: new Date(), 
+  updatedOn: new Date()
+});
+
+dao.startTransaction.then(() => {
+  // insert the model into DAO
+  dao.insert(user);
+  dao.isNew(user); // true
+})
+// sync changes with the database and release connection
+.then(() => dao.release('commit'));
+```
+
+#### Reverting Changes
+
+It is possible to revert the changes made to a model by using the following method:
+```
+dao.clean(model);
+```
+If this method is called on a new model, the model will be removed form DAO.
+
+#### Syncing Changes
+
+All pending model changes must be either committed or rolled-back upon DAO release. This can be done as follows:
+
+  * `dao.release('commit')` - this will write out all pending model changes to the database, commit any active transactions, and release connection back to the pool
+  * `dao.release('rollback')` - this will revert any pending model changes, rollback any active transaction, and release connection back to the pool
+
+If `dao.release()` is called without any parameters and there are pending model changes, the changes will be discarted, any active transaction will be rolled back, and an error will be throw. 
+
+It is also possible to sync model changes with the database without releasing DAO connection by using `dao.sync()` method as follows:
+
+  * `dao.sync()` - this will write all pending model changes to the database
+  * `dao.sync(true)` - this will write all pending model changes to the database and commit any active database transactions
+
+`dao.sync()` method returns an array describing synchronized changes. The objects have the following form:
+
+```
+{
+  original: any, // state of the model when it was read in from the database
+  current: any   // state of the model that was written out to the database
+}
+```
+
+pg-dao does not actively enforce model immutability. This means that models retrieved as immutable can still be modified by the user. As pg-dao only observes mutable models, any changes to immutable models will be ignored. However, it is possible to force pg-dao to validate model immutability on syncing changes. This can be done via setting `validateImmutability` property for the connection to true. In such a case, if any changes to immutable models are detected during model synchronization, an error will be throw. There are performance implications to setting `validateImmutability` property to true - so, it might be a good idea to use it in development environments only.
+
+#### Checking Model State
+
+It is possible to check the state of DAO as well as the state of a specific model using the following methods:
+
+```
+dao.isSynchronized() : boolean  // returns false if DAO has any pending changes
+dao.isModified(model): boolean  // returns true if the model has pending changes
+dao.isNew(model): boolean       // returns true if the new model has not yet been saved to the database
+dao.isDestroyed(model): boolean // returns true if the deleted model has not yet been removed from the databsae
+```
+
+To check whether a model is registered with DAO the following method can be used:
+```
+dao.hasModel(model) : boolean
+```
 
 ## License
 Copyright (c) 2015 Hercules Inc.
