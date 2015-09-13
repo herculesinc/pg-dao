@@ -1,8 +1,8 @@
 {
   "name": "pg-dao",
   "version": "0.1.0",
-  "description": "Data access module for PostgreSQL written in TypeScript",
-    "keywords": [
+  "description": "Promise-based data access layer for PostgreSQL",
+  "keywords": [
     "postgres",
     "pg",
     "postgre",
@@ -24,7 +24,7 @@
     "pg-io": "^0.1.5"
   },
   "engines": {
-    "node": "0.12.6"
+    "node": "^0.12.6"
   },
   "devDependencies": {
     "del": "^1.2.1",
