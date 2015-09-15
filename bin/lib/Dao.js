@@ -40,19 +40,23 @@ var Dao = (function (_super) {
             return Promise.reject(new Error("Cannot fetch a model: fetch query is not a model query"));
         if (query.mask !== 'object')
             return Promise.reject(new Error("Cannot fetch a model: fetch query is not a single result query"));
+        if (query.mutable !== forUpdate)
+            return Promise.reject(new Error("Cannot fetch a model: fetch query mutable flag is not set correctly"));
         return this.execute(query);
     };
     Dao.prototype.fetchAll = function (handler, selector, forUpdate) {
         if (forUpdate === void 0) { forUpdate = false; }
         if (Model_1.isModelHandler(handler) === false)
-            return Promise.reject(new Error('Cannot fetch a model: model handler is invalid'));
+            return Promise.reject(new Error('Cannot fetch models: model handler is invalid'));
         var query = handler.getFetchAllQuery(selector, forUpdate);
         if (query === undefined)
-            return Promise.reject(new Error("Cannot fetch a model: fetch query for selector (" + selector + ") was not found"));
+            return Promise.reject(new Error("Cannot fetch models: fetch query for selector (" + selector + ") was not found"));
         if (Model_1.isModelQuery(query) === false)
-            return Promise.reject(new Error("Cannot fetch a model: fetch query is not a model query"));
+            return Promise.reject(new Error("Cannot fetch models: fetch query is not a model query"));
         if (query.mask !== 'list')
-            return Promise.reject(new Error("Cannot fetch a model: fetch query is not a list result query"));
+            return Promise.reject(new Error("Cannot fetch models: fetch query is not a list result query"));
+        if (query.mutable !== forUpdate)
+            return Promise.reject(new Error("Cannot fetch models: fetch query mutable flag is not set correctly"));
         return this.execute(query);
     };
     // LIFECYCLE METHODS

@@ -4,7 +4,7 @@ Simple promise-based data access layer for PostgreSQL written on top of [pg-io](
 ## Philosophy
 pg-dao is designed for scenarios when connection to the database is needed for a series of short and relatively simple requests. If you need a connection to execute long running queries (or queries that return large amounts of data) or require complex transaction logic, pg-dao is probably not for you.
 
-Key principales for pg-dao are:
+Key principals for pg-dao are:
   * __Single transaction__ - only one transaction is allowed per connection session. A transaction can be started at any point during the session, but can be committed (or rolled back) only at the end of the session
   * __Low error tolerance__ - any error in query execution will terminate the session and release the connection back to the pool
 
@@ -362,6 +362,8 @@ Model handler is an object which provides services needed by DAO to work with th
   areEqual(model1: any, model2: any): boolean;
   infuse(target: any, source: any);
   getSyncQueries(original: any, current: any): Query[];
+  getFetchOneQuery(selector: any, forUpdate: boolean): Query;
+  getFetchAllQuery(selector: any, forUpdate: boolean): Query;
 }
 ```
 The meaning of the above methods is described below:
@@ -371,7 +373,9 @@ The meaning of the above methods is described below:
   * areEqual(model1, model2) - should return true if both models are identical
   * infuse(target, source) - should change the properties of the `target` to make it identical to the `source`
   * getSyncQueries(original, current) - given the original and the current state of the model, should produce an array of queries that should be run to synchronize the model with the database
-  
+  * getFetchOneQuery - given the selector, returns a query which can be executed to retrieve a single model
+  * getFetchAllQuery - given the selector, returns a query which can be executed to retrieve a list of models
+    
 Below is an example of a very simple `User` model. For this model, the data is stored in the `users` table which has `id`, `username`, `created_on`, and `updated_on` fields.
 ```JavaScript
 // import symbols used by pg-dao
@@ -448,15 +452,40 @@ var userHandler = {
 
         return queries;
     }
+    
+    getFetchOneQuery(selector: any, forUpdate: boolean) {
+      if ('id' in selector) {
+        return {
+          text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
+                FROM tmp_users WHERE id = ${selector.id};`
+          mask: 'object',
+          mutable: forUpdate,
+          handler: this
+        };
+      }
+    }
+    
+    static getFetchAllQuery(selector: any, forUpdate: boolean) {
+      if ('userIdList' in selector) {
+        return {
+          text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
+                  FROM tmp_users WHERE id = ${selector.userIdList.join(',')};`
+          mask: 'list',
+          mutable: forUpdate,
+          handler: this
+        };
+      }
+    }
 };
 
 ```
 
 ### Retrieving Models
 
-Retrieving models from the database can be done via the regular `dao.execute()` method. The main difference from executing regular queries is that model queries should have `ModelHandler` specified for the `handler` property and can have an additional `mutable` property to specify whether retrieved models can be updated.
+Retrieving models from the database can be done via the regular `dao.execute()` method or via specialized `fetchOne()` and `fetchAll()` methods. 
 
-For example, given the User model defined above, a query to retrieve a single user by ID would look like this:
+#### Retrieving via execute()
+The main difference from executing regular queries is that model queries should have `ModelHandler` specified for the `handler` property and can have an additional `mutable` property to specify whether retrieved models can be updated. For example, given the User model defined above, a query to retrieve a single user by ID would look like this:
 
 ```JavaScript
 var userId = 1;
@@ -538,6 +567,36 @@ Checking whether the model was retrieved as mutable can be done as follows:
 
 ```JavaScript
 dao.isMutable(model) : boolean;
+```
+
+#### Retrieving via fetch methods
+
+If you only need to retrieve one type of model at a time, it might be easier to use `fetchOne()` or `fetchAll()` methods. The signatures of the methods are as follows:
+```
+fetchOne(handler, selector, forEdit?): Model;
+fetchAll(handler, selector, forEdit?): Model[];
+```
+The meaning of the parameters is as follows:
+  * `handler` - model handler for which to retrieve models
+  * `selector`- an object describing parameters based on which models should be selected
+  * `forEdit` - an optional parameter (default false) indicating whether the retrieved models are mutable
+
+The fetch methods can be used as follows:
+```
+  dao.fetchOne(userHandler, { id: 1 }).then((user) => {
+    // fetches User model with ID = 1 from the database
+    // the fetched model is immutable
+  });
+  
+  dao.fetchOne(userHandler, { id: 2 }, true).then((user) => {
+    // fetches User model with ID = 2 from the database
+    // the fetched model is mutable
+  });
+  
+  dao.fetchAll(userHandler, { userIdList: [2, 3] }, true).then((users) => {
+    // fetches User models with IDs 2 and 3 from the database
+    // the fetched models are immutable
+  });
 ```
 
 ### Modifying and Syncing Models

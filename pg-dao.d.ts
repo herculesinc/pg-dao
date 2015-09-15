@@ -89,6 +89,8 @@
         infuse(target: T, source: T);
         areEqual(model1: T, model2: T): boolean;
         getSyncQueries(original: T, current: T): Query[];
+        getFetchOneQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
+        getFetchAllQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
     }
 
     // QUERY DEFINITIONS
