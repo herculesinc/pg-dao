@@ -23,7 +23,191 @@ interface Database {
 
 // FETCHING TESTS
 // ================================================================================================
-describe('DAO: Fetching Models', function () {
+describe('DAO: Fetching a Single Model', function () {
+
+    it('Fetching a single model should added it to the store', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.fetchOne(User, {id: 1}).then((user) =>{
+                    assert.strictEqual(user.id, 1);
+                    assert.strictEqual(user.username, 'Irakliy');
+                    assert.strictEqual(dao.hasModel(user), true);
+                    assert.strictEqual(dao.isNew(user), false);
+                    assert.strictEqual(dao.isModified(user), false);
+                    assert.strictEqual(dao.isDestroyed(user), false);
+                    assert.strictEqual(dao.isMutable(user), false); 
+                });
+            }).then(() => dao.release());
+        });
+    });
+
+    it('Fetching a locked model should make it mutable', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.fetchOne(User, {id: 1}, true).then((user) =>{
+                    assert.strictEqual(user.id, 1);
+                    assert.strictEqual(user.username, 'Irakliy');
+                    assert.strictEqual(dao.hasModel(user), true);
+                    assert.strictEqual(dao.isNew(user), false);
+                    assert.strictEqual(dao.isModified(user), false);
+                    assert.strictEqual(dao.isDestroyed(user), false);
+                    assert.strictEqual(dao.isMutable(user), true);
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    it('Fetching the same model multiple times should return the same object', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.fetchOne(User, {id: 1}).then((user1) =>{
+                    return dao.fetchOne(User, {id: 1}).then((user2) =>{
+                        assert.strictEqual(user1, user2);
+                    });
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    it('Re-fetching model as mutable should make it mutable', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.fetchOne(User, {id: 1}).then((user1) =>{
+                    assert.strictEqual(dao.isMutable(user1), false);
+                    return dao.fetchOne(User, {id: 1}, true).then((user2) =>{
+                        assert.strictEqual(user1, user2);
+                        assert.strictEqual(dao.isMutable(user1), true);
+                    });
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    it('Fetching a single model with an invalid handler should throw an error', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                var nonHandler: any = {};
+                return dao.fetchOne(nonHandler, {id: 1}).then((user) =>{
+                    assert.fail();
+                })
+                .catch((reason) => {
+                    assert(reason instanceof assert.AssertionError === false);
+                    assert(reason instanceof Error);
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    it('Fetching a single model with an invalid selector should throw an error', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.fetchOne(User, {ids: 1}).then((user) =>{
+                    assert.fail();
+                })
+                .catch((reason) => {
+                    assert(reason instanceof assert.AssertionError === false);
+                    assert(reason instanceof Error);
+                });
+            }).then(() => dao.release());
+        });
+    });
+});
+
+describe('DAO: Fetching Multiple Models', function () {
+
+    it('Fetching multiple models should add them to the store', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.fetchAll(User, { userIdList: [1, 3]}).then((users) => {
+                    assert(users.length === 2);
+                    
+                    assert(users[0].id === 1);
+                    assert(users[0].username === 'Irakliy');
+                    assert.strictEqual(dao.hasModel(users[0]), true);
+                    assert.strictEqual(dao.isNew(users[0]), false);
+                    assert.strictEqual(dao.isModified(users[0]), false);
+                    assert.strictEqual(dao.isDestroyed(users[0]), false);
+                    assert.strictEqual(dao.isMutable(users[0]), false);
+                    
+                    assert(users[1].id === 3);
+                    assert(users[1].username === 'George');
+                    assert.strictEqual(dao.hasModel(users[1]), true);
+                    assert.strictEqual(dao.isNew(users[1]), false);
+                    assert.strictEqual(dao.isModified(users[1]), false);
+                    assert.strictEqual(dao.isDestroyed(users[1]), false);
+                    assert.strictEqual(dao.isMutable(users[1]), false);
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    it('Fetching multiple locked models should make them mutable', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.fetchAll(User, { userIdList: [1, 3] }, true).then((users) => {
+                    assert(users.length === 2);
+                    
+                    assert(users[0].id === 1);
+                    assert(users[0].username === 'Irakliy');
+                    assert.strictEqual(dao.hasModel(users[0]), true);
+                    assert.strictEqual(dao.isNew(users[0]), false);
+                    assert.strictEqual(dao.isModified(users[0]), false);
+                    assert.strictEqual(dao.isDestroyed(users[0]), false);
+                    assert.strictEqual(dao.isMutable(users[0]), true);
+                    
+                    assert(users[1].id === 3);
+                    assert(users[1].username === 'George');
+                    assert.strictEqual(dao.hasModel(users[1]), true);
+                    assert.strictEqual(dao.isNew(users[1]), false);
+                    assert.strictEqual(dao.isModified(users[1]), false);
+                    assert.strictEqual(dao.isDestroyed(users[1]), false);
+                    assert.strictEqual(dao.isMutable(users[1]), true);
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    it('Fetching multiple model with an invalid handler should throw an error', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                var nonHandler: any = {};
+                return dao.fetchAll(nonHandler, {userIdList: [1, 3] }).then((user) =>{
+                    assert.fail();
+                })
+                .catch((reason) => {
+                    assert(reason instanceof assert.AssertionError === false);
+                    assert(reason instanceof Error);
+                });
+            }).then(() => dao.release());
+        });
+    });
+    
+    it('Fetching a single model with an invalid selector should throw an error', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.fetchAll(User, { ids: 1 }).then((user) =>{
+                    assert.fail();
+                })
+                .catch((reason) => {
+                    assert(reason instanceof assert.AssertionError === false);
+                    assert(reason instanceof Error);
+                });
+            }).then(() => dao.release());
+        });
+    });
+});
+
+describe('DAO: Fetching Models via execute() method', function () {
 
     it('Fetching a single model should added it to the store', () => {
         var database: Database = pg.db(settings);

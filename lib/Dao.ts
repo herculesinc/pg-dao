@@ -2,7 +2,7 @@
 // ================================================================================================
 import { Connection, ConnectionOptions, Query, DbQueryResult, ConnectionState } from 'pg-io';
 import { Store, SyncInfo, Options as StoreOptions } from './Store';
-import { Model, ModelHandler, symHandler, isModelQuery, ModelQuery } from './Model';
+import { Model, isModelHandler, ModelHandler, symHandler, isModelQuery, ModelQuery } from './Model';
 
 // DAO CLASS DEFINITION
 // ================================================================================================
@@ -23,6 +23,42 @@ export class Dao extends Connection {
         return (this.store.hasChanges === false);
     }
 	
+    // FETCH METHODS
+    // --------------------------------------------------------------------------------------------
+    fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T> {
+        if (isModelHandler(handler) === false)
+            return Promise.reject(new Error('Cannot fetch a model: model handler is invalid'));
+            
+        var query = handler.getFetchOneQuery(selector, forUpdate);
+        if (query === undefined)
+            return Promise.reject(new Error(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
+            
+        if (isModelQuery(query) === false)
+            return Promise.reject(new Error(`Cannot fetch a model: fetch query is not a model query`));
+            
+        if (query.mask !== 'object') 
+            return Promise.reject(new Error(`Cannot fetch a model: fetch query is not a single result query`));
+            
+        return this.execute(query);
+    }
+    
+    fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T[]> {
+        if (isModelHandler(handler) === false)
+            return Promise.reject(new Error('Cannot fetch a model: model handler is invalid'));
+            
+        var query = handler.getFetchAllQuery(selector, forUpdate);
+        if (query === undefined)
+            return Promise.reject(new Error(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
+            
+        if (isModelQuery(query) === false)
+            return Promise.reject(new Error(`Cannot fetch a model: fetch query is not a model query`));
+            
+        if (query.mask !== 'list') 
+            return Promise.reject(new Error(`Cannot fetch a model: fetch query is not a list result query`));
+            
+        return this.execute(query);
+    }
+    
 	// LIFECYCLE METHODS
     // --------------------------------------------------------------------------------------------
 	sync(): Promise<SyncInfo[]> {

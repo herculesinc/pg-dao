@@ -18,7 +18,9 @@ function isModelHandler(handler) {
         && (typeof handler.clone === 'function')
         && (typeof handler.infuse === 'function')
         && (typeof handler.areEqual === 'function')
-        && (typeof handler.getSyncQueries === 'function');
+        && (typeof handler.getSyncQueries === 'function')
+        && (typeof handler.getFetchOneQuery === 'function')
+        && (typeof handler.getFetchAllQuery === 'function');
 }
 exports.isModelHandler = isModelHandler;
 function isModelQuery(query) {

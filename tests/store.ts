@@ -47,7 +47,7 @@ describe('Store: Loading Models', function () {
         assert.strictEqual(store.isNew(user), false);
         assert.strictEqual(store.isDestroyed(user), false);
         assert.strictEqual(store.isMutable(user), false);
-        //assert.strictEqual(store.hasChanges, false);
+        assert.strictEqual(store.hasChanges, false);
     });
 
     it('Loading models with an invalid handler should throw an error', function () {
@@ -312,6 +312,18 @@ describe('Store: Inserting Models', function () {
             store.load(User, [seed], true);
         }, Error);
     });
+    
+    it('Inserting a perviously destroyed and synced model should throw an error', function () {
+        var store = new Store(defaults);
+        var users = store.load(User, [seed], true);
+        var user: User = <User> users[0];
+        
+        store.destroy(user);
+        store.applyChanges(store.getChanges());
+        assert.throws(function () {
+            store.insert(user);
+        }, Error);
+    });
 });
 
 // CLEANING MODELS
@@ -385,13 +397,17 @@ describe('Store: Syncing store', function () {
         var store = new Store(defaults);
         var user = User.parse(seed);
         store.insert(user);
-        store.applyChanges(store.getChanges());
+        var changes = store.applyChanges(store.getChanges());
         
         assert.strictEqual(store.hasChanges, false);
         assert.strictEqual(store.isNew(user), false);
         assert.strictEqual(store.isModified(user), false);
         assert.strictEqual(store.isDestroyed(user), false);
         assert.strictEqual(store.isMutable(user), true);
+        
+        assert.strictEqual(changes.length, 1);
+        assert.strictEqual(changes[0].original, undefined);
+        assert.strictEqual(changes[0].current, user);
     });
 
     it('Modified model should be synchronized on apply changes', function () {
@@ -400,12 +416,16 @@ describe('Store: Syncing store', function () {
         var user: User = <User> users[0];
         
         user.username = 'Test';
-        store.applyChanges(store.getChanges());
+        var changes = store.applyChanges(store.getChanges());
         assert.strictEqual(store.hasChanges, false);
         assert.strictEqual(store.isNew(user), false);
         assert.strictEqual(store.isModified(user), false);
         assert.strictEqual(store.isDestroyed(user), false);
         assert.strictEqual(store.isMutable(user), true);
+        
+        assert.strictEqual(changes.length, 1);
+        assert.strictEqual((changes[0].original as User).username, 'Irakliy');
+        assert.strictEqual((changes[0].current as User).username, 'Test');
     });
 
     it('Destroyed model should be synchronized on apply changes', function () {
@@ -414,20 +434,158 @@ describe('Store: Syncing store', function () {
         var user: User = <User> users[0];
         
         store.destroy(user);
-        store.applyChanges(store.getChanges());
+        var changes = store.applyChanges(store.getChanges());
         assert.strictEqual(store.hasChanges, false);
         assert.strictEqual(store.has(user), false);
+        
+        assert.strictEqual(changes.length, 1);
+        assert.strictEqual(changes[0].original.id, user.id);
+        assert.strictEqual(changes[0].current, undefined);
     });
     
-    it('Apply changes should throw error if immutable models were modified', function () {
+    it('Get changes should throw error if immutable models were modified', function () {
         var store = new Store(defaults);
         var users = store.load(User, [seed], false);
         var user: User = <User> users[0];
         
         user.username = 'Test';
         assert.throws(function () {
-            store.applyChanges(store.getChanges());   
+            store.getChanges();   
         }, Error);
+    });
+    
+    it('Apply changes should aggregate changes over time', function () {
+        var store = new Store(defaults);
+        var seeds = [
+            { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
+            { id: 2, username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
+            { id: 3, username: 'George', createdOn: new Date(), updatedOn: new Date() }
+        ];
+        
+        var newSeeds = [
+            { id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
+            { id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
+        ];
+        
+        var users = store.load(User, seeds, true) as User[];
+        
+        users[0].username = 'test';
+        var changes = store.getChanges();
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        
+        users[2].username = 'Giorgi';
+        changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 2);
+        assert.strictEqual((changes[0].original as User).username, 'Irakliy');
+        assert.strictEqual((changes[0].current as User).username, 'test');
+        assert.strictEqual((changes[1].original as User).username, 'George');
+        assert.strictEqual((changes[1].current as User).username, 'Giorgi');
+    });
+    
+    it('Reversing a change should remove it from the list of changes', function () {
+        var store = new Store(defaults);
+        var seeds = [
+            { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
+            { id: 2, username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
+            { id: 3, username: 'George', createdOn: new Date(), updatedOn: new Date() }
+        ];
+        
+        var newSeeds = [
+            { id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
+            { id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
+        ];
+        
+        var users = store.load(User, seeds, true) as User[];
+        
+        users[0].username = 'test';
+        var changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        
+        users[0].username = 'Irakliy';
+        changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 0);
+    });
+    
+    it('Deleting a previously inserted and syncronized model should produce no changes', function () {
+        var store = new Store(defaults);
+        var user = User.parse(seed);
+        
+        store.insert(user);
+        var changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        
+        store.destroy(user);
+        changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 0);
+    });
+    
+    it('Deleting a previously updated and syncronized model should produce a single change', function () {
+        var store = new Store(defaults);
+        var users = store.load(User, [seed], true);
+        var user = users[0] as User;
+        
+        user.username = 'Test';
+        var changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        
+        store.destroy(user);
+        changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        assert.strictEqual(changes[0].current, undefined);
+    });
+    
+    it('Updating a previously inserted and syncronized model should produce a single change', function () {
+        var store = new Store(defaults);
+        var user = User.parse(seed);
+        
+        store.insert(user);
+        var changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        
+        user.username = 'Test';
+        changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        assert.strictEqual(changes[0].original, undefined);
+        assert.strictEqual((changes[0].current as User).username, 'Test');
+    });
+    
+    it('Updating a previously updated and syncronized model should produce a single change', function () {
+        var store = new Store(defaults);
+        var users = store.load(User, [seed], true);
+        var user = users[0] as User;
+        
+        user.username = 'Test';
+        var changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        
+        user.username = 'Test2';
+        changes = store.getChanges();
+        assert.strictEqual(changes.length, 1);
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 1);
+        assert.strictEqual((changes[0].original as User).username, 'Irakliy');
+        assert.strictEqual((changes[0].current as User).username, 'Test2');
     });
     
     it('Multiple cycles of changes and syncing should execute correctly', function () {
@@ -449,13 +607,16 @@ describe('Store: Syncing store', function () {
         assert.strictEqual(store.has(users[1]), true);
         assert.strictEqual(store.has(users[2]), true);
         
+        // change #1, delete User1
         store.destroy(users[0]);
         assert.strictEqual(store.isDestroyed(users[0]), true);
         
+        // change #2, add User4
         var newUser1 = User.parse(newSeeds[0]);
         store.insert(newUser1);
         assert.strictEqual(store.isNew(newUser1), true);
         
+        // change #3, update User2
         (<User>users[2]).username = 'Giorgi';
         assert.strictEqual(store.isModified(users[2]), true);
         
@@ -471,7 +632,9 @@ describe('Store: Syncing store', function () {
         assert.strictEqual(changes[2].current, newUser1);
         assert.strictEqual(changes[2].original, undefined);
         
-        store.applyChanges(store.getChanges());
+        // Sync #1
+        changes = store.applyChanges(changes);
+        assert.strictEqual(changes.length, 3)
         assert.strictEqual(store.hasChanges, false);
         assert.strictEqual(store.getChanges().length, 0);
         
@@ -479,6 +642,7 @@ describe('Store: Syncing store', function () {
         assert.strictEqual(store.isNew(newUser1), false);
         assert.strictEqual(store.isModified(users[2]), false);
         
+        // change #4, add user5
         var newUser2 = User.parse(newSeeds[1]);
         store.insert(newUser2);
         assert.strictEqual(store.isNew(newUser2), true);
@@ -487,21 +651,26 @@ describe('Store: Syncing store', function () {
             store.insert(users[0]);   
         }, Error);
         
+        // change #5, delete user4
         store.destroy(newUser1);
         assert.strictEqual(store.isDestroyed(newUser1), true);
         
+        // revert chang #5
         store.clean(newUser1);
         assert.strictEqual(store.isDestroyed(newUser1), false);
         
+        // change #6, destroy user3
         store.destroy(users[2]);
         (<User>users[2]).username = 'Test3';
         store.isDestroyed(users[2]);
         assert.strictEqual(store.isModified(users[2]), false);
         
+        // change #7, update user6
         newUser2.username = 'Test2';
         assert.strictEqual(store.isModified(newUser2), false);
         assert.strictEqual(store.isNew(newUser2), true);
-                
+        
+        // change #8, update user2
         (<User> users[1]).username = 'Test';
         assert.strictEqual(store.isModified(users[1]), true);
         
@@ -517,7 +686,9 @@ describe('Store: Syncing store', function () {
         assert.strictEqual(changes[2].current, newUser2);
         assert.strictEqual(changes[2].original, undefined);
         
-        store.applyChanges(store.getChanges());
+        // Sync #2
+        changes = store.applyChanges(store.getChanges());
         assert.strictEqual(store.hasChanges, false);
+        assert.strictEqual(changes.length, 5);
     });
 });

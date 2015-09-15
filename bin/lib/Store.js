@@ -197,6 +197,9 @@ var Store = (function () {
                 if (previousChange === undefined) {
                     this.changes.set(current, changes[i]);
                 }
+                else if (handler.areEqual(previousChange.original, current)) {
+                    this.changes.delete(current);
+                }
             }
             else {
                 var handler = original[Model_1.symHandler];

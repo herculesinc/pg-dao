@@ -1,6 +1,6 @@
 {
   "name": "pg-dao",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Promise-based data access layer for PostgreSQL written in TypeScript",
   "keywords": [
     "postgres",

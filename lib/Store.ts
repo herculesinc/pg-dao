@@ -243,6 +243,9 @@ export class Store {
                 if (previousChange === undefined) {
                     this.changes.set(current, changes[i]);
                 }
+                else if (handler.areEqual(previousChange.original, current)) {
+                    this.changes.delete(current);
+                }
             }
             else {
                 let handler = original[symHandler];

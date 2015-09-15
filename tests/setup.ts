@@ -62,6 +62,18 @@ export class User implements Model {
         target.createdOn = source.createdOn;
         target.updatedOn = source.updatedOn;
     }
+    
+    static getFetchOneQuery(selector: any, forUpdate: boolean): ModelQuery<User> {
+        if ('id' in selector) {
+            return new qFetchUserById(selector.id, forUpdate);
+        }
+    }
+    
+    static getFetchAllQuery(selector: any, forUpdate: boolean): ModelQuery<User> {
+        if ('userIdList' in selector) {
+            return new qFetchUsersByIdList(selector.userIdList, forUpdate);
+        }
+    }
 }
 
 // QUERIES
