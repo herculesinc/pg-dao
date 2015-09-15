@@ -14,8 +14,9 @@ var Store = (function () {
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
     function Store(options) {
-        this.cache = new Map();
         this.options = options;
+        this.cache = new Map();
+        this.changes = new Map();
     }
     // STATE CHANGE METHODS
     // --------------------------------------------------------------------------------------------
@@ -192,13 +193,33 @@ var Store = (function () {
             if (current) {
                 var handler = current[Model_1.symHandler];
                 current[symbols.original] = handler.clone(current);
+                var previousChange = this.changes.get(current);
+                if (previousChange === undefined) {
+                    this.changes.set(current, changes[i]);
+                }
             }
             else {
                 var handler = original[Model_1.symHandler];
                 var modelMap = this.getModelMap(handler);
+                var model = modelMap.get(original.id);
+                var previousChange = this.changes.get(model);
+                if (previousChange === undefined) {
+                    this.changes.set(current, changes[i]);
+                }
+                else {
+                    if (previousChange.original === undefined) {
+                        this.changes.delete(model);
+                    }
+                    else {
+                        previousChange.current = undefined;
+                    }
+                }
                 modelMap.delete(original.id);
             }
         }
+        var allChanges = [];
+        this.changes.forEach(function (change) { return allChanges.push(change); });
+        return allChanges;
     };
     Store.prototype.cleanChanges = function () {
         var _this = this;

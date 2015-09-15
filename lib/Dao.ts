@@ -66,7 +66,7 @@ export class Dao extends Connection {
             case 'commit':
                 var queries = this.getModelSyncQueries(changes, true);
                 return this.execute(queries).then(() => {
-                    this.store.applyChanges(changes);
+                    changes = this.store.applyChanges(changes);
                     this.releaseConnection();
                     return changes; 
                 });

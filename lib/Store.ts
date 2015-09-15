@@ -28,12 +28,14 @@ export class Store {
 
     private options: Options;
     private cache: Map<ModelHandler<any>, Map<number, Model>>;
+    private changes: Map<Model, SyncInfo>;
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
     constructor(options: Options) {
-        this.cache = new Map<ModelHandler<any>, Map<number, Model>>();
         this.options = options;
+        this.cache = new Map<ModelHandler<any>, Map<number, Model>>();
+        this.changes = new Map<Model, SyncInfo>();        
     }
 
     // STATE CHANGE METHODS
@@ -229,7 +231,7 @@ export class Store {
         return syncInfo;
     }
 
-    applyChanges(changes: SyncInfo[]) {
+    applyChanges(changes: SyncInfo[]): SyncInfo[] {
         for (var i = 0; i < changes.length; i++) {
             let original = changes[i].original;
             let current = changes[i].current;
@@ -237,13 +239,34 @@ export class Store {
             if (current) {
                 let handler = current[symHandler];
                 current[symbols.original] = handler.clone(current);
+                let previousChange = this.changes.get(current);
+                if (previousChange === undefined) {
+                    this.changes.set(current, changes[i]);
+                }
             }
             else {
                 let handler = original[symHandler];
                 let modelMap = this.getModelMap(handler);
+                let model = modelMap.get(original.id);
+                let previousChange = this.changes.get(model);
+                if (previousChange === undefined) {
+                    this.changes.set(current, changes[i]);
+                }
+                else {
+                    if (previousChange.original === undefined) {
+                        this.changes.delete(model);
+                    }
+                    else {
+                        previousChange.current = undefined;
+                    }
+                }
                 modelMap.delete(original.id);
             }
         }
+        
+        var allChanges: SyncInfo[] = [];
+        this.changes.forEach((change) => allChanges.push(change));
+        return allChanges;
     }
     
     cleanChanges() {

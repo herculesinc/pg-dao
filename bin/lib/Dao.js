@@ -66,7 +66,7 @@ var Dao = (function (_super) {
             case 'commit':
                 var queries = this.getModelSyncQueries(changes, true);
                 return this.execute(queries).then(function () {
-                    _this.store.applyChanges(changes);
+                    changes = _this.store.applyChanges(changes);
                     _this.releaseConnection();
                     return changes;
                 });
