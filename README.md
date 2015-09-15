@@ -572,7 +572,7 @@ dao.isMutable(model) : boolean;
 #### Retrieving via fetch methods
 
 If you only need to retrieve one type of model at a time, it might be easier to use `fetchOne()` or `fetchAll()` methods. The signatures of the methods are as follows:
-```
+```JavaScript
 fetchOne(handler, selector, forEdit?): Model;
 fetchAll(handler, selector, forEdit?): Model[];
 ```
@@ -582,7 +582,7 @@ The meaning of the parameters is as follows:
   * `forEdit` - an optional parameter (default false) indicating whether the retrieved models are mutable
 
 The fetch methods can be used as follows:
-```
+```JavaScript
   dao.fetchOne(userHandler, { id: 1 }).then((user) => {
     // fetches User model with ID = 1 from the database
     // the fetched model is immutable
