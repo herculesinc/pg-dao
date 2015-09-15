@@ -13,7 +13,8 @@ exports.defaults = {
     collapseQueries: false,
     startTransaction: false,
     validateImmutability: true,
-    validateHandlerOutput: true
+    validateHandlerOutput: true,
+    manageUpdatedOn: true,
 };
 pg.defaults = exports.defaults;
 pg.ConnectionConstructor = Dao_1.Dao;

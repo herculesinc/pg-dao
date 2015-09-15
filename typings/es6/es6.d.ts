@@ -499,11 +499,6 @@ interface ObjectConstructor {
     is(value1: any, value2: any): boolean;
 }
 
-interface ArrayLike<T> {
-    length: number;
-    [n: number]: T;
-}
-
 interface Array<T> {
     /** Iterator */
     [Symbol.iterator](): IterableIterator<T>;

@@ -3,7 +3,7 @@
 import * as assert from 'assert';
 import * as pg from './../index';
 import { PoolState } from 'pg-io';
-import { Dao, Options as DaoOptions } from './../lib/Dao'
+import { Dao } from './../lib/Dao'
 import { User, prepareDatabase, qFetchUserById, qFetchUsersByIdList } from './setup';
 
 // CONNECTION SETTINGS
@@ -17,7 +17,7 @@ var settings = {
 };
 
 interface Database {
-    connect(options?: DaoOptions): Promise<Dao>;
+    connect(options?: any): Promise<Dao>;
     getPoolState(): PoolState;
 }
 
@@ -577,17 +577,17 @@ describe('DAO: Lifecycle Tests', function () {
                         assert.strictEqual(dao.inTransaction, true);
                         assert.strictEqual(dao.isSynchronized, false);
 
-                        return dao.sync(true).then((changes) => {
+                        return dao.sync().then((changes) => {
                             assert.strictEqual(changes.length, 1);
 
                             assert.strictEqual(dao.isActive, true);
-                            assert.strictEqual(dao.inTransaction, false);
+                            assert.strictEqual(dao.inTransaction, true);
                             assert.strictEqual(dao.isSynchronized, true);
 
                             assert.strictEqual(pg.db(settings).getPoolState().size, 1);
                             assert.strictEqual(pg.db(settings).getPoolState().available, 0);
 
-                            return dao.release().then((changes) => {
+                            return dao.release('commit').then((changes) => {
                                 assert.strictEqual(changes, undefined);
 
                                 assert.strictEqual(dao.isActive, false);

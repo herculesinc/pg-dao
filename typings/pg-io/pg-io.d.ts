@@ -51,6 +51,7 @@ declare module "pg-io" {
         constructor(options: ConnectionOptions, client: any, done: (error?: Error) => void);
         
         protected state: ConnectionState;
+        protected options: ConnectionOptions;
         protected processQueryResult(query: Query, result: DbQueryResult): any[];
         protected rollbackAndRelease(reason?: any): Promise<any>;
         protected releaseConnection(error?: any);

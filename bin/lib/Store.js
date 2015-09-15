@@ -8,10 +8,6 @@ var symbols = {
     mutable: Symbol(),
     destroyed: Symbol()
 };
-var defaults = {
-    validateImmutability: true,
-    validateHandlerOutput: true
-};
 // STORE CLASS DEFINITION
 // ================================================================================================
 var Store = (function () {
@@ -19,12 +15,7 @@ var Store = (function () {
     // --------------------------------------------------------------------------------------------
     function Store(options) {
         this.cache = new Map();
-        // TODO: better way to merge objects
-        this.options = options || defaults;
-        if ('validateImmutability' in this.options === false)
-            this.options.validateImmutability = defaults.validateImmutability;
-        if ('validateHandlerOutput' in this.options === false)
-            this.options.validateHandlerOutput = defaults.validateHandlerOutput;
+        this.options = options;
     }
     // STATE CHANGE METHODS
     // --------------------------------------------------------------------------------------------
@@ -172,6 +163,7 @@ var Store = (function () {
         configurable: true
     });
     Store.prototype.getChanges = function () {
+        var _this = this;
         var syncInfo = [];
         this.cache.forEach(function (modelMap, handler) {
             modelMap.forEach(function (model) {
@@ -182,7 +174,7 @@ var Store = (function () {
                         syncInfo.push({ original: original, current: current });
                     }
                 }
-                else if (this.options.validateImmutability) {
+                else if (_this.options.validateImmutability) {
                     var original = model[symbols.original];
                     var current = model[symbols.destroyed] ? undefined : model;
                     if (handler.areEqual(original, current) === false) {
@@ -193,32 +185,20 @@ var Store = (function () {
         });
         return syncInfo;
     };
-    Store.prototype.applyChanges = function () {
-        var _this = this;
-        var syncInfo = [];
-        this.cache.forEach(function (modelMap, handler) {
-            modelMap.forEach(function (model) {
-                var original = model[symbols.original];
-                var current = model[symbols.destroyed] ? undefined : model;
-                if (model[symbols.mutable]) {
-                    if (handler.areEqual(original, current) === false) {
-                        if (current) {
-                            model[symbols.original] = handler.clone(current);
-                        }
-                        else {
-                            modelMap.delete(original.id);
-                        }
-                        syncInfo.push({ current: current, original: original });
-                    }
-                }
-                else if (_this.options.validateImmutability) {
-                    if (handler.areEqual(original, current) === false) {
-                        throw new Error('Change to immutable model detected');
-                    }
-                }
-            });
-        });
-        return syncInfo;
+    Store.prototype.applyChanges = function (changes) {
+        for (var i = 0; i < changes.length; i++) {
+            var original = changes[i].original;
+            var current = changes[i].current;
+            if (current) {
+                var handler = current[Model_1.symHandler];
+                current[symbols.original] = handler.clone(current);
+            }
+            else {
+                var handler = original[Model_1.symHandler];
+                var modelMap = this.getModelMap(handler);
+                modelMap.delete(original.id);
+            }
+        }
     };
     Store.prototype.cleanChanges = function () {
         var _this = this;

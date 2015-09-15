@@ -28,7 +28,7 @@ export interface ModelQuery<T extends Model> extends ResultQuery<T> {
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
-export function isModel(model: any): boolean {
+export function isModel(model: any): model is Model {
     return (typeof model.id === 'number')
         && (isModelHandler(model[symHandler]));
 }
@@ -38,7 +38,7 @@ export function getModelHandler(model: Model): ModelHandler<any> {
     return isModelHandler(handler) ? handler : undefined;
 }
 
-export function isModelHandler(handler: any): boolean {
+export function isModelHandler(handler: any): handler is ModelHandler<any> {
     return (handler !== undefined)     
         && (typeof handler.clone === 'function')
         && (typeof handler.infuse === 'function')
@@ -46,6 +46,6 @@ export function isModelHandler(handler: any): boolean {
         && (typeof handler.getSyncQueries === 'function');
 }
 
-export function isModelQuery(query: Query): boolean {
+export function isModelQuery(query: Query): query is ModelQuery<any> {
     return ('handler' in query && isModelHandler(query['handler']));
 }

@@ -10,11 +10,6 @@ var symbols = {
     destroyed   : Symbol()
 }
 
-var defaults : Options = {
-    validateImmutability    : true,
-    validateHandlerOutput   : true
-}
-
 // INTERFACES
 // ================================================================================================
 export interface SyncInfo {
@@ -22,7 +17,7 @@ export interface SyncInfo {
     current : Model;
 }
 
-interface Options {
+export interface Options {
     validateImmutability?   : boolean;
     validateHandlerOutput?  : boolean;
 }
@@ -36,15 +31,9 @@ export class Store {
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-    constructor(options?: any) {
+    constructor(options: Options) {
         this.cache = new Map<ModelHandler<any>, Map<number, Model>>();
-        
-        // TODO: better way to merge objects
-        this.options = options || defaults;
-        if ('validateImmutability' in this.options === false) 
-            this.options.validateImmutability = defaults.validateImmutability;
-        if ('validateHandlerOutput' in this.options === false)
-            this.options.validateHandlerOutput = defaults.validateHandlerOutput;
+        this.options = options;
     }
 
     // STATE CHANGE METHODS
@@ -219,8 +208,8 @@ export class Store {
 
     getChanges(): SyncInfo[]{
         var syncInfo: SyncInfo[] = [];
-        this.cache.forEach(function (modelMap, handler) {
-            modelMap.forEach(function (model) {                
+        this.cache.forEach((modelMap, handler) => {
+            modelMap.forEach((model) => {                
                 if (model[symbols.mutable]) {
                     var original = model[symbols.original];
                     var current = model[symbols.destroyed] ? undefined : model;
@@ -240,32 +229,21 @@ export class Store {
         return syncInfo;
     }
 
-    applyChanges(): SyncInfo[] {
-        var syncInfo: SyncInfo[] = [];
-        this.cache.forEach((modelMap, handler) => {
-            modelMap.forEach((model) => {
-                var original = model[symbols.original];
-                var current = model[symbols.destroyed] ? undefined : model;
-                
-                if (model[symbols.mutable]) {
-                    if (handler.areEqual(original, current) === false) {
-                        if (current) {
-                            model[symbols.original] = handler.clone(current);
-                        }
-                        else {
-                            modelMap.delete(original.id);
-                        }
-                        syncInfo.push({ current, original });
-                    }
-                }
-                else if (this.options.validateImmutability) {
-                    if (handler.areEqual(original, current) === false) {
-                        throw new Error('Change to immutable model detected');
-                    }
-                } 
-            });
-        });
-        return syncInfo;
+    applyChanges(changes: SyncInfo[]) {
+        for (var i = 0; i < changes.length; i++) {
+            let original = changes[i].original;
+            let current = changes[i].current;
+            
+            if (current) {
+                let handler = current[symHandler];
+                current[symbols.original] = handler.clone(current);
+            }
+            else {
+                let handler = original[symHandler];
+                let modelMap = this.getModelMap(handler);
+                modelMap.delete(original.id);
+            }
+        }
     }
     
     cleanChanges() {

@@ -2,7 +2,7 @@
 // ================================================================================================
 import * as pg from 'pg-io';
 
-import { Dao, Options } from './lib/Dao'
+import { Dao } from './lib/Dao'
 import { symHandler } from './lib/Model';
 
 // INTERFACES
@@ -16,13 +16,6 @@ export interface Settings {
     poolSize?   : number;
 };
 
-export interface DaoOptions {
-    collapseQueries?        : boolean;
-    startTransaction?       : boolean;
-    validateImmutability?   : boolean;
-    validateHandlerOutput?  : boolean;
-}
-
 export interface PoolState {
     size        : number;
     available   : number;
@@ -34,11 +27,12 @@ export var symbols = {
     handler: symHandler
 }
 
-export var defaults: Options = {
+export var defaults: pg.ConnectionOptions = {
     collapseQueries         : false,
     startTransaction        : false,
     validateImmutability    : true,
-    validateHandlerOutput   : true
+    validateHandlerOutput   : true,
+    manageUpdatedOn         : true,
 }
 
 pg.defaults = defaults;

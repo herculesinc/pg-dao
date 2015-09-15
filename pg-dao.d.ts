@@ -22,6 +22,7 @@
         startTransaction?       : boolean;
         validateImmutability?   : boolean;
         validateHandlerOutput?  : boolean;
+        manageUpdatedOn?        : boolean;
     }
 
     export interface PoolState {
@@ -42,7 +43,7 @@
         isSynchronized  : boolean;
         
         startTransaction(lazy?: boolean)    : Promise<void>;
-        sync(commit?: boolean)              : Promise<SyncInfo[]>;
+        sync()                              : Promise<SyncInfo[]>;
         
         release(action: 'commit')           : Promise<SyncInfo[]>;
         release(action: 'rollback')         : Promise<void>;
