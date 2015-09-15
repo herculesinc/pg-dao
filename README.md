@@ -14,7 +14,7 @@ pg-dao provides:
 ## Install
 
 ```sh
-$ npm install -save pg-dao
+$ npm install --save pg-dao
 ```
 
 ## Example
