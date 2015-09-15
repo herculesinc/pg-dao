@@ -1,20 +1,21 @@
 # pg-dao
-
 Simple promise-based data access layer for PostgreSQL written on top of [pg-io](https://github.com/herculesinc/pg-io).
 
-## Use Case
+## Philosophy
+pg-dao is designed for scenarios when connection to the database is needed for a series of short and relatively simple requests. If you need a connection to execute long running queries (or queries that return large amounts of data) or require complex transaction logic, pg-dao is probably not for you.
 
-Just as pg-io, pg-dao is best used when connection to the database is needed for a series of short requests and then can be released (e.g. web server scenarios). If you need to have a connection to execute long running queries (or queries that return large amounts of data), pg-dao is probably not for you.
+Key principales for pg-dao are:
+  * __Single transaction__ - only one transaction is allowed per connection session. A transaction can be started at any point during the session, but can be committed (or rolled back) only at the end of the session
+  * __Low error tolerance__ - any error in query execution will terminate the session and release the connection back to the pool
 
-pg-dao provides:
-  * Ability to run raw queries against a database
-  * Simple transaction management
-  * Ability to define managed models (for automated model syncing with the database)
+The above would work well for many web-server scenarios when connection is needed to process a single user request. If an error is encountered during the request, all changes are rolled back, an error is returned to the user, and the connection is release to handle the next request. 
+
+In addition to the functionality of pg-io, pg-dao provides a flexible managed model mechanism to make syncing data with the database simpler.
 
 ## Install
 
 ```sh
-$ npm install -save pg-dao
+$ npm install --save pg-dao
 ```
 
 ## Example
@@ -78,7 +79,7 @@ where `settings` should have the following form:
     poolSize?   : number;  // optional, default 10
 }
 ```
-The returned Database object can be used further to establish a connection to the database. Creation of the database object does not establish a database connection but rather allocates a pool to hold connections to the database specified by the settings object.
+The returned Database object can be used further to establish a connection session to the database. Creation of the database object does not establish a database connection but rather allocates a pool to hold connections to the database specified by the settings object.
 
 Calling `db()` method multiple times with the same settings will return the same Database object. However, if different settings are supplied, different connection pools will be created.
 
@@ -97,6 +98,7 @@ The optional `options` object has the following form:
     startTransaction?       : boolean;  // optional, default false
     validateImmutability?   : boolean;  // optional, default true
     validateHandlerOutput?  : boolean;  // optional, default true
+    manageUpdatedOn?        : boolean;  // optional, default true
 }
 ```
 The meaning of these options will be explained in the following sections.
@@ -119,7 +121,7 @@ Database **connections must always be released** after they are no longer needed
 
 ## Managing Transactions
 
-pg-dao supports a simple transactions mechanism. Queries executed when DAO is in transaction mode will all be a part of a single transaction. It is possible to start and commit multiple transactions within the same DAO session, but only one transaction roll-back per sessions is allowed.
+pg-dao supports a simple transactions mechanism. Queries executed when DAO is in transaction mode will all be a part of a single transaction. Only one transaction is allowed per connection session. A transaction can be started at any point during the connection session, and must be committed or rolled back when the connection is released back to the pool.
 
 ### Entering Transaction Mode
 Starting a transaction can be done via the following method:
@@ -146,26 +148,23 @@ pg.db(settings).connect({ stratTransaction: true }).then((dao) => {
 });
 ```
 
+In the above example, the transaction is actually not started immediately but is delayed until the first call to `dao.execute()` method (this is basically equivalent to starting a transaction in `lazy` mode).
+
+Do not start transactions manually by executing `BEGIN` commands. Doing so will confuse the DAO object and bad things may happen.
+
 ### Exiting Transaction Mode
 
-DAO exits transaction mode when the transaction is either committed or rolled back.
+DAO exits transaction mode when the transaction is either committed or rolled back. This can only be done at the end of the connection session using the following method:
 
-Committing a transaction can be done via the following methods:
-  * dao.sync(true) : Promise<any>;
-  * dao.release('commit'): Promise<any>;
+```
+connection.release(action?) : Promise<void>;
+```
 
-Rolling back a transaction can be done via the following method:
-  * dao.release('rollback'): Promise<void>;
+where `action` parameter is as follows:
 
-The `doa.sync(commitTransaction?: boolean)` method will actually synchronize all pending model changes with the database (more on this later), and when true is passed for the optional `commitTransaction` parameter, will also commit the active transaction. Calling `dao.sync(true)` when no transactions are in progress will throw an error.
-
-The `dao.release(action?: string)` method must always be called once database connection is no longer needed. It will release the connection back to the pool and based on what is supplied for the `action` parameter will either commit or roll back the active transaction.
-
-In general, the meaning of the `action` parameter is as follows:
-
-  * 'commit' - if there is an active transaction it will be committed. The method will still execute without errors if no transactions are in progress
-  * 'rollback' - if there is an active transaction it will be rolled back. The method will execute without errors if no transactions are in progress
-  * undefined - if not transaction was started on the connection, `dao.release()` method can be called without `action` parameter. However, if a transaction is in progress, and action parameter is omitted, an error will be thrown and the active transaction will be rolled back before the connection is released back to the pool
+  * 'commit' - if there is an active transaction it will be committed
+  * 'rollback' - if there is an active transaction it will be rolled back
+  * undefined - if no transaction was started on the connection, `dao.release()` method can be called without `action` parameter. However, if a transaction is in progress, and action parameter is omitted, an error will be thrown and the active transaction will be rolled back before the connection is released back to the pool
 
 Once DAO is released back to the pool, DAO object will become inactive and trying to execute queries on it will throw errors.
 
@@ -282,7 +281,7 @@ var query5 = {
 };
 
 dao.execute([query4, query5]).then((result) => {
-  // result is a map layed out as follows:
+  // result is a map laid out as follows:
   // result.get(query4.name) contains results from query4
   var user1 = result.get(query4.name)[0];
   
@@ -337,7 +336,7 @@ dao.execute(query).then((result) => {
 ```
 
 ### Query execution errors
-If an error is thrown during query execution or query result parsing, DAO will be immediately released back to the pool. If DAO is in transaction, then the transaction will be rolled back. Basically, any error generated within the execute method will render the DAO object useless and no further communication with the database through this connection object will be possible.
+If an error is thrown during query execution or query result parsing, DAO will be immediately released back to the pool. If DAO is in transaction, then the transaction will be rolled back. Basically, any error generated within the execute method will render the DAO object useless and no further communication with the database through this DAO object will be possible.
 
 ## Working with Models
 
@@ -491,7 +490,7 @@ dao.execute(qFetchUsersByIdList).then((users) => {
 });
 ```
 
-Retriving the same model multiple times does not create a new model object - but rather updates an existing model object with fresh data from the database:
+Retrieving the same model multiple times does not create a new model object - but rather updates an existing model object with fresh data from the database:
 
 ```JavaScript
 var userId = 1;
@@ -618,10 +617,7 @@ All pending model changes must be either committed or rolled-back upon DAO relea
 
 If `dao.release()` is called without any parameters and there are pending model changes, the changes will be discarded, any active transaction will be rolled back, and an error will be thrown. 
 
-It is also possible to sync model changes with the database without releasing DAO connection by using `dao.sync()` method as follows:
-
-  * `dao.sync()` - this will write all pending model changes to the database
-  * `dao.sync(true)` - this will write all pending model changes to the database and commit any active database transactions
+It is also possible to sync model changes with the database without releasing DAO connection by using `dao.sync()` method.
 
 `dao.sync()` method returns an array describing synchronized changes. The objects have the following form:
 
@@ -632,7 +628,11 @@ It is also possible to sync model changes with the database without releasing DA
 }
 ```
 
+`dao.release('commit')` call also returns an array of change objects, however, the `release()` method returns the complete set of changes that were performed during the DAO session, while the `sync()` method returns only the changes done since the lasts sync.
+
 pg-dao does not actively enforce model immutability. This means that models retrieved as immutable can still be modified by the user. As pg-dao only observes mutable models, any changes to immutable models will be ignored. However, it is possible to force pg-dao to validate model immutability on syncing changes. This can be done via setting `validateImmutability` property for the connection to true. In such a case, if any changes to immutable models are detected during model synchronization, an error will be thrown. There are performance implications to setting `validateImmutability` property to true - so, it might be a good idea to use it in development environments only.
+
+pg-dao will also automatically set `updatedOn` property of any models that have been updated to the current date upon model synchronization. This behavior can be overridden by setting `manageUpdatedOn` connection option to false.
 
 #### Checking Model State
 
