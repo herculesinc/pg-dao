@@ -3,6 +3,7 @@
         "target": "ES6",
         "noEmitOnError": true,
         "sourceMap": true,
-        "outDir": "bin"
+        "outDir": "bin",
+        "experimentalDecorators": true
     }
 }
