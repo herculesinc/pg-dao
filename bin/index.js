@@ -14,11 +14,19 @@ var _libDao = require('./lib/Dao');
 
 var _libModel = require('./lib/Model');
 
+var _libAbstractModel = require('./lib/AbstractModel');
+
 ;
 // GLOBALS
 // ================================================================================================
 var symbols = {
-    handler: _libModel.symHandler
+    handler: _libModel.symHandler,
+    fetchQuery: _libAbstractModel.symbols.fetchQuery,
+    updateQuery: _libAbstractModel.symbols.updateQuery,
+    insertQuery: _libAbstractModel.symbols.insertQuery,
+    deleteQuery: _libAbstractModel.symbols.deleteQuery,
+    dbTable: _libAbstractModel.symbols.dbTable,
+    dbSchema: _libAbstractModel.symbols.dbSchema
 };
 exports.symbols = symbols;
 var defaults = {
@@ -30,7 +38,7 @@ var defaults = {
 };
 pg.defaults = Object.assign(pg.defaults, defaults);
 pg.constructors.connection = _libDao.Dao;
-// RE-EXPORT
+// RE-EXPORTS
 // ================================================================================================
 Object.defineProperty(exports, 'db', {
     enumerable: true,
@@ -99,6 +107,27 @@ Object.defineProperty(exports, 'SyncError', {
     enumerable: true,
     get: function get() {
         return _libErrors.SyncError;
+    }
+});
+Object.defineProperty(exports, 'AbstractModel', {
+    enumerable: true,
+    get: function get() {
+        return _libAbstractModel.AbstractModel;
+    }
+});
+
+var _libDecorators = require('./lib/decorators');
+
+Object.defineProperty(exports, 'dbModel', {
+    enumerable: true,
+    get: function get() {
+        return _libDecorators.dbModel;
+    }
+});
+Object.defineProperty(exports, 'dbField', {
+    enumerable: true,
+    get: function get() {
+        return _libDecorators.dbField;
     }
 });
 //# sourceMappingURL=../bin/index.js.map

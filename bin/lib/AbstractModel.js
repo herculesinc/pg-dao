@@ -139,21 +139,25 @@ class AbstractModel {
         }
         return queries;
     }
-    static getFetchOneQuery(selector, forUpdate) {
+    static getFetchOneQuery(selector, forUpdate, name) {
+        if (forUpdate === undefined) forUpdate = false;
+
         var qFetchQuery = this[symbols.fetchQuery];
         if (qFetchQuery == undefined) {
             qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
             this[symbols.fetchQuery] = qFetchQuery;
         }
-        return new qFetchQuery(selector, 'object', forUpdate);
+        return new qFetchQuery(selector, 'object', name, forUpdate);
     }
-    static getFetchAllQuery(selector, forUpdate) {
+    static getFetchAllQuery(selector, forUpdate, name) {
+        if (forUpdate === undefined) forUpdate = false;
+
         var qFetchQuery = this[symbols.fetchQuery];
         if (qFetchQuery == undefined) {
             qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
             this[symbols.fetchQuery] = qFetchQuery;
         }
-        return new qFetchQuery(selector, 'list', forUpdate);
+        return new qFetchQuery(selector, 'list', name, forUpdate);
     }
 }
 
@@ -165,13 +169,15 @@ __decorate([(0, _decorators.dbField)(Date)], AbstractModel.prototype, "updatedOn
 // QUERY BUILDERS
 // ================================================================================================
 function buildFetchQuery(table, schema, handler) {
+    if (table == undefined || table.trim() === '') throw new _errors.ModelError('Cannot build a fetch query: model table is undefined');
+    if (schema == undefined) throw new _errors.ModelError('Cannot build a fetch query: model schema is undefined');
     var fields = [];
     for (var field in schema) {
         fields.push(`${ (0, _util.camelToSnake)(field) } AS "${ field }"`);
     }
     var querySpec = `SELECT ${ fields.join(',') } FROM ${ table }`;
     return class class_1 {
-        constructor(selector, mask, forUpdate) {
+        constructor(selector, mask, name, forUpdate) {
             var criteria = [];
             for (var filter in selector) {
                 if (filter in schema === false) throw new _errors.ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
@@ -181,6 +187,7 @@ function buildFetchQuery(table, schema, handler) {
                     criteria.push(`${ (0, _util.camelToSnake)(filter) }={{${ filter }}}`);
                 }
             }
+            this.name = name;
             this.text = querySpec + ` WHERE ${ criteria.join(' AND ') } ${ forUpdate ? 'FOR UPDATE' : '' };`;
             this.params = selector;
             this.mask = mask;
@@ -190,6 +197,8 @@ function buildFetchQuery(table, schema, handler) {
     };
 }
 function buildInsertQuery(table, schema) {
+    if (table == undefined || table.trim() === '') throw new _errors.ModelError('Cannot build an insert query: model table is undefined');
+    if (schema == undefined) throw new _errors.ModelError('Cannot build an insert query: model schema is undefined');
     var fields = [];
     var params = [];
     for (var field in schema) {
@@ -205,6 +214,8 @@ function buildInsertQuery(table, schema) {
     };
 }
 function buildUpdateQuery(table, schema) {
+    if (table == undefined || table.trim() === '') throw new _errors.ModelError('Cannot build an update query: model table is undefined');
+    if (schema == undefined) throw new _errors.ModelError('Cannot build an update query: model schema is undefined');
     var fields = [];
     for (var field in schema) {
         if (field === 'id' || field === 'createdOn') continue;
@@ -219,6 +230,7 @@ function buildUpdateQuery(table, schema) {
     };
 }
 function buildDeleteQuery(table) {
+    if (table == undefined || table.trim() === '') throw new _errors.ModelError('Cannot build a delete query: model table is undefined');
     return class class_4 {
         constructor(model) {
             this.text = `DELETE FROM ${ table } WHERE id = ${ model.id };`;

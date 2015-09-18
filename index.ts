@@ -4,6 +4,7 @@ import * as pg from 'pg-io';
 
 import { Dao } from './lib/Dao'
 import { symHandler } from './lib/Model';
+import { symbols as modelSymbols } from './lib/AbstractModel';
 
 // INTERFACES
 // ================================================================================================
@@ -24,7 +25,13 @@ export interface PoolState {
 // GLOBALS
 // ================================================================================================
 export var symbols = {
-    handler: symHandler
+    handler: symHandler,
+    fetchQuery  : modelSymbols.fetchQuery,
+    updateQuery : modelSymbols.updateQuery,
+    insertQuery : modelSymbols.insertQuery,
+    deleteQuery : modelSymbols.deleteQuery,
+    dbTable     : modelSymbols.dbTable,
+    dbSchema    : modelSymbols.dbSchema
 }
 
 var defaults: pg.ConnectionOptions = {
@@ -38,7 +45,9 @@ var defaults: pg.ConnectionOptions = {
 pg.defaults = Object.assign(pg.defaults, defaults);
 pg.constructors.connection = Dao;
 
-// RE-EXPORT
+// RE-EXPORTS
 // ================================================================================================
 export { db, defaults, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
 export { ModelError, ModelQueryError, StoreError, SyncError } from './lib/errors';
+export { AbstractModel } from './lib/AbstractModel';
+export { dbModel, dbField } from './lib/decorators';

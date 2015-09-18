@@ -13,7 +13,15 @@
 
     export function db(settings: ConnectionSettings): Database;
     export var defaults: DaoOptions;
-    export var symbols: { handler: symbol; };
+    export var symbols: {
+        handler     : symbol;
+        fetchQuery  : symbol;
+        updateQuery : symbol;
+        insertQuery : symbol;
+        deleteQuery : symbol;
+        dbTable     : symbol;
+        dbSchema    : symbol;
+    };
     
     // DATABASE
     // --------------------------------------------------------------------------------------------
@@ -80,6 +88,27 @@
         updatedOn   : Date;
         createdOn   : Date;
     }
+    
+    export class AbstractModel implements Model {
+        id          : number;
+        updatedOn   : Date;
+        createdOn   : Date;
+        
+        constructor(seed: any);
+        
+        static parse(row: any): any;
+        static clone(seed: any): any;
+        static infuse(target: Model, source: Model);
+        static areEqual(model1: AbstractModel, model2: AbstractModel): boolean;
+        static getSyncQueries(original: AbstractModel, current: AbstractModel): Query[];
+        static getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
+        static getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
+    }
+    
+    // DECORATORS
+    // --------------------------------------------------------------------------------------------
+    export function dbModel(table: string)  : ClassDecorator;
+    export function dbField(fieldType: any) : PropertyDecorator;
 
     // RESULT/MODEL HANDLER DEFINITIONS
     // --------------------------------------------------------------------------------------------
@@ -92,8 +121,8 @@
         infuse(target: T, source: T);
         areEqual(model1: T, model2: T): boolean;
         getSyncQueries(original: T, current: T): Query[];
-        getFetchOneQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
-        getFetchAllQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
+        getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<T>;
+        getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<T>;
     }
 
     // QUERY DEFINITIONS

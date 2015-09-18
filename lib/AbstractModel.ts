@@ -24,7 +24,7 @@ interface ModelQueryConstructor {
 }
 
 interface FetchQueryConstructor {
-    new(selector: any, mask: string, forUpdate: boolean): ModelQuery<any>;
+    new(selector: any, mask: string, name: string, forUpdate: boolean): ModelQuery<any>;
 }
 
 // ABSTRACT MODEL CLASS DEFINITION
@@ -120,7 +120,7 @@ export class AbstractModel implements Model {
         return retval;
     }
 
-    static getSyncQueries(original: Model, current: Model): Query[] {
+    static getSyncQueries(original: AbstractModel, current: AbstractModel): Query[] {
         var queries: Query[] = [];
         if (original === undefined && current !== undefined) {
             let qInsertModel = this[symbols.insertQuery];
@@ -150,28 +150,34 @@ export class AbstractModel implements Model {
         return queries;
     }
     
-    static getFetchOneQuery(selector: any, forUpdate: boolean) {
-        var qFetchQuery = this[symbols.fetchQuery];
+    static getFetchOneQuery(selector: any, forUpdate = false, name?: string): ModelQuery<any> {
+        var qFetchQuery: FetchQueryConstructor = this[symbols.fetchQuery];
         if (qFetchQuery == undefined) {
             qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
             this[symbols.fetchQuery] = qFetchQuery;
         }
-        return new qFetchQuery(selector, 'object', forUpdate);
+        return new qFetchQuery(selector, 'object', name, forUpdate);
     }
     
-    static getFetchAllQuery(selector: any, forUpdate: boolean) {
-        var qFetchQuery = this[symbols.fetchQuery];
+    static getFetchAllQuery(selector: any, forUpdate = false, name?: string): ModelQuery<any> {
+        var qFetchQuery: FetchQueryConstructor = this[symbols.fetchQuery];
         if (qFetchQuery == undefined) {
             qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
             this[symbols.fetchQuery] = qFetchQuery;
         }
-        return new qFetchQuery(selector, 'list', forUpdate);
+        return new qFetchQuery(selector, 'list', name, forUpdate);
     }
 }
 
 // QUERY BUILDERS
 // ================================================================================================
 function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>): FetchQueryConstructor {
+    
+    if (table == undefined || table.trim() === '')
+        throw new ModelError('Cannot build a fetch query: model table is undefined');
+        
+    if (schema == undefined)
+        throw new ModelError('Cannot build a fetch query: model schema is undefined');
     
     var fields: string[] = [];
     for (var field in schema) {
@@ -180,13 +186,14 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
     var querySpec = `SELECT ${fields.join(',')} FROM ${table}`;
     
     return class {
+        name: string;
         text: string;
         params: any;
         mask: string;
         mutable: boolean;
         handler: ModelHandler<any>;
         
-        constructor(selector: any, mask: string, forUpdate: boolean) {
+        constructor(selector: any, mask: string, name: string, forUpdate: boolean) {
             
             var criteria: string[] = [];
             for (var filter in selector) {
@@ -200,6 +207,7 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
                 }
             }
             
+            this.name = name;
             this.text = querySpec + ` WHERE ${criteria.join(' AND ')} ${ forUpdate ? 'FOR UPDATE' : ''};`;
             this.params = selector;
             this.mask = mask;
@@ -210,6 +218,12 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
 }
 
 function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
+    
+    if (table == undefined || table.trim() === '')
+        throw new ModelError('Cannot build an insert query: model table is undefined');
+        
+    if (schema == undefined)
+        throw new ModelError('Cannot build an insert query: model schema is undefined');
     
     var fields: string[] = [];
     var params: string[] = [];
@@ -232,6 +246,12 @@ function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
 
 function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
     
+    if (table == undefined || table.trim() === '')
+        throw new ModelError('Cannot build an update query: model table is undefined');
+        
+    if (schema == undefined)
+        throw new ModelError('Cannot build an update query: model schema is undefined');
+    
     var fields: string[] = [];
     for (var field in schema) {
         if (field === 'id' || field === 'createdOn') continue;
@@ -251,6 +271,9 @@ function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
 }
 
 function buildDeleteQuery(table: string): ModelQueryConstructor {
+    
+    if (table == undefined || table.trim() === '')
+        throw new ModelError('Cannot build a delete query: model table is undefined');
     
     return class {
         text: string;

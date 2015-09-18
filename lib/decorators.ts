@@ -5,7 +5,7 @@ import { ModelError } from './errors';
 
 // DECORATOR DEFINITIONS
 // ================================================================================================
-export function dbModel(table: string) {
+export function dbModel(table: string): ClassDecorator {
     if (table === undefined || table === null || table.trim() === '')
         throw new ModelError('Model table name cannot be empty');
     
@@ -15,7 +15,7 @@ export function dbModel(table: string) {
     }
 }
 
-export function dbField(fieldType: any) {
+export function dbField(fieldType: any): PropertyDecorator {
     switch (fieldType) {
         case Number: case String: case Date: case Object:
             break;
