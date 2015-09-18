@@ -125,7 +125,7 @@ describe('DAO: Fetching Multiple Models', function () {
         var database: Database = pg.db(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
-                return dao.fetchAll(User, { idList: [1, 3]}).then((users) => {
+                return dao.fetchAll(User, { id: [1, 3]}).then((users) => {
                     assert.strictEqual(users.length, 2);
                     
                     assert.strictEqual(users[0].id, 1);
@@ -152,7 +152,7 @@ describe('DAO: Fetching Multiple Models', function () {
         var database: Database = pg.db(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
-                return dao.fetchAll(User, { idList: [1, 3] }, true).then((users) => {
+                return dao.fetchAll(User, { id: [1, 3] }, true).then((users) => {
                     assert.strictEqual(users.length, 2);
                     
                     assert.strictEqual(users[0].id, 1);
@@ -180,7 +180,7 @@ describe('DAO: Fetching Multiple Models', function () {
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var nonHandler: any = {};
-                return dao.fetchAll(nonHandler, {idList: [1, 3] }).then((user) =>{
+                return dao.fetchAll(nonHandler, {id: [1, 3] }).then((user) =>{
                     assert.fail();
                 })
                 .catch((reason) => {

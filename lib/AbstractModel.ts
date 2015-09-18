@@ -1,14 +1,15 @@
 // IMPORTS 
 // ================================================================================================
 import { Query } from 'pg-io';
-import { Model, symHandler } from './Model';
+import { Model, ModelQuery, ModelHandler, symHandler } from './Model';
 import { dbField } from './decorators'
-import { ModelError } from './errors';
+import { ModelError, ModelQueryError } from './errors';
 import { camelToSnake } from './util'
 
 // MODULE VARIABLES
 // ================================================================================================
 export var symbols = {
+    fetchQuery  : Symbol(),
 	updateQuery : Symbol(),
 	insertQuery : Symbol(),
 	deleteQuery : Symbol(),
@@ -20,6 +21,10 @@ export var symbols = {
 // ================================================================================================
 interface ModelQueryConstructor {
     new (model: Model): Query;
+}
+
+interface FetchQueryConstructor {
+    new(selector: any, mask: string, forUpdate: boolean): ModelQuery<any>;
 }
 
 // ABSTRACT MODEL CLASS DEFINITION
@@ -144,10 +149,66 @@ export class AbstractModel implements Model {
 
         return queries;
     }
+    
+    static getFetchOneQuery(selector: any, forUpdate: boolean) {
+        var qFetchQuery = this[symbols.fetchQuery];
+        if (qFetchQuery == undefined) {
+            qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
+            this[symbols.fetchQuery] = qFetchQuery;
+        }
+        return new qFetchQuery(selector, 'object', forUpdate);
+    }
+    
+    static getFetchAllQuery(selector: any, forUpdate: boolean) {
+        var qFetchQuery = this[symbols.fetchQuery];
+        if (qFetchQuery == undefined) {
+            qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
+            this[symbols.fetchQuery] = qFetchQuery;
+        }
+        return new qFetchQuery(selector, 'list', forUpdate);
+    }
 }
 
 // QUERY BUILDERS
 // ================================================================================================
+function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>): FetchQueryConstructor {
+    
+    var fields: string[] = [];
+    for (var field in schema) {
+        fields.push(`${camelToSnake(field)} AS "${field}"`);
+    }
+    var querySpec = `SELECT ${fields.join(',')} FROM ${table}`;
+    
+    return class {
+        text: string;
+        params: any;
+        mask: string;
+        mutable: boolean;
+        handler: ModelHandler<any>;
+        
+        constructor(selector: any, mask: string, forUpdate: boolean) {
+            
+            var criteria: string[] = [];
+            for (var filter in selector) {
+                if (filter in schema === false)
+                    throw new ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
+                if (selector[filter] && Array.isArray(selector[filter])) {
+                    criteria.push(`${camelToSnake(filter)} IN ({{${filter}}})`);
+                }
+                else {
+                    criteria.push(`${camelToSnake(filter)}={{${filter}}}`);
+                }
+            }
+            
+            this.text = querySpec + ` WHERE ${criteria.join(' AND ')} ${ forUpdate ? 'FOR UPDATE' : ''};`;
+            this.params = selector;
+            this.mask = mask;
+            this.mutable = forUpdate;
+            this.handler = handler;
+        }
+    };
+}
+
 function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
     
     var fields: string[] = [];
@@ -156,13 +217,14 @@ function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
         fields.push(camelToSnake(field));
         params.push(`{{${field}}}`)
     }
+    var querySpec = `INSERT INTO ${table} (${fields.join(',')}) VALUES (${params.join(',')});`;
     
     return class {
         text: string;
         params: Model;
         
         constructor(model: Model) {
-            this.text = `INSERT INTO ${table} (${fields.join(',')}) VALUES (${params.join(',')});`;
+            this.text = querySpec;
             this.params = model;
         }
     };
@@ -175,13 +237,14 @@ function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
         if (field === 'id' || field === 'createdOn') continue;
         fields.push(`${camelToSnake(field)}={{${field}}}`);
     }
+    var querySpec = `UPDATE ${table} SET ${fields.join(',')}`;
     
     return class {
         text: string;
         params: Model;
         
         constructor(model: Model) {
-            this.text = `UPDATE ${table} SET ${fields.join(',')} WHERE id = ${model.id};`;
+            this.text = querySpec + ` WHERE id = ${model.id};`;
             this.params = model;
         }
     };

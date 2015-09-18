@@ -35,8 +35,14 @@ export class Dao extends Connection {
         if (isModelHandler(handler) === false)
             return <any> Promise.reject(
                 new ModelError('Cannot fetch a model: model handler is invalid'));
-            
-        var query = handler.getFetchOneQuery(selector, forUpdate);
+        
+        try {    
+            var query = handler.getFetchOneQuery(selector, forUpdate);
+        }
+        catch (error) {
+            return <any> Promise.reject(error);    
+        }
+        
         if (query === undefined)
             return <any> Promise.reject(
                 new ModelQueryError(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
@@ -64,8 +70,14 @@ export class Dao extends Connection {
         if (isModelHandler(handler) === false)
             return <any> Promise.reject(
                 new ModelError('Cannot fetch models: model handler is invalid'));
-            
-        var query = handler.getFetchAllQuery(selector, forUpdate);
+        
+        try {
+            var query = handler.getFetchAllQuery(selector, forUpdate);
+        }
+        catch (error) {
+            return <any> Promise.reject(error);    
+        }
+        
         if (query === undefined)
             return <any> Promise.reject(
                 new ModelQueryError(`Cannot fetch models: fetch query for selector (${selector}) was not found`));

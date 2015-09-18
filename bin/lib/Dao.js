@@ -34,7 +34,11 @@ class Dao extends _pgIo.Connection {
 
         if (this.isActive === false) return Promise.reject(new _pgIo.ConnectionError('Cannot fetch a model: connection has already been released'));
         if ((0, _Model.isModelHandler)(handler) === false) return Promise.reject(new _errors.ModelError('Cannot fetch a model: model handler is invalid'));
-        var query = handler.getFetchOneQuery(selector, forUpdate);
+        try {
+            var query = handler.getFetchOneQuery(selector, forUpdate);
+        } catch (error) {
+            return Promise.reject(error);
+        }
         if (query === undefined) return Promise.reject(new _errors.ModelQueryError(`Cannot fetch a model: fetch query for selector (${ selector }) was not found`));
         if ((0, _Model.isModelQuery)(query) === false) return Promise.reject(new _errors.ModelQueryError(`Cannot fetch a model: fetch query is not a model query`));
         if (query.mask !== 'object') return Promise.reject(new _errors.ModelQueryError(`Cannot fetch a model: fetch query is not a single result query`));
@@ -46,7 +50,11 @@ class Dao extends _pgIo.Connection {
 
         if (this.isActive === false) return Promise.reject(new _pgIo.ConnectionError('Cannot fetch models: connection has already been released'));
         if ((0, _Model.isModelHandler)(handler) === false) return Promise.reject(new _errors.ModelError('Cannot fetch models: model handler is invalid'));
-        var query = handler.getFetchAllQuery(selector, forUpdate);
+        try {
+            var query = handler.getFetchAllQuery(selector, forUpdate);
+        } catch (error) {
+            return Promise.reject(error);
+        }
         if (query === undefined) return Promise.reject(new _errors.ModelQueryError(`Cannot fetch models: fetch query for selector (${ selector }) was not found`));
         if ((0, _Model.isModelQuery)(query) === false) return Promise.reject(new _errors.ModelQueryError(`Cannot fetch models: fetch query is not a model query`));
         if (query.mask !== 'list') return Promise.reject(new _errors.ModelQueryError(`Cannot fetch models: fetch query is not a list result query`));

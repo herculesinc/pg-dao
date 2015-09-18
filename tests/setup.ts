@@ -18,18 +18,6 @@ export class User extends AbstractModel {
         super(seed);
         this.username = seed.username;
     }
-    
-    static getFetchOneQuery(selector: any, forUpdate: boolean) {
-        if ('id' in selector) {
-            return new qFetchUserById(selector.id, forUpdate);
-        }
-    }
-    
-    static getFetchAllQuery(selector: any, forUpdate: boolean) {
-        if ('idList' in selector) {
-            return new qFetchUsersByIdList(selector.idList, forUpdate);
-        }
-    }
 }
 
 // QUERIES

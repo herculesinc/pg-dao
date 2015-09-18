@@ -32,6 +32,7 @@ var __decorate = undefined && undefined.__decorate || function (decorators, targ
     }
 };
 var symbols = {
+    fetchQuery: Symbol(),
     updateQuery: Symbol(),
     insertQuery: Symbol(),
     deleteQuery: Symbol(),
@@ -138,6 +139,22 @@ class AbstractModel {
         }
         return queries;
     }
+    static getFetchOneQuery(selector, forUpdate) {
+        var qFetchQuery = this[symbols.fetchQuery];
+        if (qFetchQuery == undefined) {
+            qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
+            this[symbols.fetchQuery] = qFetchQuery;
+        }
+        return new qFetchQuery(selector, 'object', forUpdate);
+    }
+    static getFetchAllQuery(selector, forUpdate) {
+        var qFetchQuery = this[symbols.fetchQuery];
+        if (qFetchQuery == undefined) {
+            qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
+            this[symbols.fetchQuery] = qFetchQuery;
+        }
+        return new qFetchQuery(selector, 'list', forUpdate);
+    }
 }
 
 exports.AbstractModel = AbstractModel;
@@ -147,6 +164,31 @@ __decorate([(0, _decorators.dbField)(Date)], AbstractModel.prototype, "createdOn
 __decorate([(0, _decorators.dbField)(Date)], AbstractModel.prototype, "updatedOn");
 // QUERY BUILDERS
 // ================================================================================================
+function buildFetchQuery(table, schema, handler) {
+    var fields = [];
+    for (var field in schema) {
+        fields.push(`${ (0, _util.camelToSnake)(field) } AS "${ field }"`);
+    }
+    var querySpec = `SELECT ${ fields.join(',') } FROM ${ table }`;
+    return class class_1 {
+        constructor(selector, mask, forUpdate) {
+            var criteria = [];
+            for (var filter in selector) {
+                if (filter in schema === false) throw new _errors.ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
+                if (selector[filter] && Array.isArray(selector[filter])) {
+                    criteria.push(`${ (0, _util.camelToSnake)(filter) } IN ({{${ filter }}})`);
+                } else {
+                    criteria.push(`${ (0, _util.camelToSnake)(filter) }={{${ filter }}}`);
+                }
+            }
+            this.text = querySpec + ` WHERE ${ criteria.join(' AND ') } ${ forUpdate ? 'FOR UPDATE' : '' };`;
+            this.params = selector;
+            this.mask = mask;
+            this.mutable = forUpdate;
+            this.handler = handler;
+        }
+    };
+}
 function buildInsertQuery(table, schema) {
     var fields = [];
     var params = [];
@@ -154,9 +196,10 @@ function buildInsertQuery(table, schema) {
         fields.push((0, _util.camelToSnake)(field));
         params.push(`{{${ field }}}`);
     }
-    return class class_1 {
+    var querySpec = `INSERT INTO ${ table } (${ fields.join(',') }) VALUES (${ params.join(',') });`;
+    return class class_2 {
         constructor(model) {
-            this.text = `INSERT INTO ${ table } (${ fields.join(',') }) VALUES (${ params.join(',') });`;
+            this.text = querySpec;
             this.params = model;
         }
     };
@@ -167,15 +210,16 @@ function buildUpdateQuery(table, schema) {
         if (field === 'id' || field === 'createdOn') continue;
         fields.push(`${ (0, _util.camelToSnake)(field) }={{${ field }}}`);
     }
-    return class class_2 {
+    var querySpec = `UPDATE ${ table } SET ${ fields.join(',') }`;
+    return class class_3 {
         constructor(model) {
-            this.text = `UPDATE ${ table } SET ${ fields.join(',') } WHERE id = ${ model.id };`;
+            this.text = querySpec + ` WHERE id = ${ model.id };`;
             this.params = model;
         }
     };
 }
 function buildDeleteQuery(table) {
-    return class class_3 {
+    return class class_4 {
         constructor(model) {
             this.text = `DELETE FROM ${ table } WHERE id = ${ model.id };`;
         }
