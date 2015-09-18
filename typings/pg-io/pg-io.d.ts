@@ -13,7 +13,7 @@ declare module "pg-io" {
 
     export function db(settings: ConnectionSettings): Database;
     export var defaults: ConnectionOptions;
-    export var ConnectionConstructor: typeof Connection;
+    export var constructors: { connection: typeof Connection; };
 
     // DATABASE
     // --------------------------------------------------------------------------------------------
@@ -88,4 +88,19 @@ declare module "pg-io" {
     interface DbQueryResult {
         rows: any[];
     }
+    
+    // ERROR CLASSES
+    // --------------------------------------------------------------------------------------------
+    export class PgError extends Error {
+        cause: Error;
+        stack: string;
+        
+        constructor(cause: Error);
+	    constructor(message: string, cause?: Error);
+    }
+	
+    export class ConnectionError extends PgError {}
+    export class ConnectionStateError extends PgError {}
+    export class QueryError extends PgError {}
+    export class ParseError extends PgError {}
 }

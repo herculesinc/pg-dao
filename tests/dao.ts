@@ -96,8 +96,8 @@ describe('DAO: Fetching a Single Model', function () {
                     assert.fail();
                 })
                 .catch((reason) => {
-                    assert(reason instanceof assert.AssertionError === false);
-                    assert(reason instanceof Error);
+                    assert.strictEqual(reason instanceof assert.AssertionError, false);
+                    assert.strictEqual(reason instanceof Error, true);
                 });
             }).then(() => dao.release());
         });
@@ -111,8 +111,8 @@ describe('DAO: Fetching a Single Model', function () {
                     assert.fail();
                 })
                 .catch((reason) => {
-                    assert(reason instanceof assert.AssertionError === false);
-                    assert(reason instanceof Error);
+                    assert.strictEqual(reason instanceof assert.AssertionError, false);
+                    assert.strictEqual(reason instanceof Error, true);
                 });
             }).then(() => dao.release());
         });
@@ -126,18 +126,18 @@ describe('DAO: Fetching Multiple Models', function () {
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchAll(User, { userIdList: [1, 3]}).then((users) => {
-                    assert(users.length === 2);
+                    assert.strictEqual(users.length, 2);
                     
-                    assert(users[0].id === 1);
-                    assert(users[0].username === 'Irakliy');
+                    assert.strictEqual(users[0].id, 1);
+                    assert.strictEqual(users[0].username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(users[0]), true);
                     assert.strictEqual(dao.isNew(users[0]), false);
                     assert.strictEqual(dao.isModified(users[0]), false);
                     assert.strictEqual(dao.isDestroyed(users[0]), false);
                     assert.strictEqual(dao.isMutable(users[0]), false);
                     
-                    assert(users[1].id === 3);
-                    assert(users[1].username === 'George');
+                    assert.strictEqual(users[1].id, 3);
+                    assert.strictEqual(users[1].username, 'George');
                     assert.strictEqual(dao.hasModel(users[1]), true);
                     assert.strictEqual(dao.isNew(users[1]), false);
                     assert.strictEqual(dao.isModified(users[1]), false);
@@ -153,18 +153,18 @@ describe('DAO: Fetching Multiple Models', function () {
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchAll(User, { userIdList: [1, 3] }, true).then((users) => {
-                    assert(users.length === 2);
+                    assert.strictEqual(users.length, 2);
                     
-                    assert(users[0].id === 1);
-                    assert(users[0].username === 'Irakliy');
+                    assert.strictEqual(users[0].id, 1);
+                    assert.strictEqual(users[0].username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(users[0]), true);
                     assert.strictEqual(dao.isNew(users[0]), false);
                     assert.strictEqual(dao.isModified(users[0]), false);
                     assert.strictEqual(dao.isDestroyed(users[0]), false);
                     assert.strictEqual(dao.isMutable(users[0]), true);
                     
-                    assert(users[1].id === 3);
-                    assert(users[1].username === 'George');
+                    assert.strictEqual(users[1].id, 3);
+                    assert.strictEqual(users[1].username, 'George');
                     assert.strictEqual(dao.hasModel(users[1]), true);
                     assert.strictEqual(dao.isNew(users[1]), false);
                     assert.strictEqual(dao.isModified(users[1]), false);
@@ -184,8 +184,8 @@ describe('DAO: Fetching Multiple Models', function () {
                     assert.fail();
                 })
                 .catch((reason) => {
-                    assert(reason instanceof assert.AssertionError === false);
-                    assert(reason instanceof Error);
+                    assert.strictEqual(reason instanceof assert.AssertionError, false);
+                    assert.strictEqual(reason instanceof Error, true);
                 });
             }).then(() => dao.release());
         });
@@ -199,8 +199,8 @@ describe('DAO: Fetching Multiple Models', function () {
                     assert.fail();
                 })
                 .catch((reason) => {
-                    assert(reason instanceof assert.AssertionError === false);
-                    assert(reason instanceof Error);
+                    assert.strictEqual(reason instanceof assert.AssertionError, false);
+                    assert.strictEqual(reason instanceof Error, true);
                 });
             }).then(() => dao.release());
         });
@@ -251,18 +251,18 @@ describe('DAO: Fetching Models via execute() method', function () {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUsersByIdList([1, 3]);
                 return dao.execute(query).then((users) => {
-                    assert(users.length === 2);
+                    assert.strictEqual(users.length, 2);
                     
-                    assert(users[0].id === 1);
-                    assert(users[0].username === 'Irakliy');
+                    assert.strictEqual(users[0].id, 1);
+                    assert.strictEqual(users[0].username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(users[0]), true);
                     assert.strictEqual(dao.isNew(users[0]), false);
                     assert.strictEqual(dao.isModified(users[0]), false);
                     assert.strictEqual(dao.isDestroyed(users[0]), false);
                     assert.strictEqual(dao.isMutable(users[0]), false);
                     
-                    assert(users[1].id === 3);
-                    assert(users[1].username === 'George');
+                    assert.strictEqual(users[1].id, 3);
+                    assert.strictEqual(users[1].username, 'George');
                     assert.strictEqual(dao.hasModel(users[1]), true);
                     assert.strictEqual(dao.isNew(users[1]), false);
                     assert.strictEqual(dao.isModified(users[1]), false);
@@ -279,18 +279,18 @@ describe('DAO: Fetching Models via execute() method', function () {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUsersByIdList([1, 3], true);
                 return dao.execute(query).then((users) => {
-                    assert(users.length === 2);
+                    assert.strictEqual(users.length, 2);
                     
-                    assert(users[0].id === 1);
-                    assert(users[0].username === 'Irakliy');
+                    assert.strictEqual(users[0].id, 1);
+                    assert.strictEqual(users[0].username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(users[0]), true);
                     assert.strictEqual(dao.isNew(users[0]), false);
                     assert.strictEqual(dao.isModified(users[0]), false);
                     assert.strictEqual(dao.isDestroyed(users[0]), false);
                     assert.strictEqual(dao.isMutable(users[0]), true);
                     
-                    assert(users[1].id === 3);
-                    assert(users[1].username === 'George');
+                    assert.strictEqual(users[1].id, 3);
+                    assert.strictEqual(users[1].username, 'George');
                     assert.strictEqual(dao.hasModel(users[1]), true);
                     assert.strictEqual(dao.isNew(users[1]), false);
                     assert.strictEqual(dao.isModified(users[1]), false);

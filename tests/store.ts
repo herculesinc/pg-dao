@@ -172,7 +172,7 @@ describe('Store: Destroying Models', function () {
         assert.notStrictEqual(changes[0].original, undefined);
         assert.notStrictEqual(changes[0].original, user);
         assert.strictEqual(changes[0].current, undefined);
-        assert(User.areEqual(<any> changes[0].original, user));
+        assert.strictEqual(User.areEqual(<any> changes[0].original, user), true);
     });
 
     it('Destroying an immutable model should throw an error', function () {
@@ -624,10 +624,10 @@ describe('Store: Syncing store', function () {
         assert.strictEqual(changes.length, 3);
         
         assert.strictEqual(changes[0].current, undefined);
-        assert(User.areEqual(<User> changes[0].original, users[0]));
+        assert.strictEqual(User.areEqual(<User> changes[0].original, users[0]), true);
         
         assert.strictEqual(users[2], changes[1].current);
-        assert((<User> changes[1].original).username, 'Giorgi');
+        assert.strictEqual((<User> changes[1].original).username, 'George');
         
         assert.strictEqual(changes[2].current, newUser1);
         assert.strictEqual(changes[2].original, undefined);

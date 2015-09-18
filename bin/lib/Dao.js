@@ -1,159 +1,155 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-// IMPORTS
-// ================================================================================================
-var pg_io_1 = require('pg-io');
-var Store_1 = require('./Store');
-var Model_1 = require('./Model');
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+    value: true
+});
+
+var _pgIo = require('pg-io');
+
+var _Store = require('./Store');
+
+var _Model = require('./Model');
+
 // DAO CLASS DEFINITION
 // ================================================================================================
-var Dao = (function (_super) {
-    __extends(Dao, _super);
+
+class Dao extends _pgIo.Connection {
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-    function Dao(options, client, done) {
-        _super.call(this, options, client, done);
-        this.store = new Store_1.Store(options);
+    constructor(options, client, done) {
+        super(options, client, done);
+        this.store = new _Store.Store(options);
     }
-    Object.defineProperty(Dao.prototype, "isSynchronized", {
-        // PUBLIC ACCESSORS
-        // --------------------------------------------------------------------------------------------
-        get: function () {
-            return (this.store.hasChanges === false);
-        },
-        enumerable: true,
-        configurable: true
-    });
+    // PUBLIC ACCESSORS
+    // --------------------------------------------------------------------------------------------
+    get isSynchronized() {
+        return this.store.hasChanges === false;
+    }
     // FETCH METHODS
     // --------------------------------------------------------------------------------------------
-    Dao.prototype.fetchOne = function (handler, selector, forUpdate) {
-        if (forUpdate === void 0) { forUpdate = false; }
-        if (Model_1.isModelHandler(handler) === false)
-            return Promise.reject(new Error('Cannot fetch a model: model handler is invalid'));
+    fetchOne(handler, selector) {
+        let forUpdate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
+        if ((0, _Model.isModelHandler)(handler) === false) return Promise.reject(new Error('Cannot fetch a model: model handler is invalid'));
         var query = handler.getFetchOneQuery(selector, forUpdate);
-        if (query === undefined)
-            return Promise.reject(new Error("Cannot fetch a model: fetch query for selector (" + selector + ") was not found"));
-        if (Model_1.isModelQuery(query) === false)
-            return Promise.reject(new Error("Cannot fetch a model: fetch query is not a model query"));
-        if (query.mask !== 'object')
-            return Promise.reject(new Error("Cannot fetch a model: fetch query is not a single result query"));
-        if (query.mutable !== forUpdate)
-            return Promise.reject(new Error("Cannot fetch a model: fetch query mutable flag is not set correctly"));
+        if (query === undefined) return Promise.reject(new Error(`Cannot fetch a model: fetch query for selector (${ selector }) was not found`));
+        if ((0, _Model.isModelQuery)(query) === false) return Promise.reject(new Error(`Cannot fetch a model: fetch query is not a model query`));
+        if (query.mask !== 'object') return Promise.reject(new Error(`Cannot fetch a model: fetch query is not a single result query`));
+        if (query.mutable !== forUpdate) return Promise.reject(new Error(`Cannot fetch a model: fetch query mutable flag is not set correctly`));
         return this.execute(query);
-    };
-    Dao.prototype.fetchAll = function (handler, selector, forUpdate) {
-        if (forUpdate === void 0) { forUpdate = false; }
-        if (Model_1.isModelHandler(handler) === false)
-            return Promise.reject(new Error('Cannot fetch models: model handler is invalid'));
+    }
+    fetchAll(handler, selector) {
+        let forUpdate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
+        if ((0, _Model.isModelHandler)(handler) === false) return Promise.reject(new Error('Cannot fetch models: model handler is invalid'));
         var query = handler.getFetchAllQuery(selector, forUpdate);
-        if (query === undefined)
-            return Promise.reject(new Error("Cannot fetch models: fetch query for selector (" + selector + ") was not found"));
-        if (Model_1.isModelQuery(query) === false)
-            return Promise.reject(new Error("Cannot fetch models: fetch query is not a model query"));
-        if (query.mask !== 'list')
-            return Promise.reject(new Error("Cannot fetch models: fetch query is not a list result query"));
-        if (query.mutable !== forUpdate)
-            return Promise.reject(new Error("Cannot fetch models: fetch query mutable flag is not set correctly"));
+        if (query === undefined) return Promise.reject(new Error(`Cannot fetch models: fetch query for selector (${ selector }) was not found`));
+        if ((0, _Model.isModelQuery)(query) === false) return Promise.reject(new Error(`Cannot fetch models: fetch query is not a model query`));
+        if (query.mask !== 'list') return Promise.reject(new Error(`Cannot fetch models: fetch query is not a list result query`));
+        if (query.mutable !== forUpdate) return Promise.reject(new Error(`Cannot fetch models: fetch query mutable flag is not set correctly`));
         return this.execute(query);
-    };
+    }
     // LIFECYCLE METHODS
     // --------------------------------------------------------------------------------------------
-    Dao.prototype.sync = function () {
-        var _this = this;
-        if (this.isActive === false)
-            return Promise.reject(new Error('Cannot snyc: Dao is currently not active'));
+    sync() {
+        if (this.isActive === false) return Promise.reject(new Error('Cannot snyc: Dao is currently not active'));
         var changes;
-        return Promise.resolve().then(function () {
-            changes = _this.store.getChanges();
-            return _this.getModelSyncQueries(changes);
-        })
-            .catch(function (reason) { return _this.rollbackAndRelease(reason); })
-            .then(function (queries) {
-            if (queries.length === 0)
-                return Promise.resolve(changes);
-            return _this.execute(queries).then(function () {
-                _this.store.applyChanges(changes);
+        return Promise.resolve().then(() => {
+            changes = this.store.getChanges();
+            return this.getModelSyncQueries(changes);
+        }).catch(reason => this.rollbackAndRelease(reason)).then(queries => {
+            if (queries.length === 0) return Promise.resolve(changes);
+            return this.execute(queries).then(() => {
+                this.store.applyChanges(changes);
                 return changes;
             });
-        }).catch(function (reason) { return Promise.reject(new Error("Sync failed: " + reason.message)); });
-    };
+        }).catch(reason => Promise.reject(new Error(`Sync failed: ${ reason.message }`)));
+    }
     // OVERRIDEN CONNECTION METHODS
     // --------------------------------------------------------------------------------------------
-    Dao.prototype.release = function (action) {
-        var _this = this;
-        if (this.isActive === false)
-            return Promise.reject(new Error('Cannot sync: Dao is currently not active'));
+    release(action) {
+        if (this.isActive === false) return Promise.reject(new Error('Cannot sync: Dao is currently not active'));
         try {
             var changes = this.store.getChanges();
-        }
-        catch (error) {
+        } catch (error) {
             return Promise.reject(error);
         }
-        if (changes.length === 0)
-            return _super.prototype.release.call(this, action);
+        if (changes.length === 0) return super.release(action);
         switch (action) {
             case 'commit':
                 var queries = this.getModelSyncQueries(changes, true);
-                return this.execute(queries).then(function () {
-                    changes = _this.store.applyChanges(changes);
-                    _this.releaseConnection();
+                return this.execute(queries).then(() => {
+                    changes = this.store.applyChanges(changes);
+                    this.releaseConnection();
                     return changes;
                 });
             case 'rollback':
-                return this.rollbackAndRelease()
-                    .then(function () { return _this.store.cleanChanges(); });
+                return this.rollbackAndRelease().then(() => this.store.cleanChanges());
             default:
                 return this.rollbackAndRelease(new Error('Unsynchronized models detected during connection release'));
         }
-    };
-    Dao.prototype.processQueryResult = function (query, result) {
-        if (Model_1.isModelQuery(query)) {
+    }
+    processQueryResult(query, result) {
+        if ((0, _Model.isModelQuery)(query)) {
             var handler = query.handler;
             return this.store.load(handler, result.rows, query.mutable);
+        } else {
+            return super.processQueryResult(query, result);
         }
-        else {
-            return _super.prototype.processQueryResult.call(this, query, result);
-        }
-    };
+    }
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
-    Dao.prototype.insert = function (model) { return this.store.insert(model); };
-    Dao.prototype.destroy = function (model) { return this.store.destroy(model); };
-    Dao.prototype.clean = function (model) { return this.store.clean(model); };
-    Dao.prototype.hasModel = function (model) { return this.store.has(model); };
-    Dao.prototype.isNew = function (model) { return this.store.isNew(model); };
-    Dao.prototype.isDestroyed = function (model) { return this.store.isDestroyed(model); };
-    Dao.prototype.isModified = function (model) { return this.store.isModified(model); };
-    Dao.prototype.isMutable = function (model) { return this.store.isMutable(model); };
+    insert(model) {
+        return this.store.insert(model);
+    }
+    destroy(model) {
+        return this.store.destroy(model);
+    }
+    clean(model) {
+        return this.store.clean(model);
+    }
+    hasModel(model) {
+        return this.store.has(model);
+    }
+    isNew(model) {
+        return this.store.isNew(model);
+    }
+    isDestroyed(model) {
+        return this.store.isDestroyed(model);
+    }
+    isModified(model) {
+        return this.store.isModified(model);
+    }
+    isMutable(model) {
+        return this.store.isMutable(model);
+    }
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
-    Dao.prototype.getModelSyncQueries = function (changes, commit) {
-        if (commit === void 0) { commit = false; }
+    getModelSyncQueries(changes) {
+        let commit = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
         var queries = [];
         for (var i = 0; i < changes.length; i++) {
-            var original = changes[i].original;
-            var current = changes[i].current;
+            let original = changes[i].original;
+            let current = changes[i].current;
             if (this.options.manageUpdatedOn && original !== undefined && current !== undefined) {
                 current.updatedOn = new Date();
             }
-            var handler = current ? current[Model_1.symHandler] : original[Model_1.symHandler];
+            var handler = current ? current[_Model.symHandler] : original[_Model.symHandler];
             queries = queries.concat(handler.getSyncQueries(original, current));
         }
         if (commit) {
             if (queries.length > 0 || this.state === 2 /* transaction */) {
-                queries.push(COMMIT_TRANSACTION);
-            }
+                    queries.push(COMMIT_TRANSACTION);
+                }
         }
         return queries;
-    };
-    return Dao;
-})(pg_io_1.Connection);
-exports.Dao = Dao;
+    }
+}
+
 // COMMON QUERIES
 // ================================================================================================
+exports.Dao = Dao;
 var BEGIN_TRANSACTION = {
     text: 'BEGIN;'
 };
@@ -163,4 +159,4 @@ var COMMIT_TRANSACTION = {
 var ROLLBACK_TRANSACTION = {
     text: 'ROLLBACK;'
 };
-//# sourceMappingURL=Dao.js.map
+//# sourceMappingURL=../../bin/lib/Dao.js.map

@@ -27,7 +27,7 @@ export var symbols = {
     handler: symHandler
 }
 
-export var defaults: pg.ConnectionOptions = {
+var defaults: pg.ConnectionOptions = {
     collapseQueries         : false,
     startTransaction        : false,
     validateImmutability    : true,
@@ -35,9 +35,9 @@ export var defaults: pg.ConnectionOptions = {
     manageUpdatedOn         : true,
 }
 
-pg.defaults = defaults;
-pg.ConnectionConstructor = Dao;
+pg.defaults = Object.assign(pg.defaults, defaults);
+pg.constructors.connection = Dao;
 
 // RE-EXPORT
 // ================================================================================================
-export { db } from 'pg-io';
+export { db, defaults } from 'pg-io';

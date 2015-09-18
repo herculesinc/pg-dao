@@ -27,40 +27,40 @@ export class Dao extends Connection {
     // --------------------------------------------------------------------------------------------
     fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T> {
         if (isModelHandler(handler) === false)
-            return Promise.reject(new Error('Cannot fetch a model: model handler is invalid'));
+            return <any> Promise.reject(new Error('Cannot fetch a model: model handler is invalid'));
             
         var query = handler.getFetchOneQuery(selector, forUpdate);
         if (query === undefined)
-            return Promise.reject(new Error(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
+            return <any> Promise.reject(new Error(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
             
         if (isModelQuery(query) === false)
-            return Promise.reject(new Error(`Cannot fetch a model: fetch query is not a model query`));
+            return <any> Promise.reject(new Error(`Cannot fetch a model: fetch query is not a model query`));
             
         if (query.mask !== 'object') 
-            return Promise.reject(new Error(`Cannot fetch a model: fetch query is not a single result query`));
+            return <any> Promise.reject(new Error(`Cannot fetch a model: fetch query is not a single result query`));
             
         if (query.mutable !== forUpdate)
-            return Promise.reject(new Error(`Cannot fetch a model: fetch query mutable flag is not set correctly`));
+            return <any> Promise.reject(new Error(`Cannot fetch a model: fetch query mutable flag is not set correctly`));
             
         return this.execute(query);
     }
     
     fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T[]> {
         if (isModelHandler(handler) === false)
-            return Promise.reject(new Error('Cannot fetch models: model handler is invalid'));
+            return <any> Promise.reject(new Error('Cannot fetch models: model handler is invalid'));
             
         var query = handler.getFetchAllQuery(selector, forUpdate);
         if (query === undefined)
-            return Promise.reject(new Error(`Cannot fetch models: fetch query for selector (${selector}) was not found`));
+            return <any> Promise.reject(new Error(`Cannot fetch models: fetch query for selector (${selector}) was not found`));
             
         if (isModelQuery(query) === false)
-            return Promise.reject(new Error(`Cannot fetch models: fetch query is not a model query`));
+            return <any> Promise.reject(new Error(`Cannot fetch models: fetch query is not a model query`));
             
         if (query.mask !== 'list') 
-            return Promise.reject(new Error(`Cannot fetch models: fetch query is not a list result query`));
+            return <any> Promise.reject(new Error(`Cannot fetch models: fetch query is not a list result query`));
             
         if (query.mutable !== forUpdate)
-            return Promise.reject(new Error(`Cannot fetch models: fetch query mutable flag is not set correctly`));
+            return <any> Promise.reject(new Error(`Cannot fetch models: fetch query mutable flag is not set correctly`));
             
         return this.execute(query);
     }
@@ -69,7 +69,7 @@ export class Dao extends Connection {
     // --------------------------------------------------------------------------------------------
 	sync(): Promise<SyncInfo[]> {
         if(this.isActive === false)
-            return Promise.reject(new Error('Cannot snyc: Dao is currently not active'));
+            return <any> Promise.reject(new Error('Cannot snyc: Dao is currently not active'));
 
         var changes: SyncInfo[];
         

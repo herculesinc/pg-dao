@@ -1,5 +1,6 @@
 // IMPORTS
 // ================================================================================================
+import { ModelStoreError } from './errors';
 import { Model, isModel, ModelHandler, isModelHandler, symHandler } from './Model';
 
 // MODULE VARIABLES
@@ -166,7 +167,7 @@ export class Store {
     }
 
     isNew(model: Model): boolean {
-        return (this.has(model, true) && model[symbols.original] === undefined);
+        return (this.has(model, true) && model[symbols.original] === undefined && model[symbols.mutable]);
     }
 
     isDestroyed(model: Model): boolean {
