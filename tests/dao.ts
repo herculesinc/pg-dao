@@ -632,7 +632,12 @@ describe('DAO: Updating Models', function () {
                     return dao.sync().then((changes) => {
                         var original = changes[0].original;
                         var current = changes[0].current;
-                        assert.ok(original.updatedOn.valueOf() < current.updatedOn.valueOf());
+                        if (pg.defaults.manageUpdatedOn) {
+                            assert.ok(original.updatedOn.valueOf() < current.updatedOn.valueOf());
+                        }
+                        else {
+                            assert.strictEqual(original.updatedOn.valueOf(), current.updatedOn.valueOf());
+                        }
                     });
                 });
             }).then(() => dao.release());
@@ -678,10 +683,16 @@ describe('DAO: Updating Models', function () {
                     user.username = 'Test123';
                     return dao.sync()
                         .then(() => {
-                            assert.fail();
+                            if (pg.defaults.validateImmutability) {
+                                assert.fail();
+                            }
+                            else {
+                                return dao.release();
+                            }
                         })
                         .catch((reason) => {
-                            assert.ok(reason instanceof Error); 
+                            assert.ok(reason instanceof Error);
+                            assert.strictEqual(reason instanceof assert.AssertionError, false);
                         });
                 });
             });
@@ -726,8 +737,8 @@ describe('DAO: Lifecycle Tests', function () {
                             assert.strictEqual(dao.isActive, false);
                             assert.strictEqual(dao.inTransaction, false);
                             assert.strictEqual(dao.isSynchronized, true);
-                            assert.strictEqual(pg.db(settings).getPoolState().size, 1);
-                            assert.strictEqual(pg.db(settings).getPoolState().available, 1);
+                            assert.strictEqual(database.getPoolState().size, 1);
+                            assert.strictEqual(database.getPoolState().available, 1);
                         });
                 });
             });

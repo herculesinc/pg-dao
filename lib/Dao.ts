@@ -113,8 +113,7 @@ export class Dao extends Connection {
                     return changes; 
                 });
             case 'rollback':
-                return this.rollbackAndRelease()
-                    .then(() => this.store.cleanChanges());
+                return this.rollbackAndRelease();
             default:
                 return this.rollbackAndRelease(
                     new Error('Unsynchronized models detected during connection release'));

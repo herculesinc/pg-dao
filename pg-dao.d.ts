@@ -49,13 +49,16 @@
         release(action: 'rollback')         : Promise<void>;
         release(action?: string)            : Promise<any>;
 
-        execute<T>(query: ResultQuery<T>)   : Promise<any>;
-        execute(query: Query)               : Promise<void>;
-        execute(queries: Query[])           : Promise<Map<string,any>>;
+        fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T>;
+        fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T[]>;
 
         insert<T extends Model>(model: T)   : T;
         destroy<T extends Model>(model: T)  : T;
         clean<T extends Model>(model: T)    : T;
+
+        execute<T>(query: ResultQuery<T>)   : Promise<any>;
+        execute(query: Query)               : Promise<void>;
+        execute(queries: Query[])           : Promise<Map<string,any>>;
 
         hasModel(model: Model)              : boolean;
 
@@ -78,7 +81,7 @@
         createdOn   : Date;
     }
 
-    // RESULT HANDLER DEFINITIONS
+    // RESULT/MODEL HANDLER DEFINITIONS
     // --------------------------------------------------------------------------------------------
     export interface ResultHandler<T> {
         parse(row: any): T;
@@ -107,7 +110,7 @@
     }
 
     export interface ModelQuery<T extends Model> extends ResultQuery<T> {
-        handler: ModelHandler<T>;
+        handler : ModelHandler<T>;
         mutable?: boolean;
     }
 }
