@@ -40,4 +40,5 @@ pg.constructors.connection = Dao;
 
 // RE-EXPORT
 // ================================================================================================
-export { db, defaults } from 'pg-io';
+export { db, defaults, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
+export { ModelError, ModelQueryError, StoreError, SyncError } from './lib/errors';

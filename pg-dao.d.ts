@@ -113,4 +113,23 @@
         handler : ModelHandler<T>;
         mutable?: boolean;
     }
+    
+    // ERROR CLASSES
+    // --------------------------------------------------------------------------------------------
+    export class PgError extends Error {
+        cause: Error;
+        stack: string;
+        
+        constructor(cause: Error);
+	    constructor(message: string, cause?: Error);
+    }
+	
+    export class ConnectionError extends PgError {}
+    export class TransactionError extends PgError {}
+    export class QueryError extends PgError {}
+    export class ParseError extends PgError {}
+    export class StoreError extends PgError {}
+    export class SyncError extends PgError {}
+    export class ModelError extends PgError {}
+    export class ModelQueryError extends ModelError {}
 }

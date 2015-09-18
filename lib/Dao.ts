@@ -3,6 +3,8 @@
 import { Connection, ConnectionOptions, Query, DbQueryResult, ConnectionState } from 'pg-io';
 import { Store, SyncInfo, Options as StoreOptions } from './Store';
 import { Model, isModelHandler, ModelHandler, symHandler, isModelQuery, ModelQuery } from './Model';
+import { ModelError, ModelQueryError, SyncError } from './errors';
+import {  PgError, ConnectionError } from 'pg-io';
 
 // DAO CLASS DEFINITION
 // ================================================================================================
@@ -26,41 +28,59 @@ export class Dao extends Connection {
     // FETCH METHODS
     // --------------------------------------------------------------------------------------------
     fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T> {
+        if(this.isActive === false)
+            return <any> Promise.reject(
+                new ConnectionError('Cannot fetch a model: connection has already been released'));
+                
         if (isModelHandler(handler) === false)
-            return <any> Promise.reject(new Error('Cannot fetch a model: model handler is invalid'));
+            return <any> Promise.reject(
+                new ModelError('Cannot fetch a model: model handler is invalid'));
             
         var query = handler.getFetchOneQuery(selector, forUpdate);
         if (query === undefined)
-            return <any> Promise.reject(new Error(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
+            return <any> Promise.reject(
+                new ModelQueryError(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
             
         if (isModelQuery(query) === false)
-            return <any> Promise.reject(new Error(`Cannot fetch a model: fetch query is not a model query`));
+            return <any> Promise.reject(
+                new ModelQueryError(`Cannot fetch a model: fetch query is not a model query`));
             
         if (query.mask !== 'object') 
-            return <any> Promise.reject(new Error(`Cannot fetch a model: fetch query is not a single result query`));
+            return <any> Promise.reject(
+                new ModelQueryError(`Cannot fetch a model: fetch query is not a single result query`));
             
         if (query.mutable !== forUpdate)
-            return <any> Promise.reject(new Error(`Cannot fetch a model: fetch query mutable flag is not set correctly`));
+            return <any> Promise.reject(
+                new ModelQueryError(`Cannot fetch a model: fetch query mutable flag is not set correctly`));
             
         return this.execute(query);
     }
     
     fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T[]> {
+        if(this.isActive === false)
+            return <any> Promise.reject(
+                new ConnectionError('Cannot fetch models: connection has already been released'));
+                
         if (isModelHandler(handler) === false)
-            return <any> Promise.reject(new Error('Cannot fetch models: model handler is invalid'));
+            return <any> Promise.reject(
+                new ModelError('Cannot fetch models: model handler is invalid'));
             
         var query = handler.getFetchAllQuery(selector, forUpdate);
         if (query === undefined)
-            return <any> Promise.reject(new Error(`Cannot fetch models: fetch query for selector (${selector}) was not found`));
+            return <any> Promise.reject(
+                new ModelQueryError(`Cannot fetch models: fetch query for selector (${selector}) was not found`));
             
         if (isModelQuery(query) === false)
-            return <any> Promise.reject(new Error(`Cannot fetch models: fetch query is not a model query`));
+            return <any> Promise.reject(
+                new ModelQueryError(`Cannot fetch models: fetch query is not a model query`));
             
         if (query.mask !== 'list') 
-            return <any> Promise.reject(new Error(`Cannot fetch models: fetch query is not a list result query`));
+            return <any> Promise.reject(
+                new ModelQueryError(`Cannot fetch models: fetch query is not a list result query`));
             
         if (query.mutable !== forUpdate)
-            return <any> Promise.reject(new Error(`Cannot fetch models: fetch query mutable flag is not set correctly`));
+            return <any> Promise.reject(
+                new ModelQueryError(`Cannot fetch models: fetch query mutable flag is not set correctly`));
             
         return this.execute(query);
     }
@@ -69,7 +89,8 @@ export class Dao extends Connection {
     // --------------------------------------------------------------------------------------------
 	sync(): Promise<SyncInfo[]> {
         if(this.isActive === false)
-            return <any> Promise.reject(new Error('Cannot snyc: Dao is currently not active'));
+            return <any> Promise.reject(
+                new ConnectionError('Cannot sync: connection has already been released'));
 
         var changes: SyncInfo[];
         
@@ -85,20 +106,25 @@ export class Dao extends Connection {
                 this.store.applyChanges(changes);
                 return changes;
             });          
-        }).catch((reason) => Promise.reject(new Error(`Sync failed: ${reason.message}`)));
+        }).catch((reason) => {
+            if (reason instanceof SyncError)
+                reason = new SyncError('DAO Sync failed', reason);
+            return Promise.reject(reason);
+        });
     }
         
 	// OVERRIDEN CONNECTION METHODS
     // --------------------------------------------------------------------------------------------
     release(action?: string): Promise<any> {
         if(this.isActive === false)
-            return Promise.reject(new Error('Cannot sync: Dao is currently not active'));
+            return Promise.reject(
+                new ConnectionError('Cannot release connection: connection has already been released'));
         
         try {
             var changes = this.store.getChanges();
         }
         catch (error) {
-            return Promise.reject(error);
+            return  this.rollbackAndRelease(error);
         }
         
         if (changes.length === 0)
@@ -116,7 +142,7 @@ export class Dao extends Connection {
                 return this.rollbackAndRelease();
             default:
                 return this.rollbackAndRelease(
-                    new Error('Unsynchronized models detected during connection release'));
+                    new SyncError('Unsynchronized models detected during connection release'));
            }
 	}
     

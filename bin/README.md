@@ -1,7 +1,7 @@
 # pg-dao
 Simple promise-based data access layer for PostgreSQL written on top of [pg-io](https://github.com/herculesinc/pg-io).
 
-## Philosophy
+## Usage
 pg-dao is designed for scenarios when connection to the database is needed for a series of short and relatively simple requests. If you need a connection to execute long running queries (or queries that return large amounts of data) or require complex transaction logic, pg-dao is probably not for you.
 
 Key principals for pg-dao are:
@@ -17,6 +17,9 @@ In addition to the functionality of pg-io, pg-dao provides a flexible managed mo
 ```sh
 $ npm install --save pg-dao
 ```
+
+## Requirements
+pg-dao is written in TypeScript and uses many new features of ES6 (classes, built-in promises etc.). As such, it will only work with the latest releases of Node.js which support such features. Specifically, the most recent version of pg-dao __requires Node.js 4.1 or later__.
 
 ## Example
 

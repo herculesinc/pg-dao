@@ -100,7 +100,7 @@ declare module "pg-io" {
     }
 	
     export class ConnectionError extends PgError {}
-    export class ConnectionStateError extends PgError {}
+    export class TransactionError extends PgError {}
     export class QueryError extends PgError {}
     export class ParseError extends PgError {}
 }

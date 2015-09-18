@@ -6,27 +6,51 @@ Object.defineProperty(exports, '__esModule', {
 
 var _pgIo = require('pg-io');
 
-class ModelStoreError extends _pgIo.PgError {
+class ModelError extends _pgIo.PgError {
     constructor(messageOrCause, cause) {
         super(messageOrCause, cause);
-        this.name = 'ModelStoreError';
-        Error.captureStackTrace(this, ModelStoreError);
+        this.name = 'ModelError';
+        Error.captureStackTrace(this, ModelError);
     }
 }
 
-exports.ModelStoreError = ModelStoreError;
+exports.ModelError = ModelError;
 
 ;
 
-class ModelSyncError extends _pgIo.PgError {
+class ModelQueryError extends ModelError {
     constructor(messageOrCause, cause) {
         super(messageOrCause, cause);
-        this.name = 'ModelSyncError';
-        Error.captureStackTrace(this, ModelSyncError);
+        this.name = 'ModelQueryError';
+        Error.captureStackTrace(this, ModelQueryError);
     }
 }
 
-exports.ModelSyncError = ModelSyncError;
+exports.ModelQueryError = ModelQueryError;
+
+;
+
+class StoreError extends _pgIo.PgError {
+    constructor(messageOrCause, cause) {
+        super(messageOrCause, cause);
+        this.name = 'StoreError';
+        Error.captureStackTrace(this, StoreError);
+    }
+}
+
+exports.StoreError = StoreError;
+
+;
+
+class SyncError extends _pgIo.PgError {
+    constructor(messageOrCause, cause) {
+        super(messageOrCause, cause);
+        this.name = 'SyncError';
+        Error.captureStackTrace(this, SyncError);
+    }
+}
+
+exports.SyncError = SyncError;
 
 ;
 //# sourceMappingURL=../../bin/lib/errors.js.map

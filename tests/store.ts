@@ -3,7 +3,7 @@
 import * as assert from 'assert';
 
 import { Store } from './../lib/Store';
-import { ModelStoreError, ModelSyncError } from './../lib/errors';
+import { ModelError, StoreError, SyncError } from './../lib/errors';
 import { defaults } from './../index'
 import { User } from './setup';
 
@@ -55,7 +55,7 @@ describe('Store: Loading Models', function () {
         var store = new Store(defaults);
         assert.throws(function () {
             store.load(<any> {}, [seed], true);
-        }, ModelStoreError);
+        }, ModelError);
     });
     
     it('Loading an invalid model should throw an error', function () {
@@ -63,7 +63,7 @@ describe('Store: Loading Models', function () {
         if (defaults.validateHandlerOutput) {
             assert.throws(function () {
                 store.load(User, [{}], true);
-            }, ModelStoreError);
+            }, ModelError);
         }
     });
     
@@ -140,7 +140,7 @@ describe('Store: Updating Models', function () {
         user.username = 'Test';
         assert.throws(function () {
             store.load(User, [seed], true);
-        }, ModelStoreError);
+        }, StoreError);
     });
 });
 
@@ -185,7 +185,7 @@ describe('Store: Destroying Models', function () {
         
         assert.throws(function () {
             store.destroy(user);
-        }, ModelStoreError);
+        }, StoreError);
     });
 
     it('Destroying an non-loaded model should throw an error', function () {
@@ -194,14 +194,14 @@ describe('Store: Destroying Models', function () {
         
         assert.throws(function () {
             store.destroy(user);
-        }, ModelStoreError);
+        }, StoreError);
     });
 
     it('Destroying a non-model should throw an error', function () {
         var store = new Store(defaults);
         assert.throws(function () {
             store.destroy(seed);
-        }, ModelStoreError);
+        }, ModelError);
     });
 
     it('Destroying a model twice should throw an error', function () {
@@ -212,7 +212,7 @@ describe('Store: Destroying Models', function () {
         assert.throws(function () {
             store.destroy(user);
             store.destroy(user);
-        }, ModelStoreError);
+        }, StoreError);
     });
 
     it('Reloading a destoryed model should throw an error', function () {
@@ -223,7 +223,7 @@ describe('Store: Destroying Models', function () {
         assert.throws(function () {
             store.destroy(user);
             store.load(User, [seed], true);
-        }, ModelStoreError);
+        }, StoreError);
     });
     
     it('Destroying an inserted model should remove it from the store', function () {
@@ -272,7 +272,7 @@ describe('Store: Inserting Models', function () {
         
         assert.throws(function () {
             store.insert(seed);
-        }, ModelStoreError);
+        }, ModelError);
     });
 
     it('Inserting an already loaded model throw an error', function () {
@@ -282,7 +282,7 @@ describe('Store: Inserting Models', function () {
         assert.throws(function () {
             store.load(User, [seed], true);
             store.insert(user);
-        }, ModelStoreError);
+        }, StoreError);
     });
 
     it('Inserting a model twice should throw an error', function () {
@@ -292,7 +292,7 @@ describe('Store: Inserting Models', function () {
         assert.throws(function () {
             store.insert(user);
             store.insert(user);
-        }, ModelStoreError);
+        }, StoreError);
     });
 
     it('Inserting a destroyed model should throw an error', function () {
@@ -303,7 +303,7 @@ describe('Store: Inserting Models', function () {
         assert.throws(function () {            
             store.destroy(user);
             store.insert(user);
-        }, ModelStoreError);
+        }, StoreError);
     });
     
     it('loading an inserted model should throw an error', function () {
@@ -313,7 +313,7 @@ describe('Store: Inserting Models', function () {
         assert.throws(function () {
             store.insert(user);
             store.load(User, [seed], true);
-        }, ModelStoreError);
+        }, StoreError);
     });
     
     it('Inserting a perviously destroyed and synced model should throw an error', function () {
@@ -325,7 +325,7 @@ describe('Store: Inserting Models', function () {
         store.applyChanges(store.getChanges());
         assert.throws(function () {
             store.insert(user);
-        }, ModelStoreError);
+        }, StoreError);
     });
 });
 
@@ -385,7 +385,7 @@ describe('Store: Cleaning Models', function () {
             
         assert.throws(function () {            
             store.clean(user);    
-        }, ModelStoreError);
+        }, StoreError);
     });
 });
 
@@ -455,7 +455,7 @@ describe('Store: Syncing store', function () {
         if (defaults.validateImmutability) {
             assert.throws(function () {
                 store.getChanges();   
-            }, ModelSyncError);
+            }, SyncError);
         }
     });
     
@@ -654,7 +654,7 @@ describe('Store: Syncing store', function () {
         
         assert.throws(function () {
             store.insert(users[0]);   
-        }, ModelStoreError);
+        }, StoreError);
         
         // change #5, delete user4
         store.destroy(newUser1);

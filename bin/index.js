@@ -44,4 +44,61 @@ Object.defineProperty(exports, 'defaults', {
         return _pgIo.defaults;
     }
 });
+Object.defineProperty(exports, 'PgError', {
+    enumerable: true,
+    get: function get() {
+        return _pgIo.PgError;
+    }
+});
+Object.defineProperty(exports, 'ConnectionError', {
+    enumerable: true,
+    get: function get() {
+        return _pgIo.ConnectionError;
+    }
+});
+Object.defineProperty(exports, 'TransactionError', {
+    enumerable: true,
+    get: function get() {
+        return _pgIo.TransactionError;
+    }
+});
+Object.defineProperty(exports, 'QueryError', {
+    enumerable: true,
+    get: function get() {
+        return _pgIo.QueryError;
+    }
+});
+Object.defineProperty(exports, 'ParseError', {
+    enumerable: true,
+    get: function get() {
+        return _pgIo.ParseError;
+    }
+});
+
+var _libErrors = require('./lib/errors');
+
+Object.defineProperty(exports, 'ModelError', {
+    enumerable: true,
+    get: function get() {
+        return _libErrors.ModelError;
+    }
+});
+Object.defineProperty(exports, 'ModelQueryError', {
+    enumerable: true,
+    get: function get() {
+        return _libErrors.ModelQueryError;
+    }
+});
+Object.defineProperty(exports, 'StoreError', {
+    enumerable: true,
+    get: function get() {
+        return _libErrors.StoreError;
+    }
+});
+Object.defineProperty(exports, 'SyncError', {
+    enumerable: true,
+    get: function get() {
+        return _libErrors.SyncError;
+    }
+});
 //# sourceMappingURL=../bin/index.js.map
