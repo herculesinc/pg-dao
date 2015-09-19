@@ -407,6 +407,7 @@ ModelHandler is an object which provides services needed by DAO to work with the
   getSyncQueries(original: Model, current: Model): Query[];
   getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): Query;
   getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): Query;
+  getIdGenerator(): idGenerator;
 }
 ```
 The meaning of the above methods is described below:
@@ -418,13 +419,14 @@ The meaning of the above methods is described below:
   * __getSyncQueries(original, current)__ - given the original and the current state of the model, should produce an array of queries which can be executed to synchronize the model with the database
   * __getFetchOneQuery__ - given the selector, returns a query which can be executed to retrieve a single model
   * __getFetchAllQuery__ - given the selector, returns a query which can be executed to retrieve a list of models
+  * __getIdGenerator__ - should return an IdGenerator class which can be used to generate unique IDs for the model
 
 The above mechanism is extremely flexible and allows the user to define models of nearly arbitrary complexity (e.g. it is possible to implement models which span multiple tables and contain complex object hierarchies). However, it would be extremely tedious to manually define handlers for all models from scratch. To make this task simpler, pg-dao provides a base class called `AbstractModel` which implements most of the boilerplate functionality for you.
 
-Below is an example of a very simple `User` model implemented by extending `AbstractModel` base class. For this model, the data is stored in the `users` table which has `id`, `username`, `created_on`, and `updated_on` fields.
+Below is an example of a very simple `User` model implemented by extending `AbstractModel` base class. For this model, the data is stored in the `users` table which has `id`, `username`, `created_on`, and `updated_on` fields. There is also a sequence called `users_id_seq` defined in the database.
 
 ```JavaScript
-import { AbstractModel, symbols } from 'pg-dao';
+import { AbstractModel, symbols, PgIdGenerator } from 'pg-dao';
 
 class User extends AbstractModel {    
     constructor(seed: any) {
@@ -442,14 +444,16 @@ User[symbols.dbSchema] = {
     createdOn : Date,
     updatedOn : Date
 };
+// set the ID generator for the model
+User[symbols.idGenerator] = new PgIdGenerator('users_id_seq');
 ```
 
-The above will create a fully functional User model. However, the steps of manually setting table name and schema are still cumbersome. If you are using TypeScript, this can be avoided by using decorators as follows:
+The above will create a fully functional User model. However, the steps of manually setting table name, table schema, and ID Generator are still cumbersome. If you are using TypeScript, this can be avoided by using decorators as follows:
 
 ```TypeScript
-import { AbstractModel, dbModel, dbField } from 'pg-dao';
+import { AbstractModel, PgIdGenerator, dbModel, dbField } from 'pg-dao';
 
-@dbModel('users')
+@dbModel('users', new PgIdGenerator('users_id_seq'))
 export class User extends AbstractModel {
     
     @dbField(String)
@@ -467,9 +471,9 @@ Both of the above code snippets will produce an identical model - but TypeScript
 The models can be further customized almost at will. For example, providing a specialized fetch query can be done as follows:
 
 ```TypeScript
-import { AbstractModel, dbModel, dbField } from 'pg-dao';
+import { AbstractModel, PgIdGenerator, dbModel, dbField } from 'pg-dao';
 
-@dbModel('users')
+@dbModel('users', new PgIdGenerator('users_id_seq'))
 export class User extends AbstractModel {
     
     @dbField(String)
@@ -512,6 +516,18 @@ Using `AbstractModel` (as opposed to defining model handler from scratch) does i
   
   * all model properties must be in camelCase while all database fields must be in snake_case. `AbstractModel` assumes this conventions and queries generated automatically will have syntax errors if this convention is not adhered to
   * all models of the same type must be stored in a single table (models spanning multiple tables are not possible). For example, for the User model above, the model is stored in a single table called `users`
+
+#### ID Generators
+
+As described above, pg-dao models require ID Generators to be provided. Such generators can be anything as long as they have the following form:
+```
+{
+  getNextId(dao?: Dao): Promise<number>;
+}
+```
+The `getnextId()` method will receive a reference to a DAO object whenever this method is called, but ID generator does not need to rely on this object to generate unique IDs. This approach makes it possible to generate unique IDs in a variety of ways (e.g. in-memory using timestamps, distributed ID generation using redis server etc.) making pg-dao models even more flexible.
+
+Out of the box, pg-dao provides a `PgIdGenerator` that takes a name of a database sequence and whenever a new ID is requested, makes a call to the database to get the next value from that sequence.
 
 ### Retrieving Models
 
@@ -675,21 +691,17 @@ dao.startTransaction.then(() => {
 
 #### Creating Models
 
-pg-dao does not handle creation of model objects (yet), but once a model object is created, it can be inserted into the database using `dao.insert()` method:
+Inserting new models into the database can be done using a combination of `dao.create` and `dao.insert()` method:
 
 ```JavaScript
-// create a new model object
-var user = User.parse({
-  id: 1, 
-  username: 'Test', 
-  createdOn: new Date(), 
-  updatedOn: new Date()
-});
-
 dao.startTransaction.then(() => {
+  // create a new user model
+  var user = dao.create(User, { username: 'Test' });
+  dao.hasModel(user); // false - the model is created but not yet inserted
+  
   // insert the model into DAO
   dao.insert(user);
-  dao.isNew(user); // true
+  dao.isNew(user); // true - the model is inserted but not yet saved to the database
 })
 // sync changes with the database and release connection
 .then(() => dao.release('commit'));

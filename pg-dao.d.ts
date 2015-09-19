@@ -21,6 +21,7 @@
         deleteQuery : symbol;
         dbTable     : symbol;
         dbSchema    : symbol;
+        idGenerator : symbol;
     };
     
     // DATABASE
@@ -60,6 +61,8 @@
         fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T>;
         fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T[]>;
 
+        create<T extends Model>(handler: ModelHandler<T>, attributes: any): Promise<T>;
+        
         insert<T extends Model>(model: T)   : T;
         destroy<T extends Model>(model: T)  : T;
         clean<T extends Model>(model: T)    : T;
@@ -103,12 +106,13 @@
         static getSyncQueries(original: AbstractModel, current: AbstractModel): Query[];
         static getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
         static getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
+        static getIdGenerator(): IdGenerator;
     }
     
     // DECORATORS
     // --------------------------------------------------------------------------------------------
-    export function dbModel(table: string)  : ClassDecorator;
-    export function dbField(fieldType: any) : PropertyDecorator;
+    export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator;
+    export function dbField(fieldType: any): PropertyDecorator;
 
     // RESULT/MODEL HANDLER DEFINITIONS
     // --------------------------------------------------------------------------------------------
@@ -123,8 +127,21 @@
         getSyncQueries(original: T, current: T): Query[];
         getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<T>;
         getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<T>;
+        getIdGenerator(): IdGenerator;
     }
-
+    
+    // ID GENERATORS
+    // --------------------------------------------------------------------------------------------
+    export interface IdGenerator {
+        getNextId(connection?: Dao): Promise<number>;
+    }
+    
+    export class PgIdGenerator implements IdGenerator {
+        idSequenceQuery: ResultQuery<number>;
+        constructor(idSequence: string);
+        getNextId(dao: Dao): Promise<number>;
+    }
+    
     // QUERY DEFINITIONS
     // --------------------------------------------------------------------------------------------
     export interface Query {

@@ -30,4 +30,24 @@ function isModelHandler(handler) {
 function isModelQuery(query) {
     return 'handler' in query && isModelHandler(query['handler']);
 }
+
+// DEFAULT ID GENERATOR
+// ================================================================================================
+
+class PgIdGenerator {
+    constructor(idSequence) {
+        this.idSequenceQuery = {
+            text: `SELECT nextval('${ idSequence }'::regclass) AS id;`,
+            mask: 'object',
+            handler: {
+                parse: row => row.id
+            }
+        };
+    }
+    getNextId(dao) {
+        return dao.execute(this.idSequenceQuery);
+    }
+}
+
+exports.PgIdGenerator = PgIdGenerator;
 //# sourceMappingURL=../../bin/lib/Model.js.map

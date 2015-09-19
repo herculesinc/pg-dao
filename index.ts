@@ -25,13 +25,14 @@ export interface PoolState {
 // GLOBALS
 // ================================================================================================
 export var symbols = {
-    handler: symHandler,
+    handler     : symHandler,
     fetchQuery  : modelSymbols.fetchQuery,
     updateQuery : modelSymbols.updateQuery,
     insertQuery : modelSymbols.insertQuery,
     deleteQuery : modelSymbols.deleteQuery,
     dbTable     : modelSymbols.dbTable,
-    dbSchema    : modelSymbols.dbSchema
+    dbSchema    : modelSymbols.dbSchema,
+    idGenerator : modelSymbols.idGenerator
 }
 
 var defaults: pg.ConnectionOptions = {

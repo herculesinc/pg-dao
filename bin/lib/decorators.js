@@ -13,11 +13,12 @@ var _errors = require('./errors');
 // DECORATOR DEFINITIONS
 // ================================================================================================
 
-function dbModel(table) {
+function dbModel(table, idGenerator) {
     if (table === undefined || table === null || table.trim() === '') throw new _errors.ModelError('Model table name cannot be empty');
     return function (classConstructor) {
         classConstructor[_AbstractModel.symbols.dbTable] = table;
         classConstructor[_AbstractModel.symbols.dbSchema] = classConstructor.prototype[_AbstractModel.symbols.dbSchema];
+        classConstructor[_AbstractModel.symbols.idGenerator] = idGenerator;
     };
 }
 

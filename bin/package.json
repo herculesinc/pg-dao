@@ -1,14 +1,15 @@
 {
   "name": "pg-dao",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Promise-based data access layer for PostgreSQL written in TypeScript",
   "keywords": [
-    "postgres",
     "pg",
     "postgre",
+    "postgres",
     "postgresql",
     "database",
-    "dao"
+    "dao",
+    "orm"
   ],
   "main": "index.js",
   "license": "MIT",

@@ -1,7 +1,7 @@
 // IMPORTS 
 // ================================================================================================
 import { Query } from 'pg-io';
-import { Model, ModelQuery, ModelHandler, symHandler } from './Model';
+import { Model, ModelQuery, ModelHandler, symHandler, IdGenerator } from './Model';
 import { dbField } from './decorators'
 import { ModelError, ModelQueryError } from './errors';
 import { camelToSnake } from './util'
@@ -14,7 +14,8 @@ export var symbols = {
 	insertQuery : Symbol(),
 	deleteQuery : Symbol(),
     dbTable     : Symbol(),
-    dbSchema    : Symbol()
+    dbSchema    : Symbol(),
+    idGenerator : Symbol()
 }
 
 // INTERFACES
@@ -43,6 +44,8 @@ export class AbstractModel implements Model {
     // --------------------------------------------------------------------------------------------
     constructor(seed: any) {
         if (!seed) throw new ModelError('Cannot instantiate a model: model seed is undefined');
+        if (!seed.id) throw new ModelError('Cannot instantiate a model: model id is undefined');
+         
         this.id = seed.id;
         this.createdOn = seed.createdOn;
         this.updatedOn = seed.updatedOn;
@@ -52,6 +55,19 @@ export class AbstractModel implements Model {
     // --------------------------------------------------------------------------------------------
     static parse(row: any): any {
         var model = new this(row);
+        model[symHandler] = this;
+        return model;
+    }
+    
+    static build(id: number, attributes: any): any {
+        if ('id' in attributes) 
+            throw new ModelError('Cannot build a mode: model attributes contain id property');
+        
+        var model = new this(Object.assign({
+            id: id,
+            createdOn: new Date(),
+            updatedOn: new Date()
+        }, attributes));
         model[symHandler] = this;
         return model;
     }
@@ -77,7 +93,7 @@ export class AbstractModel implements Model {
         
         for (var field in schema) {
             switch (schema[field]) {
-                case Number: case String: case Date:
+                case Number: case Boolean: case String: case Date:
                     target[field] = source[field];
                     break;
                 case Object:
@@ -100,7 +116,7 @@ export class AbstractModel implements Model {
         var schema = this[symbols.dbSchema];
         for (var field in schema) {
             switch (schema[field]) {
-                case Number: case String:
+                case Number: case Boolean: case String:
                     retval = (model1[field] === model2[field]);
                     break;
                 case Date:
@@ -166,6 +182,10 @@ export class AbstractModel implements Model {
             this[symbols.fetchQuery] = qFetchQuery;
         }
         return new qFetchQuery(selector, 'list', name, forUpdate);
+    }
+    
+    static getIdGenerator(): IdGenerator {
+        return this[symbols.idGenerator];
     }
 }
 

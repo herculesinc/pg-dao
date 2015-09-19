@@ -1,14 +1,16 @@
 // IMPORTS
 // ================================================================================================
 import { Query } from 'pg-io';
-import { ModelQuery } from './../lib/Model';
+import { ModelQuery, PgIdGenerator } from './../lib/Model';
 import { Dao } from './../lib/Dao';
 import { AbstractModel } from './../lib/AbstractModel';
 import { dbField, dbModel } from './../lib/decorators';
 
 // SETUP
 // ================================================================================================
-@dbModel('tmp_users')
+var userIdGenerator = new PgIdGenerator('tmp_users_id_seq');
+
+@dbModel('tmp_users', userIdGenerator)
 export class User extends AbstractModel {
     
     @dbField(String)
@@ -58,7 +60,10 @@ export class qFetchUsersByIdList implements ModelQuery<User> {
 // DATABASE PRIMING
 // ================================================================================================
 export function prepareDatabase(dao: Dao): Promise<any> {
-    return dao.execute([{ text: `DROP TABLE IF EXISTS tmp_users;` },
+    return dao.execute([
+        { 
+            text: `DROP TABLE IF EXISTS tmp_users;` 
+        },
         {
             text: `SELECT * INTO TEMPORARY tmp_users
                 FROM (VALUES 
@@ -66,6 +71,12 @@ export function prepareDatabase(dao: Dao): Promise<any> {
 		            (2::bigint,	'Yason'::VARCHAR, 	now()::timestamptz, now()::timestamptz),
 		            (3::bigint,	'George'::VARCHAR, 	now()::timestamptz, now()::timestamptz)
 	            ) AS q (id, username, created_on, updated_on);`
+        },
+        {
+          text: 'DROP SEQUENCE IF EXISTS tmp_users_id_seq;'
+        },
+        {
+            text: 'CREATE TEMPORARY SEQUENCE tmp_users_id_seq START 100;'
         }
     ]);
 }

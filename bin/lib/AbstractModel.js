@@ -37,7 +37,8 @@ var symbols = {
     insertQuery: Symbol(),
     deleteQuery: Symbol(),
     dbTable: Symbol(),
-    dbSchema: Symbol()
+    dbSchema: Symbol(),
+    idGenerator: Symbol()
 };
 exports.symbols = symbols;
 // ABSTRACT MODEL CLASS DEFINITION
@@ -48,6 +49,7 @@ class AbstractModel {
     // --------------------------------------------------------------------------------------------
     constructor(seed) {
         if (!seed) throw new _errors.ModelError('Cannot instantiate a model: model seed is undefined');
+        if (!seed.id) throw new _errors.ModelError('Cannot instantiate a model: model id is undefined');
         this.id = seed.id;
         this.createdOn = seed.createdOn;
         this.updatedOn = seed.updatedOn;
@@ -56,6 +58,16 @@ class AbstractModel {
     // --------------------------------------------------------------------------------------------
     static parse(row) {
         var model = new this(row);
+        model[_Model.symHandler] = this;
+        return model;
+    }
+    static build(id, attributes) {
+        if ('id' in attributes) throw new _errors.ModelError('Cannot build a mode: model attributes contain id property');
+        var model = new this(Object.assign({
+            id: id,
+            createdOn: new Date(),
+            updatedOn: new Date()
+        }, attributes));
         model[_Model.symHandler] = this;
         return model;
     }
@@ -73,6 +85,7 @@ class AbstractModel {
         for (var field in schema) {
             switch (schema[field]) {
                 case Number:
+                case Boolean:
                 case String:
                 case Date:
                     target[field] = source[field];
@@ -95,6 +108,7 @@ class AbstractModel {
         for (var field in schema) {
             switch (schema[field]) {
                 case Number:
+                case Boolean:
                 case String:
                     retval = model1[field] === model2[field];
                     break;
@@ -158,6 +172,9 @@ class AbstractModel {
             this[symbols.fetchQuery] = qFetchQuery;
         }
         return new qFetchQuery(selector, 'list', name, forUpdate);
+    }
+    static getIdGenerator() {
+        return this[symbols.idGenerator];
     }
 }
 

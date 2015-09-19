@@ -168,6 +168,27 @@ export class Dao extends Connection {
         }
 	}
     
+    // CREATE METHODS
+    // --------------------------------------------------------------------------------------------
+    create<T extends Model>(handler: ModelHandler<T>, attributes: any): Promise<T> {
+        if(this.isActive === false)
+            throw <any> Promise.reject(
+                new ConnectionError('Cannot create a model: connection has already been released'));
+        
+        if (isModelHandler(handler) === false)
+            return <any> Promise.reject(
+                new ModelError('Cannot create a model: model handler is invalid'));
+        
+        var idGenerator = handler.getIdGenerator();
+        if (!idGenerator)
+            return <any> Promise.reject(
+                new ModelError('Cannot create a model: model id generator is undefined'));
+        
+        return idGenerator.getNextId(this).then((nextId) => {
+            return handler.build(nextId, attributes);
+        });
+    }
+    
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
     insert(model: Model) : Model {

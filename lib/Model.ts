@@ -1,6 +1,7 @@
 // IMPORTS
 // ================================================================================================
 import { ResultHandler, Query, ResultQuery  } from 'pg-io';
+import { Dao } from './Dao';
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -15,17 +16,23 @@ export interface Model {
 }
 
 export interface ModelHandler<T extends Model> extends ResultHandler<T> {
+    build(id: number, attributes: any): T;
     clone(model: T): T;
     infuse(target: T, source: T);
     areEqual(model1: T, model2: T): boolean;
     getSyncQueries(original: T, current: T): Query[];
     getFetchOneQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
     getFetchAllQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
+    getIdGenerator(): IdGenerator;
 }
 
 export interface ModelQuery<T extends Model> extends ResultQuery<T> {
     handler : ModelHandler<T>;
     mutable?: boolean;
+}
+
+export interface IdGenerator {
+    getNextId(dao?: Dao): Promise<number>;
 }
 
 // PUBLIC FUNCTIONS
@@ -52,4 +59,25 @@ export function isModelHandler(handler: any): handler is ModelHandler<any> {
 
 export function isModelQuery(query: Query): query is ModelQuery<any> {
     return ('handler' in query && isModelHandler(query['handler']));
+}
+
+// DEFAULT ID GENERATOR
+// ================================================================================================
+export class PgIdGenerator implements IdGenerator{
+    
+    idSequenceQuery: ResultQuery<number>;
+    
+    constructor(idSequence: string) {
+        this.idSequenceQuery = {
+            text: `SELECT nextval('${idSequence}'::regclass) AS id;`,
+            mask: 'object',
+            handler: {
+                parse: (row: any) => row.id
+            }
+        }
+    }
+    
+    getNextId(dao: Dao): Promise<number> {
+        return dao.execute(this.idSequenceQuery);
+    }
 }

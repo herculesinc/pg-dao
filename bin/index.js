@@ -26,7 +26,8 @@ var symbols = {
     insertQuery: _libAbstractModel.symbols.insertQuery,
     deleteQuery: _libAbstractModel.symbols.deleteQuery,
     dbTable: _libAbstractModel.symbols.dbTable,
-    dbSchema: _libAbstractModel.symbols.dbSchema
+    dbSchema: _libAbstractModel.symbols.dbSchema,
+    idGenerator: _libAbstractModel.symbols.idGenerator
 };
 exports.symbols = symbols;
 var defaults = {

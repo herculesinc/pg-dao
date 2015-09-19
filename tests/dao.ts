@@ -334,6 +334,27 @@ describe('DAO: Fetching Models via execute() method', function () {
     });
 });
 
+// FETCHING TESTS
+// ================================================================================================
+describe('DAO: creating models', function () {
+
+    it('Creating a new model should create a model with new ID', () => {
+        var database: Database = pg.db(settings);
+        return database.connect().then((dao) => {
+            return prepareDatabase(dao).then(() => {
+                return dao.create<User>(User, { username: 'newuser' }).then((user) =>{
+                    assert.strictEqual(user.id, 100);
+                    assert.strictEqual(user.username, 'newuser');
+                    assert.strictEqual(user.createdOn instanceof Date, true);
+                    assert.strictEqual(user.updatedOn instanceof Date, true);
+                    assert.strictEqual(dao.hasModel(user), false); 
+                });
+            }).then(() => dao.release());
+        });
+    });
+
+});
+
 // INSERTING TESTS
 // ================================================================================================
 describe('DAO: inserting models', function () {

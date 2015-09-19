@@ -112,6 +112,17 @@ class Dao extends _pgIo.Connection {
             return super.processQueryResult(query, result);
         }
     }
+    // CREATE METHODS
+    // --------------------------------------------------------------------------------------------
+    create(handler, attributes) {
+        if (this.isActive === false) throw Promise.reject(new _pgIo.ConnectionError('Cannot create a model: connection has already been released'));
+        if ((0, _Model.isModelHandler)(handler) === false) return Promise.reject(new _errors.ModelError('Cannot create a model: model handler is invalid'));
+        var idGenerator = handler.getIdGenerator();
+        if (!idGenerator) return Promise.reject(new _errors.ModelError('Cannot create a model: model id generator is undefined'));
+        return idGenerator.getNextId(this).then(nextId => {
+            return handler.build(nextId, attributes);
+        });
+    }
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
     insert(model) {

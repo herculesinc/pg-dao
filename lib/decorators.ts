@@ -1,17 +1,19 @@
 // IMPORTS 
 // ================================================================================================
 import { AbstractModel, symbols } from './AbstractModel';
+import { IdGenerator } from './Model'
 import { ModelError } from './errors';
 
 // DECORATOR DEFINITIONS
 // ================================================================================================
-export function dbModel(table: string): ClassDecorator {
+export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator {
     if (table === undefined || table === null || table.trim() === '')
         throw new ModelError('Model table name cannot be empty');
     
     return function (classConstructor: any) {
         classConstructor[symbols.dbTable] = table;
         classConstructor[symbols.dbSchema] = classConstructor.prototype[symbols.dbSchema];
+        classConstructor[symbols.idGenerator] = idGenerator;
     }
 }
 
