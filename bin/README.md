@@ -417,9 +417,9 @@ The meaning of the above methods is described below:
   * __areEqual(model1, model2)__ - should return true if both models are identical
   * __infuse(target, source)__ - should change the properties of the `target` model to make it identical to the `source` model
   * __getSyncQueries(original, current)__ - given the original and the current state of the model, should produce an array of queries which can be executed to synchronize the model with the database
-  * __getFetchOneQuery__ - given the selector, returns a query which can be executed to retrieve a single model
-  * __getFetchAllQuery__ - given the selector, returns a query which can be executed to retrieve a list of models
-  * __getIdGenerator__ - should return an IdGenerator class which can be used to generate unique IDs for the model
+  * __getFetchOneQuery(selector, forUpdate, name?)__ - given the selector, returns a query which can be executed to retrieve a single model
+  * __getFetchAllQuery(selector, forUpdate, name?)__ - given the selector, returns a query which can be executed to retrieve a list of models
+  * __getIdGenerator()__ - should return an IdGenerator class which can be used to generate unique IDs for the model
 
 The above mechanism is extremely flexible and allows the user to define models of nearly arbitrary complexity (e.g. it is possible to implement models which span multiple tables and contain complex object hierarchies). However, it would be extremely tedious to manually define handlers for all models from scratch. To make this task simpler, pg-dao provides a base class called `AbstractModel` which implements most of the boilerplate functionality for you.
 
@@ -691,7 +691,7 @@ dao.startTransaction.then(() => {
 
 #### Creating Models
 
-Inserting new models into the database can be done using a combination of `dao.create()` and `dao.insert()` method:
+Inserting new models into the database can be done by using a combination of `dao.create()` and `dao.insert()` method:
 
 ```JavaScript
 dao.startTransaction.then(() => {
