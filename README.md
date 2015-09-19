@@ -696,12 +696,13 @@ Inserting new models into the database can be done by using a combination of `da
 ```JavaScript
 dao.startTransaction.then(() => {
   // create a new user model
-  var user = dao.create(User, { username: 'Test' });
-  dao.hasModel(user); // false - the model is created but not yet inserted
-  
-  // insert the model into DAO
-  dao.insert(user);
-  dao.isNew(user); // true - the model is inserted but not yet saved to the database
+  return dao.create(User, { username: 'Test' }).then((user) => {
+    dao.hasModel(user); // false - the model is created but not yet inserted into DAO
+    
+    // insert the model into DAO
+    dao.insert(user);
+    dao.isNew(user); // true - the model is inserted but not yet saved to the database
+  });
 })
 // sync changes with the database and release connection
 .then(() => dao.release('commit'));
