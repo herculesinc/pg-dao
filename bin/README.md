@@ -66,7 +66,7 @@ Complete public API definitions can be found in [pg-dao.d.ts]( https://github.co
     - [Defining Models](#defining-models)
     - [Retrieving Models](#retrieving-models)
     - [Modifying and Syncing Models](#modifying-and-syncing-models)
-	* [Errors](#errors)
+  * [Errors](#errors)
   
 # API
 ## Obtaining Database Connection
