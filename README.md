@@ -503,11 +503,13 @@ export class User extends AbstractModel {
 Using `AbstractModel` (as opposed to defining model handler from scratch) does impose a few limitations:
 
   * model `constructor` must be able to build the model out of either a database row or another model. Specifically, the following should be possible:
+  
   ```JavaScript
   var row = /* row retrieved from the database */
   var model1 = new User(row); // creates a model from a database row
   var model2 = new User(model1); // clones the original model
   ```
+  
   * all model properties must be in camelCase while all database fields must be in snake_case. `AbstractModel` assumes this conventions and queries generated automatically will have syntax errors if this convention is not adhered to
   * all models of the same type must be stored in a single table (models spanning multiple tables are not possible). For example, for the User model above, the model is stored in a single table called `users`
 
