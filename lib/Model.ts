@@ -48,17 +48,19 @@ export function getModelHandler(model: Model): ModelHandler<any> {
 }
 
 export function isModelHandler(handler: any): handler is ModelHandler<any> {
-    return (handler !== undefined)     
+    return (handler !== undefined)
+        && (typeof handler.build === 'function')     
         && (typeof handler.clone === 'function')
         && (typeof handler.infuse === 'function')
         && (typeof handler.areEqual === 'function')
         && (typeof handler.getSyncQueries === 'function')
         && (typeof handler.getFetchOneQuery === 'function')
-        && (typeof handler.getFetchAllQuery === 'function');
+        && (typeof handler.getFetchAllQuery === 'function')
+        && (typeof handler.getIdGenerator === 'function');
 }
 
 export function isModelQuery(query: Query): query is ModelQuery<any> {
-    return ('handler' in query && isModelHandler(query['handler']));
+    return isModelHandler(query['handler']);
 }
 
 // DEFAULT ID GENERATOR

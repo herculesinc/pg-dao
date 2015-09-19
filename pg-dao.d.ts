@@ -121,6 +121,7 @@
     }
 
     export interface ModelHandler<T extends Model> extends ResultHandler<T> {
+        build(id: number, attributes: any): T;
         clone(model: T): T;
         infuse(target: T, source: T);
         areEqual(model1: T, model2: T): boolean;

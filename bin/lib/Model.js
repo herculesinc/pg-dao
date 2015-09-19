@@ -24,11 +24,11 @@ function getModelHandler(model) {
 }
 
 function isModelHandler(handler) {
-    return handler !== undefined && typeof handler.clone === 'function' && typeof handler.infuse === 'function' && typeof handler.areEqual === 'function' && typeof handler.getSyncQueries === 'function' && typeof handler.getFetchOneQuery === 'function' && typeof handler.getFetchAllQuery === 'function';
+    return handler !== undefined && typeof handler.build === 'function' && typeof handler.clone === 'function' && typeof handler.infuse === 'function' && typeof handler.areEqual === 'function' && typeof handler.getSyncQueries === 'function' && typeof handler.getFetchOneQuery === 'function' && typeof handler.getFetchAllQuery === 'function' && typeof handler.getIdGenerator === 'function';
 }
 
 function isModelQuery(query) {
-    return 'handler' in query && isModelHandler(query['handler']);
+    return isModelHandler(query['handler']);
 }
 
 // DEFAULT ID GENERATOR

@@ -401,6 +401,7 @@ ModelHandler is an object which provides services needed by DAO to work with the
 ```JavaScript
 {
   parse(row: any): Model;
+  build(id: number, attributes: any): Model;
   clone(model: Model): Model;
   areEqual(model1: Model, model2: Model): boolean;
   infuse(target: Model, source: Model);
@@ -413,6 +414,7 @@ ModelHandler is an object which provides services needed by DAO to work with the
 The meaning of the above methods is described below:
 
   * __parse(row)__ - should take a single database row as input and return a model object
+  * __build(id, attributes)__ - should take an ID and a set of attributes, and build a fully functional model
   * __clone(model)__ - should take a model as an input and produce a new object identical to the original model
   * __areEqual(model1, model2)__ - should return true if both models are identical
   * __infuse(target, source)__ - should change the properties of the `target` model to make it identical to the `source` model
