@@ -691,7 +691,7 @@ dao.startTransaction.then(() => {
 
 #### Creating Models
 
-Inserting new models into the database can be done using a combination of `dao.create` and `dao.insert()` method:
+Inserting new models into the database can be done using a combination of `dao.create()` and `dao.insert()` method:
 
 ```JavaScript
 dao.startTransaction.then(() => {
