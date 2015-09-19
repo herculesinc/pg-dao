@@ -131,4 +131,10 @@ Object.defineProperty(exports, 'dbField', {
         return _libDecorators.dbField;
     }
 });
+Object.defineProperty(exports, 'PgIdGenerator', {
+    enumerable: true,
+    get: function get() {
+        return _libModel.PgIdGenerator;
+    }
+});
 //# sourceMappingURL=../bin/index.js.map
