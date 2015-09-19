@@ -115,12 +115,15 @@ class Dao extends _pgIo.Connection {
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
     insert(model) {
+        if (this.isActive === false) throw new _pgIo.ConnectionError('Cannot insert a model: connection has already been released');
         return this.store.insert(model);
     }
     destroy(model) {
+        if (this.isActive === false) throw new _pgIo.ConnectionError('Cannot destroy a model: connection has already been released');
         return this.store.destroy(model);
     }
     clean(model) {
+        if (this.isActive === false) throw new _pgIo.ConnectionError('Cannot clean a model: connection has already been released');
         return this.store.clean(model);
     }
     hasModel(model) {

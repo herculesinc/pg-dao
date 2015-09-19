@@ -4,22 +4,24 @@ Simple promise-based data access layer for PostgreSQL written on top of [pg-io](
 ## Usage
 pg-dao is designed for scenarios when connection to the database is needed for a series of short and relatively simple requests. If you need a connection to execute long running queries (or queries that return large amounts of data) or require complex transaction logic, pg-dao is probably not for you.
 
-Key principals for pg-dao are:
-  * __Single transaction__ - only one transaction is allowed per connection session. A transaction can be started at any point during the session, but can be committed (or rolled back) only at the end of the session
+pg-dao adheres to the following principles:
+  * __Single transaction__ - only one transaction is allowed per connection session. A transaction can be started at any point during the session, and can be committed (or rolled back) only at the end of the session
   * __Low error tolerance__ - any error in query execution will terminate the session and release the connection back to the pool
 
-The above would work well for many web-server scenarios when connection is needed to process a single user request. If an error is encountered during the request, all changes are rolled back, an error is returned to the user, and the connection is release to handle the next request. 
+The above would work well for many web-server scenarios when connection is needed to process a single user request. If an error is encountered during the request, all changes are rolled back, an error is returned to the user, and the connection is released to handle next user request. 
 
 In addition to the functionality of pg-io, pg-dao provides a flexible managed model mechanism to make syncing data with the database simpler.
+
+## Requirements
+pg-dao is written in TypeScript and compiled down to JavaScript (ES6). Aa such, it can be used in any JavaScript application which complies with runtime requirements of pg-dao. The most recent version of pg-dao __requires Node.js 4.1 or later__ as it relies heavily on many ES6 features such as classes, arrow functions, built-in promises etc. 
+
+Since pg-dao is ES6-centric, many examples below utilize ES6 syntax. Some examples also use TypeScript syntax to commutate expected types of variables.
 
 ## Install
 
 ```sh
 $ npm install --save pg-dao
 ```
-
-## Requirements
-pg-dao is written in TypeScript and uses many new features of ES6 (classes, built-in promises etc.). As such, it will only work with the latest releases of Node.js which support such features. Specifically, the most recent version of pg-dao __requires Node.js 4.1 or later__.
 
 ## Example
 
@@ -55,6 +57,8 @@ pg.db(settings).connect().then((dao) => {
 
 ## API Reference
 
+Complete public API definitions can be found in [pg-dao.d.ts]( https://github.com/herculesinc/pg-dao/blob/master/pg-dao.d.ts) file. The below sections will explain in more detail how the API can be used for specific tasks:
+
   * [Obtaining Database Connection](#obtaining-database-connection)
   * [Managing Transactions](#managing-transactions)
   * [Querying the Database](#querying-the-database)
@@ -62,11 +66,12 @@ pg.db(settings).connect().then((dao) => {
     - [Defining Models](#defining-models)
     - [Retrieving Models](#retrieving-models)
     - [Modifying and Syncing Models](#modifying-and-syncing-models)
-	
+	* [Errors](#errors)
+  
 # API
 ## Obtaining Database Connection
 
-pg-dao exposes a single function at the root level which can be used to obtain a reference to a database object:
+pg-dao exposes a single function at the root level which can be used to obtain a reference to a Database object:
 
 ```JavaScript
 function db(settings) : Database;
@@ -84,7 +89,7 @@ where `settings` should have the following form:
 ```
 The returned Database object can be used further to establish a connection session to the database. Creation of the database object does not establish a database connection but rather allocates a pool to hold connections to the database specified by the settings object.
 
-Calling `db()` method multiple times with the same settings will return the same Database object. However, if different settings are supplied, different connection pools will be created.
+Calling `db()` method multiple times with the same settings will return the same Database object. However, if different settings are provided, different connection pools will be created.
 
 ### Database
 Once a reference to a Database object is obtained, it can be used to establish a connection session using the following method:
@@ -165,11 +170,9 @@ connection.release(action?) : Promise<void>;
 
 where `action` parameter is as follows:
 
-  * 'commit' - if there is an active transaction it will be committed
-  * 'rollback' - if there is an active transaction it will be rolled back
-  * undefined - if no transaction was started on the connection, `dao.release()` method can be called without `action` parameter. However, if a transaction is in progress, and action parameter is omitted, an error will be thrown and the active transaction will be rolled back before the connection is released back to the pool
-
-Once DAO is released back to the pool, DAO object will become inactive and trying to execute queries on it will throw errors.
+  * __'commit'__ - if there is an active transaction it will be committed
+  * __'rollback'__ - if there is an active transaction it will be rolled back
+  * __undefined__ - if no transactions were started on the connection, `dao.release()` method can be called without `action` parameter. However, if a transaction is in progress, and action parameter is omitted, an error will be thrown and the active transaction will be rolled back before the connection is released back to the pool
 
 In the example below, query1 and query2 are executed in the context of the same transaction, then transaction is committed and DAO is released back to the pool.
 ```JavaScript
@@ -185,6 +188,8 @@ dao.startTransaction()
   .then((query2Result) => dao.release('commit'));
 ```
 
+Once the connection is released back to the pool, DAO object will become inactive and trying to execute queries on it will throw errors.
+
 ### Checking DAO State
 To check whether DAO is active, the following property can be used:
  ```JavaScript
@@ -197,7 +202,7 @@ To check whether DAO is in transaction, the following property can be used:
  ```JavaScript
 dao.inTransaction : boolean;
 ```
-DAO is considered to be in transaction from the point `startTransaction()` method is called, and until the transaction is committed or rolled-back.
+DAO is considered to be in transaction from the point `startTransaction()` method is called, and until the transaction is committed or rolled back.
 
 ## Querying the Database
 Once reference to DAO object is obtained it can be used to execute queries against the database using `dao.execute()` method.
@@ -206,7 +211,7 @@ Once reference to DAO object is obtained it can be used to execute queries again
 // executes a single query - and return a promise for the result
 dao.execute(query) : Promise<any>;
 
-// execute multiple queries and return a map of results
+// execute multiple queries and return a promise for a map of results
 dao.execute([query1, query2]) : Promise<Map>;
 ```
 
@@ -224,11 +229,13 @@ A query object passed to the execute method should have the following form:
 
 The only required property for a query is `text`, however, the behavior of the `execute()` method is directly controlled by other query properties. The behaviors are as follows:
 
-  * If only `text` property is provided: query will be executed against the database but no results will be returned to the user (even for SELECT statements). This is suitable for executing most INSERT, UPDATE, and DELTE commands
+  * If only `text` property is provided: query will be executed against the database but no results will be returned to the user (even for SELECT statements). This is suitable for executing most INSERT, UPDATE, and DELETE commands
   * `mask` property is provided: query will be executed and the results will be returned to the user. This is suitable for executing most SELECT commands. `mask` property can have one of the following values:
     - 'list' - an array of rows retrieved from the database will be returned to the user (or `[]` if no rows were returned)
     - 'object' - first row retrieved from the database will be returned to the user (or `undefined` if no rows were returned)
-  * `name` property is provided: when `execute()` is called with an array of queries, the returned map of results will be indexed by query name. For queries which don't have a name, the results will be held under the `undefined` key. If several executed queries have the same name, an array of results will be stored under they key for that name
+  * `name` property is provided: when `execute()` is called with an array of queries, the returned map of results will be indexed by query name. The following caveats apply:
+    - For queries which don't have a `name` property, the results will be held under the `undefined` key
+    - If several executed queries have the same name, an array of results will be stored under the key for that name
   * `params` - query will be parametrized with the provided object (more info below)
   * `handler` - query results will be parsed using custom logic (more info below)
 
@@ -313,13 +320,49 @@ dao.execute(query).then(() => {
 
 Safe parameters (e.g. booleans, numbers, safe strings) are inlined into the query text before the query is sent to the database. If one of the parameters is an unsafe string, the query is executed as a parametrized query on the database to avoid possibility of SQL-injection. In general, properties in the `params` object are treated as follows:
 
-  * boolean - always inlined
-  * number - always inlined
-  * Date - converted to ISO string and always inlined
-  * string - if the string is safe, it is inlined, otherwise the query is executed as a parametrized query
-  * object - serialized using `JSON.stringify()` and if the resulting string is safe, inlined; otherwise the query is executed as parametrized query
-  * arrays - not supported
-  * functions - not supported
+  * __boolean__ - always inlined
+  * __number__ - always inlined
+  * __Date__ - converted to ISO string and always inlined
+  * __string__ - if the string is safe, it is inlined, otherwise the query is executed as a parametrized query
+  * __object__ - object parameters are treated as follows:
+    - `valueOf()` method is called on the object and if it returns a number, a boolean, a safe string, or a date, the value is inlined; if the returned value is an unsafe string, the query is executed as parametrized query
+    - if `valueOf()` method returns an object, the parameter is converted to string using `JSON.stringify()` and if the resulting string is safe, inlined; otherwise the query is executed as parametrized query
+  * __arrays__ - arrays are parametrized as follows:
+    - arrays of numbers are always inlined using commas as a separator
+    - arrays of strings are either inlined (if the strings are safe) or sent to the database as parametrized queries (if strings are unsafe)
+    - all other array types (and arrays of mixed numbers and strings) are not supported and will throw errors
+  * __null__ or __undefined__ - always inlined as 'null'
+  * __functions__ - not supported, will throw errors
+  
+Examples of array parametrization:
+```JavaScript
+var query1 = {
+  text: 'SELECT * FROM users WHERE id IN ({{ids}});',
+  params: {
+    ids: [1, 2]
+  }
+};
+// query1 will be executed as:
+// SELECT * FROM users WHERE id IN (1,2);
+
+var query2 = {
+  text: 'SELECT * FROM users WHERE type IN ({{types}});',
+  params: {
+    types: ['personal', 'business']
+  }
+};
+// query2 will be executed as:
+// SELECT * FROM users WHERE type IN ('personal','business');
+
+var query3 = {
+  text: 'SELECT * FROM users WHERE name IN ({{names}});',
+  params: {
+    names: [`Test`, `T'est`, `Test2` ]
+  }
+};
+
+// query3 will be executed as:
+// SELECT * FROM users WHERE firstName IN ('Test',$1,'Test2');
   
 ### Result Parsing
 
@@ -338,12 +381,9 @@ dao.execute(query).then((result) => {
 });
 ```
 
-### Query execution errors
-If an error is thrown during query execution or query result parsing, DAO will be immediately released back to the pool. If DAO is in transaction, then the transaction will be rolled back. Basically, any error generated within the execute method will render the DAO object useless and no further communication with the database through this DAO object will be possible.
-
 ## Working with Models
 
-pg-dao provides a very flexible mechanism for defining managed model. Once models are defined, pg-dao takes care of synchronizing models with the database whenever changes are made.
+pg-dao provides a very flexible mechanism for defining managed models. Once models are defined, pg-dao takes care of synchronizing models with the database whenever changes are made.
 
 ### Defining Models
 
@@ -356,132 +396,120 @@ Any object can be a model as long as the object has the following properties:
   [handler]: ModelHandler  // handler for the model (described below)
 }
 ```
-Model handler is an object which provides services needed by DAO to work with the model. Model handler must have the following form:
+ModelHandler is an object which provides services needed by DAO to work with the model. Model handler must have the following form:
 
 ```JavaScript
 {
-  parse(row: any): any;
-  clone(model: any): any;
-  areEqual(model1: any, model2: any): boolean;
-  infuse(target: any, source: any);
-  getSyncQueries(original: any, current: any): Query[];
-  getFetchOneQuery(selector: any, forUpdate: boolean): Query;
-  getFetchAllQuery(selector: any, forUpdate: boolean): Query;
+  parse(row: any): Model;
+  clone(model: Model): Model;
+  areEqual(model1: Model, model2: Model): boolean;
+  infuse(target: Model, source: Model);
+  getSyncQueries(original: Model, current: Model): Query[];
+  getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): Query;
+  getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): Query;
 }
 ```
 The meaning of the above methods is described below:
 
-  * parse(row) - should take a single database row as input and return a model object
-  * clone(model) - should take a model as an input and produce a new object identical to the original model
-  * areEqual(model1, model2) - should return true if both models are identical
-  * infuse(target, source) - should change the properties of the `target` to make it identical to the `source`
-  * getSyncQueries(original, current) - given the original and the current state of the model, should produce an array of queries that should be run to synchronize the model with the database
-  * getFetchOneQuery - given the selector, returns a query which can be executed to retrieve a single model
-  * getFetchAllQuery - given the selector, returns a query which can be executed to retrieve a list of models
-    
-Below is an example of a very simple `User` model. For this model, the data is stored in the `users` table which has `id`, `username`, `created_on`, and `updated_on` fields.
+  * __parse(row)__ - should take a single database row as input and return a model object
+  * __clone(model)__ - should take a model as an input and produce a new object identical to the original model
+  * __areEqual(model1, model2)__ - should return true if both models are identical
+  * __infuse(target, source)__ - should change the properties of the `target` model to make it identical to the `source` model
+  * __getSyncQueries(original, current)__ - given the original and the current state of the model, should produce an array of queries which can be executed to synchronize the model with the database
+  * __getFetchOneQuery__ - given the selector, returns a query which can be executed to retrieve a single model
+  * __getFetchAllQuery__ - given the selector, returns a query which can be executed to retrieve a list of models
+
+The above mechanism is extremely flexible and allows the user to define models of nearly arbitrary complexity (e.g. it is possible to implement models which span multiple tables and contain complex object hierarchies). However, it would be extremely tedious to manually define handlers for all models from scratch. To make this task simpler, pg-dao provides a base class called `AbstractModel` which implements most of the boilerplate functionality for you.
+
+Below is an example of a very simple `User` model implemented by extending `AbstractModel` base class. For this model, the data is stored in the `users` table which has `id`, `username`, `created_on`, and `updated_on` fields.
+
 ```JavaScript
-// import symbols used by pg-dao
-import { symbols } from 'pg-dao';
+import { AbstractModel, symbols } from 'pg-dao';
 
-// define User class (TypeScript syntax is used)
-class User {
-    id          : number;
-    username    : string;
-    createdOn   : Date;
-    updatedOn   : Date;
-
-    constructor(row: any) {
-        this.id = row.id;
-        this.username = row.username;
-        this.createdOn = row.createdOn;
-        this.updatedOn = row.updatedOn;
+class User extends AbstractModel {    
+    constructor(seed: any) {
+        super(seed);
+        this.username = seed.username;
     }
 }
 
-// define User handler
-var userHandler = {
-  
-    parse: (row) => {
-        var user = new User(row);
-        user[symbols.handler] = this;
-        return user;
-    }
-
-    clone: (user) => {
-        var clone = new User(user);
-        clone[symbols.handler] = this;
-        return clone;
-    }
-    
-    areEqual: (user1, user2) => {
-        if (user1 === undefined || user2 === undefined) return false;
-        return (user1.id === user2.id
-            && user1.username === user2.username
-            && user1.createdOn.valueOf() === user2.createdOn.valueOf()
-            && user1.updatedOn.valueOf() === user2.updatedOn.valueOf());
-    }
-    
-    infuse: (target, source) => {
-        assert.equal(target.id, source.id);
-        target.username = source.username;
-        target.createdOn = source.createdOn;
-        target.updatedOn = source.updatedOn;
-    }
-    
-    getSyncQueries: (original, current) => {
-        var queries: Query[] = [];
-        if (original === undefined && current !== undefined) {
-            queries.push({
-              text: `INSERT INTO users (id, username, created_on, updated_on) 
-                      SELECT {{id}}, {{username}}, {{createdOn}}, {{updatedOn}};`,
-              params: current
-            });
-        }
-        else if (original !== undefined && current === undefined) {
-            queries.push({
-              text: `DELETE FROM users WHERE id = ${original.id};`
-            });
-        }
-        else if (original !== undefined && current !== undefined) {
-            queries.push({
-              text: `UPDATE users SET
-                        username = {{username}},
-                        updated_on = {{updatedOn}}
-                        WHERE id = ${user.id};`,
-              params: current
-            });
-        }
-
-        return queries;
-    }
-    
-    getFetchOneQuery(selector: any, forUpdate: boolean) {
-      if ('id' in selector) {
-        return {
-          text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
-                FROM tmp_users WHERE id = ${selector.id};`
-          mask: 'object',
-          mutable: forUpdate,
-          handler: this
-        };
-      }
-    }
-    
-    static getFetchAllQuery(selector: any, forUpdate: boolean) {
-      if ('userIdList' in selector) {
-        return {
-          text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
-                  FROM tmp_users WHERE id = ${selector.userIdList.join(',')};`
-          mask: 'list',
-          mutable: forUpdate,
-          handler: this
-        };
-      }
-    }
+// define the name of the table for the model
+User[symbols.dbTable] = 'users';
+// define the schema for the model
+User[symbols.dbSchema] = {
+    id        : Number,
+    username  : String,
+    createdOn : Date,
+    updatedOn : Date
 };
-
 ```
+
+The above will create a fully functional User model. However, the steps of manually setting table name and schema are still cumbersome. If you are using TypeScript, this can be avoided by using decorators as follows:
+
+```TypeScript
+import { AbstractModel, dbModel, dbField } from 'pg-dao';
+
+@dbModel('users')
+export class User extends AbstractModel {
+    
+    @dbField(String)
+    username: string;
+    
+    constructor(seed: any) {
+        super(seed);
+        this.username = seed.username;
+    }
+}
+```
+
+Both of the above code snippets will produce an identical model - but TypeScript provides a cleaner syntax.
+
+The models can be further customized almost at will. For example, providing a specialized fetch query can be done as follows:
+
+```TypeScript
+import { AbstractModel, dbModel, dbField } from 'pg-dao';
+
+@dbModel('users')
+export class User extends AbstractModel {
+    
+    @dbField(String)
+    username: string;
+    
+    constructor(seed: any) {
+        super(seed);
+        this.username = seed.username;
+    }
+    
+    static getFetchAllQuery(selector: any, forUpdate = false, name?: string) {
+        
+        if ('conversationId' in selector) {
+            // fetch all users participating in a specific conversation
+            return {
+                text: `SELECT ... FROM users WHERE id IN 
+                        (SELECT user_id FROM conversations WHERE id = ${selector.conversationId});`,
+                mask: 'list',
+                handler: this,
+                mutable: forUpdate,
+                name: name
+            };
+        }
+        else {
+            return super.getFetchAllQuery(selector, forUpdate, name);
+        }
+    }
+}
+```
+
+Using `AbstractModel` (as opposed to defining model handler from scratch) does impose a few limitations:
+
+  * model `constructor` must be able to build the model out of either a database row or another model. Specifically, the following should be possible:
+  ```JavaScript
+  var row = /* row retrieved from the database */
+  var model1 = new User(row); // creates a model from a database row
+  var model2 = new User(model1); // clones the original model
+  ```
+  * all model properties must be in camelCase while all database fields must be in snake_case. `AbstractModel` assumes this conventions and queries generated automatically will have syntax errors if this convention is not adhered to
+  * all models of the same type must be stored in a single table (models spanning multiple tables are not possible). For example, for the User model above, the model is stored in a single table called `users`
 
 ### Retrieving Models
 
@@ -496,7 +524,7 @@ var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId};`,
   mask: 'object',
-  handler: userHandler,
+  handler: User,
   mutable: false
 };
 
@@ -513,7 +541,7 @@ var qFetchUsersByIdList = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id IN (${userIdList.join(',')});`,
   mask: 'list',
-  handler: userHandler,
+  handler: User,
   mutable: false
 };
 
@@ -522,7 +550,7 @@ dao.execute(qFetchUsersByIdList).then((users) => {
 });
 ```
 
-Retrieving the same model multiple times does not create a new model object - but rather updates an existing model object with fresh data from the database:
+Retrieving the same model multiple times does not create a new model object - but rather updates an existing model object with fresh data from the database (this effectively reloads the model in memory):
 
 ```JavaScript
 var userId = 1;
@@ -530,7 +558,7 @@ var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId};`,
   mask: 'object',
-  handler: userHandler,
+  handler: User,
   mutable: false
 };
 
@@ -551,7 +579,7 @@ var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId} FOR UPDATE;`,
   mask: 'object',
-  handler: userHandler,
+  handler: User,
   mutable: true
 };
 
@@ -584,23 +612,27 @@ The meaning of the parameters is as follows:
   * `selector`- an object describing parameters based on which models should be selected
   * `forEdit` - an optional parameter (default false) indicating whether the retrieved models are mutable
 
-The fetch methods can be used as follows:
+For the User model defiend above, the fetch methods can be used as follows:
 ```JavaScript
-  dao.fetchOne(userHandler, { id: 1 }).then((user) => {
+  dao.fetchOne(User, { id: 1 }).then((user) => {
     // fetches User model with ID = 1 from the database
     // the fetched model is immutable
   });
   
-  dao.fetchOne(userHandler, { id: 2 }, true).then((user) => {
+  dao.fetchOne(User, { id: 2 }, true).then((user) => {
     // fetches User model with ID = 2 from the database
     // the fetched model is mutable
   });
   
-  dao.fetchAll(userHandler, { userIdList: [2, 3] }, true).then((users) => {
+  dao.fetchAll(User, { id: [2, 3] }).then((users) => {
     // fetches User models with IDs 2 and 3 from the database
     // the fetched models are immutable
   });
 ```
+
+Internally, DAO fetch methods call model handler's get fetch query methods (`getFetchOneQuery()` and `getFetchAllQuery()`) and execute returned queries using `dao.execute()` method. So, any custom fetch queries defined for the model will automatically work in these methods too.
+
+When working with models derived from `AbstractModel`, keep in mind that `FOR UPDATE` statement will be added to all automatically generated fetch queries when `forUpdate` parameter is set to true for `getFetchOneQuery()` and `getFetchAllQuery()` methods.
 
 ### Modifying and Syncing Models
 
@@ -613,7 +645,7 @@ Updating existing models is done simply by modifying model properties. No additi
 ```JavaScript
 dao.startTransaction.then(() => {
   // retrieve user model from the database
-  return dao.execute(qFetchUserById).then((user) => {
+  return dao.fetchOne(User, { id: 1 }, true).then((user) => {
     // update the model
     user.username = 'test';
     dao.isModified(user); // true
@@ -630,7 +662,7 @@ Deleting existing models can be done as follows:
 ```JavaScript
 dao.startTransaction.then(() => {
   // retrieve user model from the database
-  return dao.execute(qFetchUserById).then((user) => {
+  return dao.fetchOne(User, { id: 1 }, true).then((user) => {
     dao.destroy(user);
     dao.isDestroyed(user); // true
   });
@@ -641,13 +673,13 @@ dao.startTransaction.then(() => {
 
 #### Creating Models
 
-pg-dao does not handle creation of model objects, but once a model object is created, it can be inserted into the database using `dao.insert()` method:
+pg-dao does not handle creation of model objects (yet), but once a model object is created, it can be inserted into the database using `dao.insert()` method:
 
 ```JavaScript
 // create a new model object
-var user = userHandler.parse({
+var user = User.parse({
   id: 1, 
-  username: 'test', 
+  username: 'Test', 
   createdOn: new Date(), 
   updatedOn: new Date()
 });
@@ -668,7 +700,7 @@ It is possible to revert the changes made to a model by using the following meth
 ```JavaScript
 dao.clean(model);
 ```
-If this method is called on a new model, the model will be removed form DAO.
+The changes will be reverted to the point when last call to `dao.sync()` was made. If this method is called on a new model, the model will be removed form DAO.
 
 #### Syncing Changes
 
@@ -690,7 +722,7 @@ It is also possible to sync model changes with the database without releasing DA
 }
 ```
 
-`dao.release('commit')` call also returns an array of change objects, however, the `release()` method returns the complete set of changes that were performed during the DAO session, while the `sync()` method returns only the changes done since the lasts sync.
+`dao.release('commit')` call also returns an array of change objects, however, the `release()` method returns the complete set of changes that were performed during the DAO session, while the `sync()` method returns only the changes done since the lasts `sync()` call.
 
 pg-dao does not actively enforce model immutability. This means that models retrieved as immutable can still be modified by the user. As pg-dao only observes mutable models, any changes to immutable models will be ignored. However, it is possible to force pg-dao to validate model immutability on syncing changes. This can be done via setting `validateImmutability` property for the connection to true. In such a case, if any changes to immutable models are detected during model synchronization, an error will be thrown. There are performance implications to setting `validateImmutability` property to true - so, it might be a good idea to use it in development environments only.
 
@@ -698,20 +730,49 @@ pg-dao will also automatically set `updatedOn` property of any models that have 
 
 #### Checking Model State
 
-It is possible to check the state of DAO as well as the state of a specific model using the following methods:
+It is possible to check the state of a specific model using the following methods:
 
 ```JavaScript
-dao.isSynchronized() : boolean  // returns false if DAO has any pending changes
-dao.isModified(model): boolean  // returns true if the model has pending changes
-dao.isNew(model): boolean       // returns true if the new model has not yet been saved to the database
-dao.isDestroyed(model): boolean // returns true if the deleted model has not yet been removed from the databsae
+dao.isModified(model) : boolean  // true if the model has pending changes
+dao.isNew(model)      : boolean  // true if the new model has not yet been saved to the database
+dao.isDestroyed(model): boolean  // true if the deleted model has not yet been removed from the databsae
 ```
 
-To check whether a model is registered with DAO the following method can be used:
+This methods will throw an error if the model has not been registered with DAO. To check whether a model is registered with DAO the following method can be used:
 
 ```JavaScript
 dao.hasModel(model) : boolean
 ```
+
+To check whether DAO has any pending changes (updates, inserts, or deletes), the following method can be used:
+```
+dao.isSynchronized()  : boolean  // returns false if DAO has any pending changes
+```
+
+### Errors
+
+pg-io provides several customized errors which extend the built-in Error object (via base PgError class). These errors are:
+
+  * __ConnectionError__, thrown when:
+    - establishing a database connection fails
+    - an attempt to use an already released connection is made
+    - an attempt to release an already released connection is made
+  * __TransactionError__, thrown when:
+    - an attempt is made to start a transaction on a connection which is already in transaction
+    - a connection is released without committing or rolling back an active transaction
+  * __QueryError__, thrown when:
+    - executing of a query fails
+  * __ParseError__, thrown when:
+    - parsing of query results fails
+  * __StoreError__, thrown when:
+    - An attempt to change the state of in-memory models is made illegally (e.g. inserting the same model twice)
+  * __SyncError__, thrown when:
+    - a change to an immutable model is detected
+    - a connection is released without committing or rolling back pending model changes
+  * __ModelError__, throw when:
+    - an inconsistent model is detected (e.g. model without `[handler]` property)
+
+If an error is thrown during query execution, query result parsing, or model syncing, the connection will be immediately released back to the pool. If a connection is in transaction, then the transaction will be rolled back. Basically, any error generated within `dao.execute()` and `dao.sync()` method will render the connection object useless and no further communication with the database through this connection object will be possible. The connection itself will be released to the pool so that it can be used by other clients.
 
 ## License
 Copyright (c) 2015 Hercules Inc.

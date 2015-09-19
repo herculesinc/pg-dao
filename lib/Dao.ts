@@ -170,9 +170,23 @@ export class Dao extends Connection {
     
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
-    insert(model: Model)        : Model { return this.store.insert(model); }
-    destroy(model: Model)       : Model { return this.store.destroy(model); }
-    clean(model: Model)         : Model { return this.store.clean(model); }
+    insert(model: Model) : Model {
+        if(this.isActive === false)
+            throw new ConnectionError('Cannot insert a model: connection has already been released'); 
+        return this.store.insert(model); 
+    }
+    
+    destroy(model: Model): Model {
+        if(this.isActive === false)
+            throw new ConnectionError('Cannot destroy a model: connection has already been released'); 
+        return this.store.destroy(model); 
+    }
+    
+    clean(model: Model): Model {
+        if(this.isActive === false)
+            throw new ConnectionError('Cannot clean a model: connection has already been released'); 
+        return this.store.clean(model); 
+    }
 
     hasModel(model: Model)      : boolean { return this.store.has(model); }
 
