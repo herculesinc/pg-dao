@@ -28,14 +28,14 @@ export interface Options {
 export class Store {
 
     private options: Options;
-    private cache: Map<ModelHandler<any>, Map<number, Model>>;
+    private cache: Map<ModelHandler<any>, Map<string, Model>>;
     private changes: Map<Model, SyncInfo>;
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
     constructor(options: Options) {
         this.options = options;
-        this.cache = new Map<ModelHandler<any>, Map<number, Model>>();
+        this.cache = new Map<ModelHandler<any>, Map<string, Model>>();
         this.changes = new Map<Model, SyncInfo>();        
     }
 
@@ -280,7 +280,7 @@ export class Store {
     private getModelMap(handler: ModelHandler<any>, create = false) {
         var modelMap = this.cache.get(handler);
         if (create && modelMap === undefined) {
-            modelMap = new Map<number, Model>();
+            modelMap = new Map<string, Model>();
             this.cache.set(handler, modelMap);
         }
         return modelMap;

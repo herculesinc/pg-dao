@@ -87,19 +87,20 @@
     // MODEL DEFINITIONS
     // --------------------------------------------------------------------------------------------
     export interface Model {
-        id          : number;
+        id          : string;
         updatedOn   : Date;
         createdOn   : Date;
     }
     
     export class AbstractModel implements Model {
-        id          : number;
+        id          : string;
         updatedOn   : Date;
         createdOn   : Date;
         
         constructor(seed: any);
         
         static parse(row: any): any;
+        static build(id: string, attributes: any): Model;
         static clone(seed: any): any;
         static infuse(target: Model, source: Model);
         static areEqual(model1: AbstractModel, model2: AbstractModel): boolean;
@@ -121,7 +122,7 @@
     }
 
     export interface ModelHandler<T extends Model> extends ResultHandler<T> {
-        build(id: number, attributes: any): T;
+        build(id: string, attributes: any): T;
         clone(model: T): T;
         infuse(target: T, source: T);
         areEqual(model1: T, model2: T): boolean;
@@ -134,13 +135,13 @@
     // ID GENERATORS
     // --------------------------------------------------------------------------------------------
     export interface IdGenerator {
-        getNextId(connection?: Dao): Promise<number>;
+        getNextId(connection?: Dao): Promise<string>;
     }
     
     export class PgIdGenerator implements IdGenerator {
-        idSequenceQuery: ResultQuery<number>;
+        idSequenceQuery: ResultQuery<string>;
         constructor(idSequence: string);
-        getNextId(dao: Dao): Promise<number>;
+        getNextId(dao: Dao): Promise<string>;
     }
     
     // QUERY DEFINITIONS
@@ -165,7 +166,6 @@
     // --------------------------------------------------------------------------------------------
     export class PgError extends Error {
         cause: Error;
-        stack: string;
         
         constructor(cause: Error);
 	    constructor(message: string, cause?: Error);

@@ -6,7 +6,7 @@ exports.symHandler = Symbol();
 // PUBLIC FUNCTIONS
 // ================================================================================================
 function isModel(model) {
-    return typeof model.id === 'number' && isModelHandler(model[exports.symHandler]);
+    return typeof model.id === 'string' && isModelHandler(model[exports.symHandler]);
 }
 exports.isModel = isModel;
 function getModelHandler(model) {
@@ -27,7 +27,7 @@ exports.isModelQuery = isModelQuery;
 class PgIdGenerator {
     constructor(idSequence) {
         this.idSequenceQuery = {
-            text: `SELECT nextval('${ idSequence }'::regclass)::int AS id;`,
+            text: `SELECT nextval('${ idSequence }'::regclass) AS id;`,
             mask: 'object',
             handler: {
                 parse: row => row.id

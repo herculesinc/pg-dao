@@ -31,8 +31,8 @@ interface FetchQueryConstructor {
 // ABSTRACT MODEL CLASS DEFINITION
 // ================================================================================================
 export class AbstractModel implements Model {
-    @dbField(Number)
-    id: number;
+    @dbField(String)
+    id: string;
     
     @dbField(Date)
     createdOn: Date;
@@ -59,7 +59,7 @@ export class AbstractModel implements Model {
         return model;
     }
     
-    static build(id: number, attributes: any): any {
+    static build(id: string, attributes: any): any {
         if ('id' in attributes) 
             throw new ModelError('Cannot build a mode: model attributes contain id property');
         

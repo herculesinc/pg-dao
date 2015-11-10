@@ -10,13 +10,13 @@ export var symHandler = Symbol();
 // ENUMS A ND INTERFACES
 // ================================================================================================
 export interface Model {
-    id          : number;
+    id          : string;
     updatedOn   : Date;
     createdOn   : Date;
 }
 
 export interface ModelHandler<T extends Model> extends ResultHandler<T> {
-    build(id: number, attributes: any): T;
+    build(id: string, attributes: any): T;
     clone(model: T): T;
     infuse(target: T, source: T);
     areEqual(model1: T, model2: T): boolean;
@@ -32,13 +32,13 @@ export interface ModelQuery<T extends Model> extends ResultQuery<T> {
 }
 
 export interface IdGenerator {
-    getNextId(dao?: Dao): Promise<number>;
+    getNextId(dao?: Dao): Promise<string>;
 }
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
 export function isModel(model: any): model is Model {
-    return (typeof model.id === 'number')
+    return (typeof model.id === 'string')
         && (isModelHandler(model[symHandler]));
 }
 
@@ -67,11 +67,11 @@ export function isModelQuery(query: Query): query is ModelQuery<any> {
 // ================================================================================================
 export class PgIdGenerator implements IdGenerator{
     
-    idSequenceQuery: ResultQuery<number>;
+    idSequenceQuery: ResultQuery<string>;
     
     constructor(idSequence: string) {
         this.idSequenceQuery = {
-            text: `SELECT nextval('${idSequence}'::regclass)::int AS id;`,
+            text: `SELECT nextval('${idSequence}'::regclass) AS id;`,
             mask: 'object',
             handler: {
                 parse: (row: any) => row.id
@@ -79,7 +79,7 @@ export class PgIdGenerator implements IdGenerator{
         }
     }
     
-    getNextId(dao: Dao): Promise<number> {
+    getNextId(dao: Dao): Promise<string> {
         return dao.execute(this.idSequenceQuery);
     }
 }

@@ -30,7 +30,7 @@ describe('DAO: Fetching a Single Model', function () {
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchOne(User, {id: 1}).then((user) =>{
-                    assert.strictEqual(user.id, 1);
+                    assert.strictEqual(user.id, '1');
                     assert.strictEqual(user.username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(user), true);
                     assert.strictEqual(dao.isNew(user), false);
@@ -47,7 +47,7 @@ describe('DAO: Fetching a Single Model', function () {
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchOne(User, {id: 1}, true).then((user) =>{
-                    assert.strictEqual(user.id, 1);
+                    assert.strictEqual(user.id, '1');
                     assert.strictEqual(user.username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(user), true);
                     assert.strictEqual(dao.isNew(user), false);
@@ -128,7 +128,7 @@ describe('DAO: Fetching Multiple Models', function () {
                 return dao.fetchAll(User, { id: [1, 3]}).then((users) => {
                     assert.strictEqual(users.length, 2);
                     
-                    assert.strictEqual(users[0].id, 1);
+                    assert.strictEqual(users[0].id, '1');
                     assert.strictEqual(users[0].username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(users[0]), true);
                     assert.strictEqual(dao.isNew(users[0]), false);
@@ -136,7 +136,7 @@ describe('DAO: Fetching Multiple Models', function () {
                     assert.strictEqual(dao.isDestroyed(users[0]), false);
                     assert.strictEqual(dao.isMutable(users[0]), false);
                     
-                    assert.strictEqual(users[1].id, 3);
+                    assert.strictEqual(users[1].id, '3');
                     assert.strictEqual(users[1].username, 'George');
                     assert.strictEqual(dao.hasModel(users[1]), true);
                     assert.strictEqual(dao.isNew(users[1]), false);
@@ -155,7 +155,7 @@ describe('DAO: Fetching Multiple Models', function () {
                 return dao.fetchAll(User, { id: [1, 3] }, true).then((users) => {
                     assert.strictEqual(users.length, 2);
                     
-                    assert.strictEqual(users[0].id, 1);
+                    assert.strictEqual(users[0].id, '1');
                     assert.strictEqual(users[0].username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(users[0]), true);
                     assert.strictEqual(dao.isNew(users[0]), false);
@@ -163,7 +163,7 @@ describe('DAO: Fetching Multiple Models', function () {
                     assert.strictEqual(dao.isDestroyed(users[0]), false);
                     assert.strictEqual(dao.isMutable(users[0]), true);
                     
-                    assert.strictEqual(users[1].id, 3);
+                    assert.strictEqual(users[1].id, '3');
                     assert.strictEqual(users[1].username, 'George');
                     assert.strictEqual(dao.hasModel(users[1]), true);
                     assert.strictEqual(dao.isNew(users[1]), false);
@@ -215,7 +215,7 @@ describe('DAO: Fetching Models via execute() method', function () {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1);
                 return dao.execute(query).then((user) => {
-                    assert.strictEqual(user.id, 1);
+                    assert.strictEqual(user.id, '1');
                     assert.strictEqual(user.username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(user), true);
                     assert.strictEqual(dao.isNew(user), false);
@@ -233,7 +233,7 @@ describe('DAO: Fetching Models via execute() method', function () {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1, true);
                 return dao.execute(query).then((user) => {
-                    assert.strictEqual(user.id, 1);
+                    assert.strictEqual(user.id, '1');
                     assert.strictEqual(user.username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(user), true);
                     assert.strictEqual(dao.isNew(user), false);
@@ -253,7 +253,7 @@ describe('DAO: Fetching Models via execute() method', function () {
                 return dao.execute(query).then((users) => {
                     assert.strictEqual(users.length, 2);
                     
-                    assert.strictEqual(users[0].id, 1);
+                    assert.strictEqual(users[0].id, '1');
                     assert.strictEqual(users[0].username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(users[0]), true);
                     assert.strictEqual(dao.isNew(users[0]), false);
@@ -261,7 +261,7 @@ describe('DAO: Fetching Models via execute() method', function () {
                     assert.strictEqual(dao.isDestroyed(users[0]), false);
                     assert.strictEqual(dao.isMutable(users[0]), false);
                     
-                    assert.strictEqual(users[1].id, 3);
+                    assert.strictEqual(users[1].id, '3');
                     assert.strictEqual(users[1].username, 'George');
                     assert.strictEqual(dao.hasModel(users[1]), true);
                     assert.strictEqual(dao.isNew(users[1]), false);
@@ -281,7 +281,7 @@ describe('DAO: Fetching Models via execute() method', function () {
                 return dao.execute(query).then((users) => {
                     assert.strictEqual(users.length, 2);
                     
-                    assert.strictEqual(users[0].id, 1);
+                    assert.strictEqual(users[0].id, '1');
                     assert.strictEqual(users[0].username, 'Irakliy');
                     assert.strictEqual(dao.hasModel(users[0]), true);
                     assert.strictEqual(dao.isNew(users[0]), false);
@@ -289,7 +289,7 @@ describe('DAO: Fetching Models via execute() method', function () {
                     assert.strictEqual(dao.isDestroyed(users[0]), false);
                     assert.strictEqual(dao.isMutable(users[0]), true);
                     
-                    assert.strictEqual(users[1].id, 3);
+                    assert.strictEqual(users[1].id, '3');
                     assert.strictEqual(users[1].username, 'George');
                     assert.strictEqual(dao.hasModel(users[1]), true);
                     assert.strictEqual(dao.isNew(users[1]), false);
@@ -343,7 +343,7 @@ describe('DAO: creating models', function () {
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.create<User>(User, { username: 'newuser' }).then((user) =>{
-                    assert.strictEqual(user.id, 100);
+                    assert.strictEqual(user.id, '100');
                     assert.strictEqual(user.username, 'newuser');
                     assert.strictEqual(user.createdOn instanceof Date, true);
                     assert.strictEqual(user.updatedOn instanceof Date, true);
@@ -365,7 +365,7 @@ describe('DAO: inserting models', function () {
             return prepareDatabase(dao).then(() => {
 
                 var user = User.parse({
-                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                    id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
 
                 dao.insert(user);
@@ -403,11 +403,11 @@ describe('DAO: inserting models', function () {
             return prepareDatabase(dao).then(() => {
 
                 var user1 = User.parse({
-                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                    id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
 
                 var user2 = User.parse({
-                    id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date()
+                    id: '5', username: 'Mark', createdOn: new Date(), updatedOn: new Date()
                 });
 
                 dao.insert(user1);
@@ -445,7 +445,7 @@ describe('DAO: inserting models', function () {
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var userSeed = {
-                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                    id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 }
                 assert.throws(() => {
                     dao.insert(userSeed);
@@ -584,7 +584,7 @@ describe('DAO: Deleting Models', function () {
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var user = User.parse({
-                    id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                    id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                 });
 
                 dao.insert(user);
@@ -675,7 +675,7 @@ describe('DAO: Updating Models', function () {
                     dao.destroy(users[2]);
 
                     var user = User.parse({
-                        id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date()
+                        id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date()
                     });
                     dao.insert(user);
 

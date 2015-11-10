@@ -67,9 +67,9 @@ export function prepareDatabase(dao: Dao): Promise<any> {
         {
             text: `SELECT * INTO TEMPORARY tmp_users
                 FROM (VALUES 
-		            (1::int, 'Irakliy'::VARCHAR,  now()::timestamptz, now()::timestamptz),
-		            (2::int, 'Yason'::VARCHAR, 	  now()::timestamptz, now()::timestamptz),
-		            (3::int, 'George'::VARCHAR,   now()::timestamptz, now()::timestamptz)
+		            (1::bigint, 'Irakliy'::VARCHAR,  now()::timestamptz, now()::timestamptz),
+		            (2::bigint, 'Yason'::VARCHAR, 	  now()::timestamptz, now()::timestamptz),
+		            (3::bigint, 'George'::VARCHAR,   now()::timestamptz, now()::timestamptz)
 	            ) AS q (id, username, created_on, updated_on);`
         },
         {

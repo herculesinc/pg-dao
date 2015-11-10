@@ -22,8 +22,8 @@ describe('Store: Initialization', function () {
 // ================================================================================================
 describe('Store: Loading Models', function () {
 
-    var seed = { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
-    var seedAlt = { id: 1, username: 'Yason', createdOn: new Date(), updatedOn: new Date() };
+    var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
+    var seedAlt = { id: '1', username: 'Yason', createdOn: new Date(), updatedOn: new Date() };
 
     it('Loading mutable models should populate the store', function () {
         var store = new Store(defaults);
@@ -103,7 +103,7 @@ describe('Store: Loading Models', function () {
 // ================================================================================================
 describe('Store: Updating Models', function () {
 
-    var seed = { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
+    var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
 
     it('Updating model property should mark it as modified', function () {
         var store = new Store(defaults);
@@ -148,7 +148,7 @@ describe('Store: Updating Models', function () {
 // ================================================================================================
 describe('Store: Destroying Models', function () {
 
-    var seed = { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
+    var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
     
     it('Destroying a model should mark it as destroyed', function () {
         var store = new Store(defaults);
@@ -240,7 +240,7 @@ describe('Store: Destroying Models', function () {
 // ================================================================================================
 describe('Store: Inserting Models', function () {
 
-    var seed = { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
+    var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
 
     it('Inserting a model should mark it as new', function () {
         var store = new Store(defaults);
@@ -333,7 +333,7 @@ describe('Store: Inserting Models', function () {
 // ================================================================================================
 describe('Store: Cleaning Models', function () {
     
-    var seed = { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
+    var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
     
     it('Cleaning an updated model should revert model changes', function () {
         var store = new Store(defaults);
@@ -394,7 +394,7 @@ describe('Store: Cleaning Models', function () {
 // ================================================================================================
 describe('Store: Syncing store', function () {
 
-    var seed = { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
+    var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
     
     it('Inserted model should be synchronized on apply changes', function () {
         var store = new Store(defaults);
@@ -462,14 +462,14 @@ describe('Store: Syncing store', function () {
     it('Apply changes should aggregate changes over time', function () {
         var store = new Store(defaults);
         var seeds = [
-            { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
-            { id: 2, username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
-            { id: 3, username: 'George', createdOn: new Date(), updatedOn: new Date() }
+            { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
+            { id: '2', username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
+            { id: '3', username: 'George', createdOn: new Date(), updatedOn: new Date() }
         ];
         
         var newSeeds = [
-            { id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
-            { id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
+            { id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
+            { id: '5', username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
         ];
         
         var users = store.load(User, seeds, true) as User[];
@@ -493,14 +493,14 @@ describe('Store: Syncing store', function () {
     it('Reversing a change should remove it from the list of changes', function () {
         var store = new Store(defaults);
         var seeds = [
-            { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
-            { id: 2, username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
-            { id: 3, username: 'George', createdOn: new Date(), updatedOn: new Date() }
+            { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
+            { id: '2', username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
+            { id: '3', username: 'George', createdOn: new Date(), updatedOn: new Date() }
         ];
         
         var newSeeds = [
-            { id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
-            { id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
+            { id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
+            { id: '5', username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
         ];
         
         var users = store.load(User, seeds, true) as User[];
@@ -596,14 +596,14 @@ describe('Store: Syncing store', function () {
     it('Multiple cycles of changes and syncing should execute correctly', function () {
         var store = new Store(defaults);
         var seeds = [
-            { id: 1, username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
-            { id: 2, username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
-            { id: 3, username: 'George', createdOn: new Date(), updatedOn: new Date() }
+            { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
+            { id: '2', username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
+            { id: '3', username: 'George', createdOn: new Date(), updatedOn: new Date() }
         ];
         
         var newSeeds = [
-            { id: 4, username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
-            { id: 5, username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
+            { id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
+            { id: '5', username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
         ];
         
         var users = <User[]> store.load(User, seeds, true);

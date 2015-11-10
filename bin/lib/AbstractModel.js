@@ -157,7 +157,7 @@ class AbstractModel {
         return this[exports.symbols.idGenerator];
     }
 }
-__decorate([decorators_1.dbField(Number)], AbstractModel.prototype, "id", void 0);
+__decorate([decorators_1.dbField(String)], AbstractModel.prototype, "id", void 0);
 __decorate([decorators_1.dbField(Date)], AbstractModel.prototype, "createdOn", void 0);
 __decorate([decorators_1.dbField(Date)], AbstractModel.prototype, "updatedOn", void 0);
 exports.AbstractModel = AbstractModel;

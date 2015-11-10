@@ -10,10 +10,15 @@ declare module "pg-io" {
         database    : string;
         poolSize?   : number;
     }
+    
+    export interface Logger {
+        log(message: string): void;
+    }
 
     export function db(settings: ConnectionSettings): Database;
     export var defaults: ConnectionOptions;
     export var constructors: { connection: typeof Connection; };
+    export var logger: Logger;
 
     // DATABASE
     // --------------------------------------------------------------------------------------------
@@ -93,7 +98,6 @@ declare module "pg-io" {
     // --------------------------------------------------------------------------------------------
     export class PgError extends Error {
         cause: Error;
-        stack: string;
         
         constructor(cause: Error);
 	    constructor(message: string, cause?: Error);
