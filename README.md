@@ -390,7 +390,7 @@ pg-dao provides a very flexible mechanism for defining managed models. Once mode
 Any object can be a model as long as the object has the following properties:
 ```
 {
-  id       : number,       // unique identifier for the model
+  id       : string,       // unique identifier for the model
   createdOn: Date,         // date on which the model was created
   updatedOn: Date          // date on which the model was last updated
   [handler]: ModelHandler  // handler for the model (described below)
@@ -401,7 +401,7 @@ ModelHandler is an object which provides services needed by DAO to work with the
 ```JavaScript
 {
   parse(row: any): Model;
-  build(id: number, attributes: any): Model;
+  build(id: string, attributes: any): Model;
   clone(model: Model): Model;
   areEqual(model1: Model, model2: Model): boolean;
   infuse(target: Model, source: Model);
@@ -441,7 +441,7 @@ class User extends AbstractModel {
 User[symbols.dbTable] = 'users';
 // define the schema for the model
 User[symbols.dbSchema] = {
-    id        : Number,
+    id        : String,
     username  : String,
     createdOn : Date,
     updatedOn : Date
@@ -524,7 +524,7 @@ Using `AbstractModel` (as opposed to defining model handler from scratch) does i
 As described above, pg-dao models require ID Generators to be provided. Such generators can be anything as long as they have the following form:
 ```
 {
-  getNextId(dao?: Dao): Promise<number>;
+  getNextId(dao?: Dao): Promise<string>;
 }
 ```
 The `getnextId()` method will receive a reference to a DAO object whenever this method is called, but ID generator does not need to rely on this object to generate unique IDs. This approach makes it possible to generate unique IDs in a variety of ways (e.g. in-memory using timestamps, distributed ID generation using redis server etc.) making pg-dao models even more flexible.
@@ -539,7 +539,7 @@ Retrieving models from the database can be done via the regular `dao.execute()` 
 The main difference from executing regular queries is that model queries should have `ModelHandler` specified for the `handler` property and can have an additional `mutable` property to specify whether retrieved models can be updated. For example, given the User model defined above, a query to retrieve a single user by ID would look like this:
 
 ```JavaScript
-var userId = 1;
+var userId = '1';
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId};`,
@@ -556,7 +556,7 @@ dao.execute(qFetchUserById).then((user) => {
 A query to retrieve multiple users by ID could look like this:
 
 ```JavaScript
-var userIdList = [1, 2, 3];
+var userIdList = ['1', '2', '3'];
 var qFetchUsersByIdList = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id IN (${userIdList.join(',')});`,
@@ -573,7 +573,7 @@ dao.execute(qFetchUsersByIdList).then((users) => {
 Retrieving the same model multiple times does not create a new model object - but rather updates an existing model object with fresh data from the database (this effectively reloads the model in memory):
 
 ```JavaScript
-var userId = 1;
+var userId = '1';
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId};`,
@@ -594,7 +594,7 @@ The `mutable` property indicates whether the models retrieved by the query can b
 In some scenarios it might make sense to mark models as mutable only if `SELECT ... FOR UPDATE` statement was used to retrieve it from the database. For example, the following might be a query to select a user model for update:
 
 ```JavaScript
-var userId = 1;
+var userId = '1';
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId} FOR UPDATE;`,
@@ -605,7 +605,7 @@ var qFetchUserById = {
 
 dao.startTransaction.then(() => {
   return dao.execute(qFetchUserById).then((user) => {
-    // user row with ID = 1 is now locked in the database - no other client 
+    // user row with ID = '1' is now locked in the database - no other client 
     // can modify the row until this transaction is committed.
     // so, we can update the user model safely knowing that we have the most
     // recent version of the user data
@@ -634,18 +634,18 @@ The meaning of the parameters is as follows:
 
 For the User model defiend above, the fetch methods can be used as follows:
 ```JavaScript
-  dao.fetchOne(User, { id: 1 }).then((user) => {
-    // fetches User model with ID = 1 from the database
+  dao.fetchOne(User, { id: '1' }).then((user) => {
+    // fetches User model with ID = '1' from the database
     // the fetched model is immutable
   });
   
-  dao.fetchOne(User, { id: 2 }, true).then((user) => {
-    // fetches User model with ID = 2 from the database
+  dao.fetchOne(User, { id: '2' }, true).then((user) => {
+    // fetches User model with ID = '2' from the database
     // the fetched model is mutable
   });
   
-  dao.fetchAll(User, { id: [2, 3] }).then((users) => {
-    // fetches User models with IDs 2 and 3 from the database
+  dao.fetchAll(User, { id: ['2', '3'] }).then((users) => {
+    // fetches User models with IDs '2' and '3' from the database
     // the fetched models are immutable
   });
 ```
@@ -665,7 +665,7 @@ Updating existing models is done simply by modifying model properties. No additi
 ```JavaScript
 dao.startTransaction.then(() => {
   // retrieve user model from the database
-  return dao.fetchOne(User, { id: 1 }, true).then((user) => {
+  return dao.fetchOne(User, { id: '1' }, true).then((user) => {
     // update the model
     user.username = 'test';
     dao.isModified(user); // true
@@ -682,7 +682,7 @@ Deleting existing models can be done as follows:
 ```JavaScript
 dao.startTransaction.then(() => {
   // retrieve user model from the database
-  return dao.fetchOne(User, { id: 1 }, true).then((user) => {
+  return dao.fetchOne(User, { id: '1' }, true).then((user) => {
     dao.destroy(user);
     dao.isDestroyed(user); // true
   });
