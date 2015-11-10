@@ -7,8 +7,7 @@ export class ModelError extends PgError {
 	constructor(message: string, cause?: Error)
 	constructor(messageOrCause: string | Error, cause?: Error) {
 		super(messageOrCause as any, cause);
-		this.name = 'ModelError';
-		(Error as any).captureStackTrace(this, ModelError);
+		this.name = 'Model Error';
 	}
 };
 
@@ -17,8 +16,7 @@ export class ModelQueryError extends ModelError {
 	constructor(message: string, cause?: Error)
 	constructor(messageOrCause: string | Error, cause?: Error) {
 		super(messageOrCause as any, cause);
-		this.name = 'ModelQueryError';
-		(Error as any).captureStackTrace(this, ModelQueryError);
+		this.name = 'ModelQuery Error';
 	}
 };
 
@@ -27,8 +25,7 @@ export class StoreError extends PgError {
 	constructor(message: string, cause?: Error)
 	constructor(messageOrCause: string | Error, cause?: Error) {
 		super(messageOrCause as any, cause);
-		this.name = 'StoreError';
-		(Error as any).captureStackTrace(this, StoreError);
+		this.name = 'Store Error';
 	}
 };
 
@@ -37,7 +34,6 @@ export class SyncError extends PgError {
 	constructor(message: string, cause?: Error)
 	constructor(messageOrCause: string | Error, cause?: Error) {
 		super(messageOrCause as any, cause);
-		this.name = 'SyncError';
-		(Error as any).captureStackTrace(this, SyncError);
+		this.name = 'Sync Error';
 	}
 };

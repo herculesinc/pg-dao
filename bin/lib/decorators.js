@@ -1,27 +1,20 @@
+// IMPORTS
+// ================================================================================================
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
-    value: true
-});
-exports.dbModel = dbModel;
-exports.dbField = dbField;
-
-var _AbstractModel = require('./AbstractModel');
-
-var _errors = require('./errors');
-
+var AbstractModel_1 = require('./AbstractModel');
+var errors_1 = require('./errors');
 // DECORATOR DEFINITIONS
 // ================================================================================================
-
 function dbModel(table, idGenerator) {
-    if (table === undefined || table === null || table.trim() === '') throw new _errors.ModelError('Model table name cannot be empty');
+    if (table === undefined || table === null || table.trim() === '') throw new errors_1.ModelError('Model table name cannot be empty');
     return function (classConstructor) {
-        classConstructor[_AbstractModel.symbols.dbTable] = table;
-        classConstructor[_AbstractModel.symbols.dbSchema] = classConstructor.prototype[_AbstractModel.symbols.dbSchema];
-        classConstructor[_AbstractModel.symbols.idGenerator] = idGenerator;
+        classConstructor[AbstractModel_1.symbols.dbTable] = table;
+        classConstructor[AbstractModel_1.symbols.dbSchema] = classConstructor.prototype[AbstractModel_1.symbols.dbSchema];
+        classConstructor[AbstractModel_1.symbols.idGenerator] = idGenerator;
     };
 }
-
+exports.dbModel = dbModel;
 function dbField(fieldType) {
     switch (fieldType) {
         case Number:
@@ -30,18 +23,19 @@ function dbField(fieldType) {
         case Object:
             break;
         case Array:
-            throw new _errors.ModelError('Arrays types are not yet supported in model schemas');
+            throw new errors_1.ModelError('Arrays types are not yet supported in model schemas');
         default:
-            throw new _errors.ModelError(`Invalid field type in model schema`);
+            throw new errors_1.ModelError(`Invalid field type in model schema`);
     }
     return function (classPrototype, property) {
-        if (typeof property !== 'string') throw new _errors.ModelError('Database field property must be a string');
-        var schema = classPrototype[_AbstractModel.symbols.dbSchema];
+        if (typeof property !== 'string') throw new errors_1.ModelError('Database field property must be a string');
+        var schema = classPrototype[AbstractModel_1.symbols.dbSchema];
         if (schema === undefined) {
             schema = {};
-            classPrototype[_AbstractModel.symbols.dbSchema] = schema;
+            classPrototype[AbstractModel_1.symbols.dbSchema] = schema;
         }
         schema[property] = fieldType;
     };
 }
-//# sourceMappingURL=../../bin/lib/decorators.js.map
+exports.dbField = dbField;
+//# sourceMappingURL=decorators.js.map

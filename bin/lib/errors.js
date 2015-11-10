@@ -1,56 +1,38 @@
+// IMPORTS
+// ================================================================================================
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
-    value: true
-});
-
-var _pgIo = require('pg-io');
-
-class ModelError extends _pgIo.PgError {
+var pg_io_1 = require('pg-io');
+class ModelError extends pg_io_1.PgError {
     constructor(messageOrCause, cause) {
         super(messageOrCause, cause);
-        this.name = 'ModelError';
-        Error.captureStackTrace(this, ModelError);
+        this.name = 'Model Error';
     }
 }
-
 exports.ModelError = ModelError;
-
 ;
-
 class ModelQueryError extends ModelError {
     constructor(messageOrCause, cause) {
         super(messageOrCause, cause);
-        this.name = 'ModelQueryError';
-        Error.captureStackTrace(this, ModelQueryError);
+        this.name = 'ModelQuery Error';
     }
 }
-
 exports.ModelQueryError = ModelQueryError;
-
 ;
-
-class StoreError extends _pgIo.PgError {
+class StoreError extends pg_io_1.PgError {
     constructor(messageOrCause, cause) {
         super(messageOrCause, cause);
-        this.name = 'StoreError';
-        Error.captureStackTrace(this, StoreError);
+        this.name = 'Store Error';
     }
 }
-
 exports.StoreError = StoreError;
-
 ;
-
-class SyncError extends _pgIo.PgError {
+class SyncError extends pg_io_1.PgError {
     constructor(messageOrCause, cause) {
         super(messageOrCause, cause);
-        this.name = 'SyncError';
-        Error.captureStackTrace(this, SyncError);
+        this.name = 'Sync Error';
     }
 }
-
 exports.SyncError = SyncError;
-
 ;
-//# sourceMappingURL=../../bin/lib/errors.js.map
+//# sourceMappingURL=errors.js.map

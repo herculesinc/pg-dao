@@ -2,42 +2,32 @@
 // ================================================================================================
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
-    value: true
-});
-exports.isModel = isModel;
-exports.getModelHandler = getModelHandler;
-exports.isModelHandler = isModelHandler;
-exports.isModelQuery = isModelQuery;
-var symHandler = Symbol();
-exports.symHandler = symHandler;
+exports.symHandler = Symbol();
 // PUBLIC FUNCTIONS
 // ================================================================================================
-
 function isModel(model) {
-    return typeof model.id === 'number' && isModelHandler(model[symHandler]);
+    return typeof model.id === 'number' && isModelHandler(model[exports.symHandler]);
 }
-
+exports.isModel = isModel;
 function getModelHandler(model) {
-    var handler = model[symHandler];
+    var handler = model[exports.symHandler];
     return isModelHandler(handler) ? handler : undefined;
 }
-
+exports.getModelHandler = getModelHandler;
 function isModelHandler(handler) {
     return handler !== undefined && typeof handler.build === 'function' && typeof handler.clone === 'function' && typeof handler.infuse === 'function' && typeof handler.areEqual === 'function' && typeof handler.getSyncQueries === 'function' && typeof handler.getFetchOneQuery === 'function' && typeof handler.getFetchAllQuery === 'function' && typeof handler.getIdGenerator === 'function';
 }
-
+exports.isModelHandler = isModelHandler;
 function isModelQuery(query) {
     return isModelHandler(query['handler']);
 }
-
+exports.isModelQuery = isModelQuery;
 // DEFAULT ID GENERATOR
 // ================================================================================================
-
 class PgIdGenerator {
     constructor(idSequence) {
         this.idSequenceQuery = {
-            text: `SELECT nextval('${ idSequence }'::regclass) AS id;`,
+            text: `SELECT nextval('${ idSequence }'::regclass)::int AS id;`,
             mask: 'object',
             handler: {
                 parse: row => row.id
@@ -48,6 +38,5 @@ class PgIdGenerator {
         return dao.execute(this.idSequenceQuery);
     }
 }
-
 exports.PgIdGenerator = PgIdGenerator;
-//# sourceMappingURL=../../bin/lib/Model.js.map
+//# sourceMappingURL=Model.js.map

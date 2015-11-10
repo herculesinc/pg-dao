@@ -1,6 +1,6 @@
 {
   "name": "pg-dao",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Promise-based data access layer for PostgreSQL written in TypeScript",
   "keywords": [
     "pg",
@@ -22,10 +22,10 @@
     "url": "https://github.com/herculesinc/pg-dao.git"
   },
   "dependencies": {
-    "pg-io": "^0.3.2"
+    "pg-io": "^0.4.0"
   },
   "engines": {
-    "node": "^4.1.0"
+    "node": "^5.0.0"
   },
   "devDependencies": {
     "del": "^1.2.1",

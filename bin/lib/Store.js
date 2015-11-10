@@ -1,13 +1,9 @@
+// IMPORTS
+// ================================================================================================
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
-    value: true
-});
-
-var _errors = require('./errors');
-
-var _Model = require('./Model');
-
+var errors_1 = require('./errors');
+var Model_1 = require('./Model');
 // MODULE VARIABLES
 // ================================================================================================
 var symbols = {
@@ -17,7 +13,6 @@ var symbols = {
 };
 // STORE CLASS DEFINITION
 // ================================================================================================
-
 class Store {
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
@@ -29,31 +24,31 @@ class Store {
     // STATE CHANGE METHODS
     // --------------------------------------------------------------------------------------------
     insert(model) {
-        if ((0, _Model.isModel)(model) === false) throw new _errors.ModelError('Cannot insert a model: the model is invalid');
-        if (model[symbols.destroyed]) throw new _errors.StoreError('Cannot insert a model: the model has been destroyed');
-        var handler = model[_Model.symHandler];
+        if (Model_1.isModel(model) === false) throw new errors_1.ModelError('Cannot insert a model: the model is invalid');
+        if (model[symbols.destroyed]) throw new errors_1.StoreError('Cannot insert a model: the model has been destroyed');
+        var handler = model[Model_1.symHandler];
         var modelMap = this.getModelMap(handler, true);
-        if (modelMap.has(model.id)) throw new _errors.StoreError('Cannot insert a mode: the model is already in the store');
+        if (modelMap.has(model.id)) throw new errors_1.StoreError('Cannot insert a mode: the model is already in the store');
         model[symbols.mutable] = true;
         model[symbols.destroyed] = false;
         modelMap.set(model.id, model);
         return model;
     }
     destroy(model) {
-        if (this.has(model) === false) throw new _errors.StoreError('Cannot destroy a moadel: the model is not in the store');
-        if (model[symbols.destroyed]) throw new _errors.StoreError('Cannot destroy a model: the model has already been destroyed');
-        if (model[symbols.mutable] === false) throw new _errors.StoreError('Cannot destroy a model: the model is immutable');
+        if (this.has(model) === false) throw new errors_1.StoreError('Cannot destroy a moadel: the model is not in the store');
+        if (model[symbols.destroyed]) throw new errors_1.StoreError('Cannot destroy a model: the model has already been destroyed');
+        if (model[symbols.mutable] === false) throw new errors_1.StoreError('Cannot destroy a model: the model is immutable');
         model[symbols.destroyed] = true;
         if (model[symbols.original] === undefined) {
-            var modelMap = this.getModelMap(model[_Model.symHandler]);
+            var modelMap = this.getModelMap(model[Model_1.symHandler]);
             modelMap.delete(model.id);
         }
         return model;
     }
     clean(model) {
-        if (this.has(model) === false) throw new _errors.StoreError('Cannot clean a moadel: the model is not in the store');
+        if (this.has(model) === false) throw new errors_1.StoreError('Cannot clean a moadel: the model is not in the store');
         if (model[symbols.mutable] === false) return model;
-        var handler = model[_Model.symHandler];
+        var handler = model[Model_1.symHandler];
         if (model[symbols.original] === undefined) {
             var modelMap = this.getModelMap(handler);
             modelMap.delete(model.id);
@@ -70,17 +65,17 @@ class Store {
     // STORE LOADING METHODS
     // --------------------------------------------------------------------------------------------
     load(handler, rows, mutable) {
-        if ((0, _Model.isModelHandler)(handler) === false) throw new _errors.ModelError('Cannot load a model: model handler is invalid');
+        if (Model_1.isModelHandler(handler) === false) throw new errors_1.ModelError('Cannot load a model: model handler is invalid');
         var modelMap = this.getModelMap(handler, true);
         var models = rows.map(row => {
             var model = handler.parse(row);
-            if (this.options.validateHandlerOutput && (0, _Model.isModel)(model) === false) throw new _errors.ModelError('Cannot load a model: the model is invalid');
+            if (this.options.validateHandlerOutput && Model_1.isModel(model) === false) throw new errors_1.ModelError('Cannot load a model: the model is invalid');
             if (modelMap.has(model.id)) {
                 var storeModel = modelMap.get(model.id);
                 if (storeModel[symbols.mutable]) {
-                    if (storeModel[symbols.destroyed]) throw new _errors.StoreError('Cannot reload a model: the model has been destroyed');
-                    if (storeModel[symbols.original] === undefined) throw new _errors.StoreError('Cannot load a model: the model has been newly inserted');
-                    if (handler.areEqual(storeModel, storeModel[symbols.original]) === false) throw new _errors.StoreError('Cannot reload a model: the model has been modified');
+                    if (storeModel[symbols.destroyed]) throw new errors_1.StoreError('Cannot reload a model: the model has been destroyed');
+                    if (storeModel[symbols.original] === undefined) throw new errors_1.StoreError('Cannot load a model: the model has been newly inserted');
+                    if (handler.areEqual(storeModel, storeModel[symbols.original]) === false) throw new errors_1.StoreError('Cannot reload a model: the model has been modified');
                 }
                 handler.infuse(storeModel, model);
                 storeModel[symbols.mutable] = mutable;
@@ -89,7 +84,7 @@ class Store {
             } else {
                 if (mutable || this.options.validateImmutability) {
                     var clone = handler.clone(model);
-                    if (this.options.validateHandlerOutput && model === clone) throw new _errors.ModelError('Cannot load a model: model cloning returned the same model');
+                    if (this.options.validateHandlerOutput && model === clone) throw new errors_1.ModelError('Cannot load a model: model cloning returned the same model');
                     model[symbols.original] = clone;
                 }
                 model[symbols.mutable] = mutable;
@@ -105,11 +100,11 @@ class Store {
     has(model) {
         let errorOnAbsent = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 
-        if ((0, _Model.isModel)(model) === false) throw new _errors.ModelError('The model is invalid');
-        var modelMap = this.cache.get(model[_Model.symHandler]);
+        if (Model_1.isModel(model) === false) throw new errors_1.ModelError('The model is invalid');
+        var modelMap = this.cache.get(model[Model_1.symHandler]);
         var storeModel = modelMap ? modelMap.get(model.id) : undefined;
-        if (storeModel && model !== storeModel) throw new _errors.StoreError('Different model with the same ID was found in the store');
-        if (errorOnAbsent && storeModel === undefined) throw new _errors.StoreError('The model was not found in the store');
+        if (storeModel && model !== storeModel) throw new errors_1.StoreError('Different model with the same ID was found in the store');
+        if (errorOnAbsent && storeModel === undefined) throw new errors_1.StoreError('The model was not found in the store');
         return storeModel !== undefined;
     }
     isNew(model) {
@@ -124,7 +119,7 @@ class Store {
     }
     isModified(model) {
         if (this.has(model, true)) {
-            return model[symbols.mutable] === true && model[symbols.destroyed] === false && model[symbols.original] !== undefined && model[_Model.symHandler].areEqual(model, model[symbols.original]) === false;
+            return model[symbols.mutable] === true && model[symbols.destroyed] === false && model[symbols.original] !== undefined && model[Model_1.symHandler].areEqual(model, model[symbols.original]) === false;
         }
     }
     isMutable(model) {
@@ -162,7 +157,7 @@ class Store {
                     var original = model[symbols.original];
                     var current = model[symbols.destroyed] ? undefined : model;
                     if (handler.areEqual(original, current) === false) {
-                        throw new _errors.SyncError('Change to immutable model detected');
+                        throw new errors_1.SyncError('Change to immutable model detected');
                     }
                 }
             });
@@ -174,7 +169,7 @@ class Store {
             let original = changes[i].original;
             let current = changes[i].current;
             if (current) {
-                let handler = current[_Model.symHandler];
+                let handler = current[Model_1.symHandler];
                 current[symbols.original] = handler.clone(current);
                 let previousChange = this.changes.get(current);
                 if (previousChange === undefined) {
@@ -183,7 +178,7 @@ class Store {
                     this.changes.delete(current);
                 }
             } else {
-                let handler = original[_Model.symHandler];
+                let handler = original[Model_1.symHandler];
                 let modelMap = this.getModelMap(handler);
                 let model = modelMap.get(original.id);
                 let previousChange = this.changes.get(model);
@@ -216,6 +211,5 @@ class Store {
         return modelMap;
     }
 }
-
 exports.Store = Store;
-//# sourceMappingURL=../../bin/lib/Store.js.map
+//# sourceMappingURL=Store.js.map

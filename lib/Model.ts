@@ -71,7 +71,7 @@ export class PgIdGenerator implements IdGenerator{
     
     constructor(idSequence: string) {
         this.idSequenceQuery = {
-            text: `SELECT nextval('${idSequence}'::regclass) AS id;`,
+            text: `SELECT nextval('${idSequence}'::regclass)::int AS id;`,
             mask: 'object',
             handler: {
                 parse: (row: any) => row.id
