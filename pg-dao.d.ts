@@ -12,7 +12,9 @@
     }
 
     export function db(settings: ConnectionSettings): Database;
+    
     export var defaults: DaoOptions;
+    
     export var symbols: {
         handler     : symbol;
         fetchQuery  : symbol;
@@ -23,6 +25,12 @@
         dbSchema    : symbol;
         idGenerator : symbol;
     };
+    
+    export var config : {
+        logger: {
+            log(message: string);
+        }
+    }
     
     // DATABASE
     // --------------------------------------------------------------------------------------------
@@ -99,6 +107,7 @@
         
         constructor(seed: any);
         
+        static name: string;
         static parse(row: any): any;
         static build(id: string, attributes: any): Model;
         static clone(seed: any): any;
@@ -122,6 +131,7 @@
     }
 
     export interface ModelHandler<T extends Model> extends ResultHandler<T> {
+        name?: string;
         build(id: string, attributes: any): T;
         clone(model: T): T;
         infuse(target: T, source: T);

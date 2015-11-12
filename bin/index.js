@@ -27,11 +27,13 @@ var defaults = {
     manageUpdatedOn: true
 };
 pg.defaults = Object.assign(pg.defaults, defaults);
-pg.constructors.connection = Dao_1.Dao;
+pg.config.connectionConstructor = Dao_1.Dao;
+//pg.config.logger = console;
 // RE-EXPORTS
 // ================================================================================================
 var pg_io_1 = require('pg-io');
 exports.db = pg_io_1.db;
+exports.config = pg_io_1.config;
 exports.defaults = pg_io_1.defaults;
 exports.PgError = pg_io_1.PgError;
 exports.ConnectionError = pg_io_1.ConnectionError;

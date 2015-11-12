@@ -27,6 +27,7 @@ exports.isModelQuery = isModelQuery;
 class PgIdGenerator {
     constructor(idSequence) {
         this.idSequenceQuery = {
+            name: 'qGetNextId:' + idSequence,
             text: `SELECT nextval('${ idSequence }'::regclass) AS id;`,
             mask: 'object',
             handler: {

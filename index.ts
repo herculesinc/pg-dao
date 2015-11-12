@@ -44,11 +44,12 @@ var defaults: pg.ConnectionOptions = {
 }
 
 pg.defaults = Object.assign(pg.defaults, defaults);
-pg.constructors.connection = Dao;
+pg.config.connectionConstructor = Dao;
+//pg.config.logger = console;
 
 // RE-EXPORTS
 // ================================================================================================
-export { db, defaults, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
+export { db, config, defaults, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
 export { ModelError, ModelQueryError, StoreError, SyncError } from './lib/errors';
 export { AbstractModel } from './lib/AbstractModel';
 export { dbModel, dbField } from './lib/decorators';

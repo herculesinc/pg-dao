@@ -16,6 +16,7 @@ export interface Model {
 }
 
 export interface ModelHandler<T extends Model> extends ResultHandler<T> {
+    name?: string;
     build(id: string, attributes: any): T;
     clone(model: T): T;
     infuse(target: T, source: T);
@@ -71,6 +72,7 @@ export class PgIdGenerator implements IdGenerator{
     
     constructor(idSequence: string) {
         this.idSequenceQuery = {
+            name: 'qGetNextId:' + idSequence,
             text: `SELECT nextval('${idSequence}'::regclass) AS id;`,
             mask: 'object',
             handler: {

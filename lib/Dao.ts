@@ -1,10 +1,10 @@
 // IMPORTS
 // ================================================================================================
-import { Connection, ConnectionOptions, Query, DbQueryResult, ConnectionState } from 'pg-io';
+import { Database, Connection, ConnectionOptions, Query, DbQueryResult, ConnectionState, utils } from 'pg-io';
 import { Store, SyncInfo, Options as StoreOptions } from './Store';
 import { Model, isModelHandler, ModelHandler, symHandler, isModelQuery, ModelQuery } from './Model';
 import { ModelError, ModelQueryError, SyncError } from './errors';
-import {  PgError, ConnectionError } from 'pg-io';
+import { PgError, ConnectionError } from 'pg-io';
 
 // DAO CLASS DEFINITION
 // ================================================================================================
@@ -14,8 +14,8 @@ export class Dao extends Connection {
 	
 	// CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-	constructor(options: ConnectionOptions, client: any, done: (error?: Error) => void) {
-		super(options, client, done);
+	constructor(database: Database, options: ConnectionOptions) {
+		super(database, options);
 		this.store = new Store(options);
 	}
 	
@@ -104,18 +104,24 @@ export class Dao extends Connection {
             return <any> Promise.reject(
                 new ConnectionError('Cannot sync: connection has already been released'));
 
-        var changes: SyncInfo[];
-        
+        var start = process.hrtime();
+        this.log && this.log('Synchronizing Dao');
+       
+        var changes: SyncInfo[]; 
         return Promise.resolve().then(() => {
             changes = this.store.getChanges();
             return this.getModelSyncQueries(changes);
         })
         .catch((reason) => this.rollbackAndRelease(reason))
         .then((queries) => {
-            if (queries.length === 0) return Promise.resolve(changes);
+            if (queries.length === 0) {
+                this.log && this.log(`No changes detected in ${utils.since(start)} ms`);
+                return Promise.resolve(changes);
+            }
             
             return this.execute(queries).then(() => {
                 this.store.applyChanges(changes);
+                this.log && this.log(`Synchronized ${changes.length} changes in ${utils.since(start)} ms`);
                 return changes;
             });          
         }).catch((reason) => {
@@ -132,8 +138,11 @@ export class Dao extends Connection {
             return Promise.reject(
                 new ConnectionError('Cannot release connection: connection has already been released'));
         
+        var start = process.hrtime();
         try {
+            this.log && this.log('Preparing to release Dao connection; checking for changes');
             var changes = this.store.getChanges();
+            this.log && this.log(`Found ${changes.length} changes in ${utils.since(start)} ms`);
         }
         catch (error) {
             return  this.rollbackAndRelease(error);
@@ -142,16 +151,24 @@ export class Dao extends Connection {
         if (changes.length === 0)
             return super.release(action);
         
+        start = process.hrtime();
         switch (action) {
             case 'commit':
+                this.log && this.log('Committing transaction and releasing connection back to the pool');
                 var queries = this.getModelSyncQueries(changes, true);
                 return this.execute(queries).then(() => {
                     changes = this.store.applyChanges(changes);
                     this.releaseConnection();
+                    this.log && this.log(`Transaction committed in ${utils.since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
                     return changes; 
                 });
             case 'rollback':
-                return this.rollbackAndRelease();
+                this.log && this.log('Rolling back transaction and releasing connection back to the pool');
+                return this.rollbackAndRelease()
+                    .then((result) => {
+                        this.log && this.log(`Transaction rolled back in ${utils.since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
+                        return result;
+                    });
             default:
                 return this.rollbackAndRelease(
                     new SyncError('Unsynchronized models detected during connection release'));
@@ -175,6 +192,8 @@ export class Dao extends Connection {
             throw <any> Promise.reject(
                 new ConnectionError('Cannot create a model: connection has already been released'));
         
+        var start = process.hrtime();
+        this.log && this.log(`Creating a new ${handler.name || 'Unnamed'} model`);
         if (isModelHandler(handler) === false)
             return <any> Promise.reject(
                 new ModelError('Cannot create a model: model handler is invalid'));
@@ -185,7 +204,9 @@ export class Dao extends Connection {
                 new ModelError('Cannot create a model: model id generator is undefined'));
         
         return idGenerator.getNextId(this).then((nextId) => {
-            return handler.build(nextId, attributes);
+            var model = handler.build(nextId, attributes);
+            this.log && this.log(`New ${handler.name || 'Unnamed'} model created in ${utils.since(start)} ms`);
+            return model;
         });
     }
     
@@ -243,13 +264,16 @@ export class Dao extends Connection {
 // COMMON QUERIES
 // ================================================================================================
 var BEGIN_TRANSACTION: Query = {
+    name: 'qBeginTransaction',
     text: 'BEGIN;'
 };
 
 var COMMIT_TRANSACTION: Query = {
+    name: 'qCommitTransaction',
     text: 'COMMIT;'
 };
 
 var ROLLBACK_TRANSACTION: Query = {
+    name: 'qRollbackTransaction',
     text: 'ROLLBACK;'
 };

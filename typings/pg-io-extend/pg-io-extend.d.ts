@@ -4,4 +4,8 @@ declare module "pg-io" {
         validateHandlerOutput?  : boolean;
         manageUpdatedOn?        : boolean;
     }
+    
+    export interface Database {
+        getPoolDescription(): string;
+    }
 }

@@ -19,7 +19,7 @@ export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator
 
 export function dbField(fieldType: any): PropertyDecorator {
     switch (fieldType) {
-        case Number: case String: case Date: case Object:
+        case Number: case Boolean: case String: case Date: case Object:
             break;
         case Array:
             throw new ModelError('Arrays types are not yet supported in model schemas');

@@ -81,7 +81,7 @@ class AbstractModel {
         }
     }
     static areEqual(model1, model2) {
-        if (model1 === undefined || model2 === undefined) return false;
+        if (model1 == undefined || model2 == undefined) return false;
         if (model1.constructor !== this || model2.constructor !== this) throw new errors_1.ModelError('Cannot compare models: model constructors do not match');
         var retval = true;
         var schema = this[exports.symbols.dbSchema];
@@ -90,7 +90,7 @@ class AbstractModel {
                 case Number:
                 case Boolean:
                 case String:
-                    retval = model1[field] === model2[field];
+                    retval = model1[field].valueOf() === model2[field].valueOf();
                     break;
                 case Date:
                     retval = compareDates(model1[field], model2[field]);
@@ -141,6 +141,7 @@ class AbstractModel {
             qFetchQuery = buildFetchQuery(this[exports.symbols.dbTable], this[exports.symbols.dbSchema], this);
             this[exports.symbols.fetchQuery] = qFetchQuery;
         }
+        name = name || `qFetchOne${ this.name }Model`;
         return new qFetchQuery(selector, 'object', name, forUpdate);
     }
     static getFetchAllQuery(selector, forUpdate, name) {
@@ -151,6 +152,7 @@ class AbstractModel {
             qFetchQuery = buildFetchQuery(this[exports.symbols.dbTable], this[exports.symbols.dbSchema], this);
             this[exports.symbols.fetchQuery] = qFetchQuery;
         }
+        name = name || `qFetchAll${ this.name }Models`;
         return new qFetchQuery(selector, 'list', name, forUpdate);
     }
     static getIdGenerator() {
@@ -203,6 +205,7 @@ function buildInsertQuery(table, schema) {
     var querySpec = `INSERT INTO ${ table } (${ fields.join(',') }) VALUES (${ params.join(',') });`;
     return class {
         constructor(model) {
+            this.name = `qInsert${ model[Model_1.symHandler].name }Model`;
             this.text = querySpec;
             this.params = model;
         }
@@ -219,6 +222,7 @@ function buildUpdateQuery(table, schema) {
     var querySpec = `UPDATE ${ table } SET ${ fields.join(',') }`;
     return class {
         constructor(model) {
+            this.name = `qUpdate${ model[Model_1.symHandler].name }Model`;
             this.text = querySpec + ` WHERE id = ${ model.id };`;
             this.params = model;
         }
@@ -228,6 +232,7 @@ function buildDeleteQuery(table) {
     if (table == undefined || table.trim() === '') throw new errors_1.ModelError('Cannot build a delete query: model table is undefined');
     return class {
         constructor(model) {
+            this.name = `qDelete${ model[Model_1.symHandler].name }Model`;
             this.text = `DELETE FROM ${ table } WHERE id = ${ model.id };`;
         }
     };
@@ -235,18 +240,19 @@ function buildDeleteQuery(table) {
 // HELPER FUNCTIONS
 // ================================================================================================
 function compareDates(date1, date2) {
-    if ((date1 === null || date1 === undefined) && (date2 === null || date2 === undefined)) return true;
-    if (date1 === null || date1 === undefined || date2 === null || date2 === undefined) return false;
+    if (date1 == undefined && date2 == undefined) return true;
+    if (date1 == undefined || date2 == undefined) return false;
     return date1.valueOf() === date2.valueOf();
 }
 function compareObjects(object1, object2) {
-    if ((object1 === null || object1 === undefined) && (object2 === null || object2 === undefined)) return true;
-    if (object1 === null || object1 === undefined || object2 === null || object2 === undefined) return false;
+    if (object1 == undefined && object2 == undefined) return true;
+    if (object1 == undefined || object2 == undefined) return false;
+    if (object1.valueOf() === object2.valueOf()) return true;
     // TODO: make the comparison more intelligent
     return JSON.stringify(object1) === JSON.stringify(object2);
 }
 function cloneObject(source) {
-    if (source === undefined || source === null) return undefined;
+    if (source == undefined) return undefined;
     // TODO: make cloning more intelligent
     return JSON.parse(JSON.stringify(source));
 }

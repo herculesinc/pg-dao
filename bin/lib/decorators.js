@@ -18,6 +18,7 @@ exports.dbModel = dbModel;
 function dbField(fieldType) {
     switch (fieldType) {
         case Number:
+        case Boolean:
         case String:
         case Date:
         case Object:

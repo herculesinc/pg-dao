@@ -20,6 +20,9 @@ export class User extends AbstractModel {
         super(seed);
         this.username = seed.username;
     }
+    
+    // needed because applying decorators removes class names in TS1.7
+    static get name(): string { return 'User' };
 }
 
 // QUERIES

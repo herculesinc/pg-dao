@@ -108,7 +108,7 @@ export class AbstractModel implements Model {
     }
     
     static areEqual(model1: AbstractModel, model2: AbstractModel): boolean {
-        if (model1 === undefined || model2 === undefined) return false;
+        if (model1 == undefined || model2 == undefined) return false;
         if (model1.constructor !== this || model2.constructor !== this)
             throw new ModelError('Cannot compare models: model constructors do not match');
         
@@ -117,7 +117,7 @@ export class AbstractModel implements Model {
         for (var field in schema) {
             switch (schema[field]) {
                 case Number: case Boolean: case String:
-                    retval = (model1[field] === model2[field]);
+                    retval = (model1[field].valueOf() === model2[field].valueOf());
                     break;
                 case Date:
                     retval = compareDates(model1[field], model2[field]);
@@ -172,6 +172,7 @@ export class AbstractModel implements Model {
             qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
             this[symbols.fetchQuery] = qFetchQuery;
         }
+        name = name || `qFetchOne${this.name}Model`;
         return new qFetchQuery(selector, 'object', name, forUpdate);
     }
     
@@ -181,6 +182,7 @@ export class AbstractModel implements Model {
             qFetchQuery = buildFetchQuery(this[symbols.dbTable], this[symbols.dbSchema], this);
             this[symbols.fetchQuery] = qFetchQuery;
         }
+        name = name || `qFetchAll${this.name}Models`;
         return new qFetchQuery(selector, 'list', name, forUpdate);
     }
     
@@ -254,10 +256,12 @@ function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
     var querySpec = `INSERT INTO ${table} (${fields.join(',')}) VALUES (${params.join(',')});`;
     
     return class {
+        name: string;
         text: string;
         params: Model;
         
         constructor(model: Model) {
+            this.name = `qInsert${model[symHandler].name}Model`;
             this.text = querySpec;
             this.params = model;
         }
@@ -280,10 +284,12 @@ function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
     var querySpec = `UPDATE ${table} SET ${fields.join(',')}`;
     
     return class {
+        name: string;
         text: string;
         params: Model;
         
         constructor(model: Model) {
+            this.name = `qUpdate${model[symHandler].name}Model`;
             this.text = querySpec + ` WHERE id = ${model.id};`;
             this.params = model;
         }
@@ -296,9 +302,11 @@ function buildDeleteQuery(table: string): ModelQueryConstructor {
         throw new ModelError('Cannot build a delete query: model table is undefined');
     
     return class {
+        name: string;
         text: string;
         
         constructor(model: Model) {
+            this.name = `qDelete${model[symHandler].name}Model`;
             this.text = `DELETE FROM ${table} WHERE id = ${model.id};`;
         }
     };
@@ -307,28 +315,22 @@ function buildDeleteQuery(table: string): ModelQueryConstructor {
 // HELPER FUNCTIONS
 // ================================================================================================
 function compareDates(date1: Date, date2: Date): boolean {
-    if ((date1 === null || date1 === undefined) && (date2 === null || date2 === undefined))
-        return true;
-        
-    if (date1 === null || date1 === undefined || date2 === null || date2 === undefined)
-        return false;
-        
+    if (date1 == undefined && date2 == undefined) return true;
+    if (date1 == undefined || date2 == undefined) return false;
     return date1.valueOf() === date2.valueOf();
 }
 
 function compareObjects(object1: any, object2: any): boolean {
-    if ((object1 === null || object1 === undefined) && (object2 === null || object2 === undefined))
-        return true;
-        
-    if (object1 === null || object1 === undefined || object2 === null || object2 === undefined)
-        return false;
+    if (object1 == undefined && object2 == undefined) return true;
+    if (object1 == undefined || object2 == undefined) return false;
+    if (object1.valueOf() === object2.valueOf()) return true;
         
     // TODO: make the comparison more intelligent
     return JSON.stringify(object1) === JSON.stringify(object2);
 }
 
 function cloneObject(source: any): any {
-    if (source === undefined || source === null) return undefined;
+    if (source == undefined) return undefined;
     
     // TODO: make cloning more intelligent
     return JSON.parse(JSON.stringify(source));
