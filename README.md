@@ -13,7 +13,7 @@ The above would work well for many web-server scenarios when connection is neede
 In addition to the functionality of pg-io, pg-dao provides a flexible managed model mechanism to make syncing data with the database simpler.
 
 ## Requirements
-pg-dao is written in TypeScript and compiled down to JavaScript (ES6). Aa such, it can be used in any JavaScript application which complies with runtime requirements of pg-dao. The most recent version of pg-dao __requires Node.js 4.1 or later__ as it relies heavily on many ES6 features such as classes, arrow functions, built-in promises etc. 
+pg-dao is written in TypeScript and compiled down to JavaScript (ES6). Aa such, it can be used in any JavaScript application which complies with runtime requirements of pg-dao. The most recent version of pg-dao __requires Node.js 5.0 or later__ as it relies heavily on many ES6 features such as classes, arrow functions, built-in promises etc. 
 
 Since pg-dao is ES6-centric, many examples below utilize ES6 syntax. Some examples also use TypeScript syntax to communicate expected types of variables.
 
