@@ -363,7 +363,8 @@ var query3 = {
 
 // query3 will be executed as:
 // SELECT * FROM users WHERE firstName IN ('Test',$1,'Test2');
-  
+```
+
 ### Result Parsing
 
 It is possible to parse query results using custom logic by providing a ResultHandler object for a query. The handler object must have a single `parse()` method which takes a row as input and produces custom output. For example:

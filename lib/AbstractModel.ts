@@ -3,6 +3,7 @@
 import { Query } from 'pg-io';
 import { Model, ModelQuery, ModelHandler, symHandler, IdGenerator } from './Model';
 import { dbField } from './decorators'
+import { AbstractActionQuery, AbstractModelQuery} from './queries';
 import { ModelError, ModelQueryError } from './errors';
 import { camelToSnake } from './util'
 
@@ -207,15 +208,9 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
     }
     var querySpec = `SELECT ${fields.join(',')} FROM ${table}`;
     
-    return class {
-        name: string;
-        text: string;
-        params: any;
-        mask: string;
-        mutable: boolean;
-        handler: ModelHandler<any>;
-        
+    return class extends AbstractModelQuery<any>{
         constructor(selector: any, mask: string, name: string, forUpdate: boolean) {
+            super(handler, mask, forUpdate);
             
             var criteria: string[] = [];
             for (var filter in selector) {
@@ -232,9 +227,6 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
             this.name = name;
             this.text = querySpec + ` WHERE ${criteria.join(' AND ')} ${ forUpdate ? 'FOR UPDATE' : ''};`;
             this.params = selector;
-            this.mask = mask;
-            this.mutable = forUpdate;
-            this.handler = handler;
         }
     };
 }
@@ -255,15 +247,10 @@ function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
     }
     var querySpec = `INSERT INTO ${table} (${fields.join(',')}) VALUES (${params.join(',')});`;
     
-    return class {
-        name: string;
-        text: string;
-        params: Model;
-        
+    return class extends AbstractActionQuery {
         constructor(model: Model) {
-            this.name = `qInsert${model[symHandler].name}Model`;
+            super(`qInsert${model[symHandler].name}Model`, model);
             this.text = querySpec;
-            this.params = model;
         }
     };
 }
@@ -283,15 +270,10 @@ function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
     }
     var querySpec = `UPDATE ${table} SET ${fields.join(',')}`;
     
-    return class {
-        name: string;
-        text: string;
-        params: Model;
-        
+    return class extends AbstractActionQuery {
         constructor(model: Model) {
-            this.name = `qUpdate${model[symHandler].name}Model`;
+            super(`qUpdate${model[symHandler].name}Model`, model)
             this.text = querySpec + ` WHERE id = ${model.id};`;
-            this.params = model;
         }
     };
 }
@@ -301,12 +283,9 @@ function buildDeleteQuery(table: string): ModelQueryConstructor {
     if (table == undefined || table.trim() === '')
         throw new ModelError('Cannot build a delete query: model table is undefined');
     
-    return class {
-        name: string;
-        text: string;
-        
+    return class extends AbstractActionQuery {
         constructor(model: Model) {
-            this.name = `qDelete${model[symHandler].name}Model`;
+            super(`qDelete${model[symHandler].name}Model`);
             this.text = `DELETE FROM ${table} WHERE id = ${model.id};`;
         }
     };

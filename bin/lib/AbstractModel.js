@@ -9,6 +9,7 @@ var __decorate = undefined && undefined.__decorate || function (decorators, targ
 };
 var Model_1 = require('./Model');
 var decorators_1 = require('./decorators');
+var queries_1 = require('./queries');
 var errors_1 = require('./errors');
 var util_1 = require('./util');
 // MODULE VARIABLES
@@ -173,8 +174,9 @@ function buildFetchQuery(table, schema, handler) {
         fields.push(`${ util_1.camelToSnake(field) } AS "${ field }"`);
     }
     var querySpec = `SELECT ${ fields.join(',') } FROM ${ table }`;
-    return class {
+    return class extends queries_1.AbstractModelQuery {
         constructor(selector, mask, name, forUpdate) {
+            super(handler, mask, forUpdate);
             var criteria = [];
             for (var filter in selector) {
                 if (filter in schema === false) throw new errors_1.ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
@@ -187,9 +189,6 @@ function buildFetchQuery(table, schema, handler) {
             this.name = name;
             this.text = querySpec + ` WHERE ${ criteria.join(' AND ') } ${ forUpdate ? 'FOR UPDATE' : '' };`;
             this.params = selector;
-            this.mask = mask;
-            this.mutable = forUpdate;
-            this.handler = handler;
         }
     };
 }
@@ -203,11 +202,10 @@ function buildInsertQuery(table, schema) {
         params.push(`{{${ field }}}`);
     }
     var querySpec = `INSERT INTO ${ table } (${ fields.join(',') }) VALUES (${ params.join(',') });`;
-    return class {
+    return class extends queries_1.AbstractActionQuery {
         constructor(model) {
-            this.name = `qInsert${ model[Model_1.symHandler].name }Model`;
+            super(`qInsert${ model[Model_1.symHandler].name }Model`, model);
             this.text = querySpec;
-            this.params = model;
         }
     };
 }
@@ -220,19 +218,18 @@ function buildUpdateQuery(table, schema) {
         fields.push(`${ util_1.camelToSnake(field) }={{${ field }}}`);
     }
     var querySpec = `UPDATE ${ table } SET ${ fields.join(',') }`;
-    return class {
+    return class extends queries_1.AbstractActionQuery {
         constructor(model) {
-            this.name = `qUpdate${ model[Model_1.symHandler].name }Model`;
+            super(`qUpdate${ model[Model_1.symHandler].name }Model`, model);
             this.text = querySpec + ` WHERE id = ${ model.id };`;
-            this.params = model;
         }
     };
 }
 function buildDeleteQuery(table) {
     if (table == undefined || table.trim() === '') throw new errors_1.ModelError('Cannot build a delete query: model table is undefined');
-    return class {
+    return class extends queries_1.AbstractActionQuery {
         constructor(model) {
-            this.name = `qDelete${ model[Model_1.symHandler].name }Model`;
+            super(`qDelete${ model[Model_1.symHandler].name }Model`);
             this.text = `DELETE FROM ${ table } WHERE id = ${ model.id };`;
         }
     };

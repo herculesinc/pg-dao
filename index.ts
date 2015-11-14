@@ -54,3 +54,4 @@ export { ModelError, ModelQueryError, StoreError, SyncError } from './lib/errors
 export { AbstractModel } from './lib/AbstractModel';
 export { dbModel, dbField } from './lib/decorators';
 export { PgIdGenerator } from './lib/Model';
+export { AbstractActionQuery, AbstractModelQuery } from './lib/queries';

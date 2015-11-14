@@ -172,6 +172,25 @@
         mutable?: boolean;
     }
     
+    export class AbstractActionQuery implements Query {
+        name: string;
+        text: string;
+        params: any;
+    
+        constructor(name?: string, params?: any);
+    }
+
+    export class AbstractModelQuery<T extends Model> implements ModelQuery<T> {
+        name: string;
+        mask: string;
+        mutable: boolean;
+        handler: ModelHandler<any>;
+        text: string;
+        params: any;
+    
+        constructor(handler: ModelHandler<T>, mask: string, mutable?: boolean);
+    }
+    
     // ERROR CLASSES
     // --------------------------------------------------------------------------------------------
     export class PgError extends Error {

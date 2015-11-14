@@ -52,4 +52,7 @@ exports.dbModel = decorators_1.dbModel;
 exports.dbField = decorators_1.dbField;
 var Model_2 = require('./lib/Model');
 exports.PgIdGenerator = Model_2.PgIdGenerator;
+var queries_1 = require('./lib/queries');
+exports.AbstractActionQuery = queries_1.AbstractActionQuery;
+exports.AbstractModelQuery = queries_1.AbstractModelQuery;
 //# sourceMappingURL=index.js.map
