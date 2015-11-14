@@ -91,10 +91,8 @@ class AbstractModel {
                 case Number:
                 case Boolean:
                 case String:
-                    retval = model1[field].valueOf() === model2[field].valueOf();
-                    break;
                 case Date:
-                    retval = compareDates(model1[field], model2[field]);
+                    retval = compareValues(model1[field], model2[field]);
                     break;
                 case Object:
                     retval = compareObjects(model1[field], model2[field]);
@@ -236,13 +234,13 @@ function buildDeleteQuery(table) {
 }
 // HELPER FUNCTIONS
 // ================================================================================================
-function compareDates(date1, date2) {
-    if (date1 == undefined && date2 == undefined) return true;
-    if (date1 == undefined || date2 == undefined) return false;
-    return date1.valueOf() === date2.valueOf();
+function compareValues(value1, value2) {
+    if (value1 == value2) return true;
+    if (value1 == undefined || value2 == undefined) return false;
+    return value1.valueOf() === value2.valueOf();
 }
 function compareObjects(object1, object2) {
-    if (object1 == undefined && object2 == undefined) return true;
+    if (object1 == object2) return true;
     if (object1 == undefined || object2 == undefined) return false;
     if (object1.valueOf() === object2.valueOf()) return true;
     // TODO: make the comparison more intelligent

@@ -12,7 +12,9 @@ export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator
     
     return function (classConstructor: any) {
         classConstructor[symbols.dbTable] = table;
-        classConstructor[symbols.dbSchema] = classConstructor.prototype[symbols.dbSchema];
+        var schemaMap: Map<string, any> = classConstructor.prototype[symbols.dbSchema];
+        classConstructor[symbols.dbSchema] = Object.assign({},
+            schemaMap.get(AbstractModel.name), schemaMap.get(classConstructor.name));
         classConstructor[symbols.idGenerator] = idGenerator;
     }
 }
@@ -31,10 +33,16 @@ export function dbField(fieldType: any): PropertyDecorator {
         if (typeof property !== 'string')
             throw new ModelError('Database field property must be a string');
         
-        var schema = classPrototype[symbols.dbSchema];
+        var schemaMap: Map<string, any> = classPrototype[symbols.dbSchema];
+        if (schemaMap === undefined) {
+            schemaMap = new Map<string, any>();
+            classPrototype[symbols.dbSchema] = schemaMap; 
+        }
+        
+        var schema = schemaMap.get(classPrototype.constructor.name);
         if (schema === undefined) {
             schema = {};
-            classPrototype[symbols.dbSchema] = schema; 
+            schemaMap.set(classPrototype.constructor.name, schema);
         }
         schema[property] = fieldType;
     }

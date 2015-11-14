@@ -10,7 +10,8 @@ function dbModel(table, idGenerator) {
     if (table === undefined || table === null || table.trim() === '') throw new errors_1.ModelError('Model table name cannot be empty');
     return function (classConstructor) {
         classConstructor[AbstractModel_1.symbols.dbTable] = table;
-        classConstructor[AbstractModel_1.symbols.dbSchema] = classConstructor.prototype[AbstractModel_1.symbols.dbSchema];
+        var schemaMap = classConstructor.prototype[AbstractModel_1.symbols.dbSchema];
+        classConstructor[AbstractModel_1.symbols.dbSchema] = Object.assign({}, schemaMap.get(AbstractModel_1.AbstractModel.name), schemaMap.get(classConstructor.name));
         classConstructor[AbstractModel_1.symbols.idGenerator] = idGenerator;
     };
 }
@@ -30,10 +31,15 @@ function dbField(fieldType) {
     }
     return function (classPrototype, property) {
         if (typeof property !== 'string') throw new errors_1.ModelError('Database field property must be a string');
-        var schema = classPrototype[AbstractModel_1.symbols.dbSchema];
+        var schemaMap = classPrototype[AbstractModel_1.symbols.dbSchema];
+        if (schemaMap === undefined) {
+            schemaMap = new Map();
+            classPrototype[AbstractModel_1.symbols.dbSchema] = schemaMap;
+        }
+        var schema = schemaMap.get(classPrototype.constructor.name);
         if (schema === undefined) {
             schema = {};
-            classPrototype[AbstractModel_1.symbols.dbSchema] = schema;
+            schemaMap.set(classPrototype.constructor.name, schema);
         }
         schema[property] = fieldType;
     };

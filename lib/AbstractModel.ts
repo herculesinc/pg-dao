@@ -117,11 +117,8 @@ export class AbstractModel implements Model {
         var schema = this[symbols.dbSchema];
         for (var field in schema) {
             switch (schema[field]) {
-                case Number: case Boolean: case String:
-                    retval = (model1[field].valueOf() === model2[field].valueOf());
-                    break;
-                case Date:
-                    retval = compareDates(model1[field], model2[field]);
+                case Number: case Boolean: case String: case Date:
+                    retval = compareValues(model1[field], model2[field]);
                     break;
                 case Object:
                     retval = compareObjects(model1[field], model2[field]);
@@ -293,14 +290,14 @@ function buildDeleteQuery(table: string): ModelQueryConstructor {
 
 // HELPER FUNCTIONS
 // ================================================================================================
-function compareDates(date1: Date, date2: Date): boolean {
-    if (date1 == undefined && date2 == undefined) return true;
-    if (date1 == undefined || date2 == undefined) return false;
-    return date1.valueOf() === date2.valueOf();
+function compareValues(value1: Date, value2: Date): boolean {
+    if (value1 == value2) return true;
+    if (value1 == undefined || value2 == undefined) return false;
+    return value1.valueOf() === value2.valueOf();
 }
 
 function compareObjects(object1: any, object2: any): boolean {
-    if (object1 == undefined && object2 == undefined) return true;
+    if (object1 == object2) return true;
     if (object1 == undefined || object2 == undefined) return false;
     if (object1.valueOf() === object2.valueOf()) return true;
         

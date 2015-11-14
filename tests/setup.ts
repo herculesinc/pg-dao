@@ -25,6 +25,21 @@ export class User extends AbstractModel {
     static get name(): string { return 'User' };
 }
 
+@dbModel('tmp_tokens', userIdGenerator)
+export class Token extends AbstractModel {
+    
+    @dbField(Number)
+    status: number;
+    
+    constructor(seed: any) {
+        super(seed);
+        this.status = seed.status;
+    }
+    
+    // needed because applying decorators removes class names in TS1.7
+    static get name(): string { return 'Token' };
+}
+
 // QUERIES
 // ================================================================================================
 export class qFetchUserById implements ModelQuery<User> {
