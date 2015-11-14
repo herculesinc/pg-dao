@@ -44,16 +44,40 @@ class AbstractModel {
     }
     static build(id, attributes) {
         if ('id' in attributes) throw new errors_1.ModelError('Cannot build a mode: model attributes contain id property');
+        var timestamp = new Date();
         var model = new this(Object.assign({
             id: id,
-            createdOn: new Date(),
-            updatedOn: new Date()
+            createdOn: timestamp,
+            updatedOn: timestamp
         }, attributes));
         model[Model_1.symHandler] = this;
         return model;
     }
     static clone(model) {
-        var clone = new this(model);
+        if (model == undefined) throw new errors_1.ModelError('Cannot clone model: source model is undefined');
+        if (model.constructor !== this) throw new errors_1.ModelError('Cannot clone model: source model has a wrong constructor');
+        var schema = this[exports.symbols.dbSchema];
+        if (!schema) throw new errors_1.ModelError('Cannot clone model: model schema is undefined');
+        // TODO: find a better mechanism for cloning models
+        var seed = {};
+        for (var field in schema) {
+            switch (schema[field]) {
+                case Number:
+                case Boolean:
+                case String:
+                case Date:
+                    seed[field] = model[field];
+                    break;
+                case Object:
+                    seed[field] = cloneObject(model[field], field, this.name);
+                    break;
+                case Array:
+                    throw new errors_1.ModelError('Arrays types are not yet supported in model schemas');
+                default:
+                    throw new errors_1.ModelError(`Invalid field type in model schema`);
+            }
+        }
+        var clone = new this(seed);
         clone[Model_1.symHandler] = this;
         return clone;
     }
@@ -72,7 +96,7 @@ class AbstractModel {
                     target[field] = source[field];
                     break;
                 case Object:
-                    target[field] = cloneObject(source[field]);
+                    target[field] = cloneObject(source[field], field, this.name);
                     break;
                 case Array:
                     throw new errors_1.ModelError('Arrays types are not yet supported in model schemas');
@@ -243,12 +267,13 @@ function compareObjects(object1, object2) {
     if (object1 == object2) return true;
     if (object1 == undefined || object2 == undefined) return false;
     if (object1.valueOf() === object2.valueOf()) return true;
-    // TODO: make the comparison more intelligent
+    if (typeof object1.isEqualTo === 'function') return object1.isEqualTo(object2);
     return JSON.stringify(object1) === JSON.stringify(object2);
 }
-function cloneObject(source) {
+function cloneObject(source, field, model) {
     if (source == undefined) return undefined;
-    // TODO: make cloning more intelligent
-    return JSON.parse(JSON.stringify(source));
+    if (typeof source.clone === 'function') return source.clone();
+    if (source.constructor === Object) return JSON.parse(JSON.stringify(source));
+    throw new errors_1.ModelError(`Cannot clone [${ field }] property of ${ model } model: no clone() method provided`);
 }
 //# sourceMappingURL=AbstractModel.js.map
