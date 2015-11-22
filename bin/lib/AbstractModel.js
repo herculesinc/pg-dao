@@ -32,8 +32,8 @@ class AbstractModel {
         if (!seed) throw new errors_1.ModelError('Cannot instantiate a model: model seed is undefined');
         if (!seed.id) throw new errors_1.ModelError('Cannot instantiate a model: model id is undefined');
         this.id = seed.id;
-        this.createdOn = seed.createdOn;
-        this.updatedOn = seed.updatedOn;
+        this.createdOn = seed.createdOn ? seed.createdOn : new Date();
+        this.updatedOn = seed.updatedOn ? seed.updatedOn : new Date();
     }
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------
