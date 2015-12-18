@@ -2,10 +2,11 @@
 // ================================================================================================
 import { Query } from 'pg-io';
 import { Model, ModelQuery, ModelHandler, symHandler, IdGenerator } from './Model';
+import { DbField } from './schema';
 import { dbField } from './decorators'
 import { AbstractActionQuery, AbstractModelQuery} from './queries';
 import { ModelError, ModelQueryError } from './errors';
-import { camelToSnake } from './util'
+import { camelToSnake, deepCompare, ArrayComparator, deepClone } from './util'
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -16,7 +17,8 @@ export var symbols = {
 	deleteQuery : Symbol(),
     dbTable     : Symbol(),
     dbSchema    : Symbol(),
-    idGenerator : Symbol()
+    idGenerator : Symbol(),
+    arrayComparator: Symbol()
 }
 
 // INTERFACES
@@ -32,10 +34,10 @@ interface FetchQueryConstructor {
 // ABSTRACT MODEL CLASS DEFINITION
 // ================================================================================================
 export class AbstractModel implements Model {
-    @dbField(String)
+    @dbField(String, true)
     id: string;
     
-    @dbField(Date)
+    @dbField(Date, true)
     createdOn: Date;
     
     @dbField(Date)
@@ -86,19 +88,9 @@ export class AbstractModel implements Model {
 
         // TODO: find a better mechanism for cloning models
         var seed: any = {};
-        for (var field in schema) {
-            switch (schema[field]) {
-                case Number: case Boolean: case String: case Date:
-                    seed[field] = model[field];
-                    break;
-                case Object:
-                    seed[field] = cloneObject(model[field], field, this.name);
-                    break;
-                case Array:
-                    throw new ModelError('Arrays types are not yet supported in model schemas');
-                default:
-                    throw new ModelError(`Invalid field type in model schema`);
-            }    
+        for (var fieldName in schema) {
+            var field: DbField = schema[fieldName];
+            seed[field.name] = deepClone(model[field.name]);
         }
         
         var clone = new this(seed);
@@ -119,19 +111,10 @@ export class AbstractModel implements Model {
         var schema = this[symbols.dbSchema];
         if (!schema) throw new ModelError('Cannot infuse source into target: model schema is undefined')
         
-        for (var field in schema) {
-            switch (schema[field]) {
-                case Number: case Boolean: case String: case Date:
-                    target[field] = source[field];
-                    break;
-                case Object:
-                    target[field] = cloneObject(source[field], field, this.name);
-                    break;
-                case Array:
-                    throw new ModelError('Arrays types are not yet supported in model schemas');
-                default:
-                    throw new ModelError(`Invalid field type in model schema`);
-            }    
+        for (var fieldName in schema) {
+            var field: DbField = schema[fieldName];
+            if (field.readonly) continue;
+            target[field.name] = deepClone(source[field.name]);
         }
     }
     
@@ -142,20 +125,11 @@ export class AbstractModel implements Model {
         
         var retval = true;
         var schema = this[symbols.dbSchema];
-        for (var field in schema) {
-            switch (schema[field]) {
-                case Number: case Boolean: case String: case Date:
-                    retval = compareValues(model1[field], model2[field]);
-                    break;
-                case Object:
-                    retval = compareObjects(model1[field], model2[field]);
-                    break;
-                case Array:
-                    throw new ModelError('Arrays types are not yet supported in model schemas');
-                default:
-                    throw new ModelError(`Invalid field type in model schema`);
-            }    
-            if (retval === false) break;    
+        var arrayComparator: ArrayComparator = this[symbols.arrayComparator];
+        for (var fieldName in schema) {
+            var field: DbField = schema[fieldName];
+            retval = deepCompare(model1[field.name], model2[field.name], arrayComparator);
+            if (retval === false) break;
         }
         
         return retval;
@@ -227,8 +201,9 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
         throw new ModelError('Cannot build a fetch query: model schema is undefined');
     
     var fields: string[] = [];
-    for (var field in schema) {
-        fields.push(`${camelToSnake(field)} AS "${field}"`);
+    for (var fieldName in schema) {
+        var field: DbField = schema[fieldName];
+        fields.push(`${camelToSnake(field.name)} AS "${field.name}"`);
     }
     var querySpec = `SELECT ${fields.join(',')} FROM ${table}`;
     
@@ -241,7 +216,7 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
                 if (filter in schema === false)
                     throw new ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
                 if (selector[filter] && Array.isArray(selector[filter])) {
-                    criteria.push(`${camelToSnake(filter)} IN ({{${filter}}})`);
+                    criteria.push(`${camelToSnake(filter)} IN ([[${filter}]])`);
                 }
                 else {
                     criteria.push(`${camelToSnake(filter)}={{${filter}}}`);
@@ -265,9 +240,10 @@ function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
     
     var fields: string[] = [];
     var params: string[] = [];
-    for (var field in schema) {
-        fields.push(camelToSnake(field));
-        params.push(`{{${field}}}`)
+    for (var fieldName in schema) {
+        var field: DbField = schema[fieldName];
+        fields.push(camelToSnake(field.name));
+        params.push(`{{${field.name}}}`)
     }
     var querySpec = `INSERT INTO ${table} (${fields.join(',')}) VALUES (${params.join(',')});`;
     
@@ -288,9 +264,10 @@ function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
         throw new ModelError('Cannot build an update query: model schema is undefined');
     
     var fields: string[] = [];
-    for (var field in schema) {
-        if (field === 'id' || field === 'createdOn') continue;
-        fields.push(`${camelToSnake(field)}={{${field}}}`);
+    for (var fieldName in schema) {
+        var field: DbField = schema[fieldName];
+        if (field.readonly) continue;
+        fields.push(`${camelToSnake(field.name)}={{${field.name}}}`);
     }
     var querySpec = `UPDATE ${table} SET ${fields.join(',')}`;
     
@@ -313,35 +290,4 @@ function buildDeleteQuery(table: string): ModelQueryConstructor {
             this.text = `DELETE FROM ${table} WHERE id = ${model.id};`;
         }
     };
-}
-
-// HELPER FUNCTIONS
-// ================================================================================================
-function compareValues(value1: Date, value2: Date): boolean {
-    if (value1 == value2) return true;
-    if (value1 == undefined || value2 == undefined) return false;
-    return value1.valueOf() === value2.valueOf();
-}
-
-function compareObjects(object1: any, object2: any): boolean {
-    if (object1 == object2) return true;
-    if (object1 == undefined || object2 == undefined) return false;
-    if (object1.valueOf() === object2.valueOf()) return true;
-    
-    if (typeof object1.isEqualTo === 'function')
-        return object1.isEqualTo(object2);
-
-    return JSON.stringify(object1) === JSON.stringify(object2);
-}
-
-function cloneObject(source: any, field: string, model: string): any {
-    if (source == undefined) return undefined;
-    
-    if (typeof source.clone === 'function') 
-        return source.clone();
-        
-    if (source.constructor === Object) 
-        return JSON.parse(JSON.stringify(source)); 
-    
-    throw new ModelError(`Cannot clone [${field}] property of ${model} model: no clone() method provided`);
 }

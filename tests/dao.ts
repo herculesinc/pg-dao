@@ -32,6 +32,8 @@ describe('DAO: Fetching a Single Model', function () {
                 return dao.fetchOne(User, {id: 1}).then((user) =>{
                     assert.strictEqual(user.id, '1');
                     assert.strictEqual(user.username, 'Irakliy');
+                    assert.strictEqual(user.tags[0], 'tag1');
+                    assert.strictEqual(user.tags[1], 'tag2');
                     assert.strictEqual(dao.hasModel(user), true);
                     assert.strictEqual(dao.isNew(user), false);
                     assert.strictEqual(dao.isModified(user), false);
@@ -616,6 +618,7 @@ describe('DAO: Updating Models', function () {
                 return dao.execute(query1).then((user) => {
 
                     user.username = 'Test';
+                    user.tags[0] = 'testing';
                     assert.strictEqual(dao.isSynchronized, false);
                     assert.strictEqual(dao.hasModel(user), true);
                     assert.strictEqual(dao.isDestroyed(user), false);
@@ -636,6 +639,7 @@ describe('DAO: Updating Models', function () {
                         return dao.execute(query2).then((newUser) => {
                             assert.deepEqual(newUser, user);
                             assert.strictEqual(newUser.username, 'Test');
+                            assert.deepEqual(newUser.tags, ['testing', 'tag2']);
                         });
                     });
                 });

@@ -24,6 +24,7 @@
         dbTable     : symbol;
         dbSchema    : symbol;
         idGenerator : symbol;
+        arrayComparator: symbol;
     };
     
     export var config : {
@@ -121,8 +122,12 @@
     
     // DECORATORS
     // --------------------------------------------------------------------------------------------
-    export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator;
-    export function dbField(fieldType: any): PropertyDecorator;
+    export function dbModel(table: string, idGenerator: IdGenerator, arrayComparator?: ArrayComparison): ClassDecorator;
+    export function dbField(fieldType: any, readonly?: boolean): PropertyDecorator;
+
+    export const enum ArrayComparison {
+        strict = 1, set
+    }
 
     // RESULT/MODEL HANDLER DEFINITIONS
     // --------------------------------------------------------------------------------------------
@@ -153,7 +158,7 @@
         constructor(idSequence: string);
         getNextId(dao: Dao): Promise<string>;
     }
-    
+        
     // QUERY DEFINITIONS
     // --------------------------------------------------------------------------------------------
     export interface Query {

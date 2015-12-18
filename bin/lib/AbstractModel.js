@@ -21,7 +21,8 @@ exports.symbols = {
     deleteQuery: Symbol(),
     dbTable: Symbol(),
     dbSchema: Symbol(),
-    idGenerator: Symbol()
+    idGenerator: Symbol(),
+    arrayComparator: Symbol()
 };
 // ABSTRACT MODEL CLASS DEFINITION
 // ================================================================================================
@@ -60,22 +61,9 @@ class AbstractModel {
         if (!schema) throw new errors_1.ModelError('Cannot clone model: model schema is undefined');
         // TODO: find a better mechanism for cloning models
         var seed = {};
-        for (var field in schema) {
-            switch (schema[field]) {
-                case Number:
-                case Boolean:
-                case String:
-                case Date:
-                    seed[field] = model[field];
-                    break;
-                case Object:
-                    seed[field] = cloneObject(model[field], field, this.name);
-                    break;
-                case Array:
-                    throw new errors_1.ModelError('Arrays types are not yet supported in model schemas');
-                default:
-                    throw new errors_1.ModelError(`Invalid field type in model schema`);
-            }
+        for (var fieldName in schema) {
+            var field = schema[fieldName];
+            seed[field.name] = util_1.deepClone(model[field.name]);
         }
         var clone = new this(seed);
         clone[Model_1.symHandler] = this;
@@ -87,22 +75,10 @@ class AbstractModel {
         if (target.id !== source.id) throw new errors_1.ModelError('Cannot infuse source into target: source ID does not match target ID');
         var schema = this[exports.symbols.dbSchema];
         if (!schema) throw new errors_1.ModelError('Cannot infuse source into target: model schema is undefined');
-        for (var field in schema) {
-            switch (schema[field]) {
-                case Number:
-                case Boolean:
-                case String:
-                case Date:
-                    target[field] = source[field];
-                    break;
-                case Object:
-                    target[field] = cloneObject(source[field], field, this.name);
-                    break;
-                case Array:
-                    throw new errors_1.ModelError('Arrays types are not yet supported in model schemas');
-                default:
-                    throw new errors_1.ModelError(`Invalid field type in model schema`);
-            }
+        for (var fieldName in schema) {
+            var field = schema[fieldName];
+            if (field.readonly) continue;
+            target[field.name] = util_1.deepClone(source[field.name]);
         }
     }
     static areEqual(model1, model2) {
@@ -110,22 +86,10 @@ class AbstractModel {
         if (model1.constructor !== this || model2.constructor !== this) throw new errors_1.ModelError('Cannot compare models: model constructors do not match');
         var retval = true;
         var schema = this[exports.symbols.dbSchema];
-        for (var field in schema) {
-            switch (schema[field]) {
-                case Number:
-                case Boolean:
-                case String:
-                case Date:
-                    retval = compareValues(model1[field], model2[field]);
-                    break;
-                case Object:
-                    retval = compareObjects(model1[field], model2[field]);
-                    break;
-                case Array:
-                    throw new errors_1.ModelError('Arrays types are not yet supported in model schemas');
-                default:
-                    throw new errors_1.ModelError(`Invalid field type in model schema`);
-            }
+        var arrayComparator = this[exports.symbols.arrayComparator];
+        for (var fieldName in schema) {
+            var field = schema[fieldName];
+            retval = util_1.deepCompare(model1[field.name], model2[field.name], arrayComparator);
             if (retval === false) break;
         }
         return retval;
@@ -182,8 +146,8 @@ class AbstractModel {
         return this[exports.symbols.idGenerator];
     }
 }
-__decorate([decorators_1.dbField(String)], AbstractModel.prototype, "id", void 0);
-__decorate([decorators_1.dbField(Date)], AbstractModel.prototype, "createdOn", void 0);
+__decorate([decorators_1.dbField(String, true)], AbstractModel.prototype, "id", void 0);
+__decorate([decorators_1.dbField(Date, true)], AbstractModel.prototype, "createdOn", void 0);
 __decorate([decorators_1.dbField(Date)], AbstractModel.prototype, "updatedOn", void 0);
 exports.AbstractModel = AbstractModel;
 // QUERY BUILDERS
@@ -192,8 +156,9 @@ function buildFetchQuery(table, schema, handler) {
     if (table == undefined || table.trim() === '') throw new errors_1.ModelError('Cannot build a fetch query: model table is undefined');
     if (schema == undefined) throw new errors_1.ModelError('Cannot build a fetch query: model schema is undefined');
     var fields = [];
-    for (var field in schema) {
-        fields.push(`${ util_1.camelToSnake(field) } AS "${ field }"`);
+    for (var fieldName in schema) {
+        var field = schema[fieldName];
+        fields.push(`${ util_1.camelToSnake(field.name) } AS "${ field.name }"`);
     }
     var querySpec = `SELECT ${ fields.join(',') } FROM ${ table }`;
     return class extends queries_1.AbstractModelQuery {
@@ -203,7 +168,7 @@ function buildFetchQuery(table, schema, handler) {
             for (var filter in selector) {
                 if (filter in schema === false) throw new errors_1.ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
                 if (selector[filter] && Array.isArray(selector[filter])) {
-                    criteria.push(`${ util_1.camelToSnake(filter) } IN ({{${ filter }}})`);
+                    criteria.push(`${ util_1.camelToSnake(filter) } IN ([[${ filter }]])`);
                 } else {
                     criteria.push(`${ util_1.camelToSnake(filter) }={{${ filter }}}`);
                 }
@@ -219,9 +184,10 @@ function buildInsertQuery(table, schema) {
     if (schema == undefined) throw new errors_1.ModelError('Cannot build an insert query: model schema is undefined');
     var fields = [];
     var params = [];
-    for (var field in schema) {
-        fields.push(util_1.camelToSnake(field));
-        params.push(`{{${ field }}}`);
+    for (var fieldName in schema) {
+        var field = schema[fieldName];
+        fields.push(util_1.camelToSnake(field.name));
+        params.push(`{{${ field.name }}}`);
     }
     var querySpec = `INSERT INTO ${ table } (${ fields.join(',') }) VALUES (${ params.join(',') });`;
     return class extends queries_1.AbstractActionQuery {
@@ -235,9 +201,10 @@ function buildUpdateQuery(table, schema) {
     if (table == undefined || table.trim() === '') throw new errors_1.ModelError('Cannot build an update query: model table is undefined');
     if (schema == undefined) throw new errors_1.ModelError('Cannot build an update query: model schema is undefined');
     var fields = [];
-    for (var field in schema) {
-        if (field === 'id' || field === 'createdOn') continue;
-        fields.push(`${ util_1.camelToSnake(field) }={{${ field }}}`);
+    for (var fieldName in schema) {
+        var field = schema[fieldName];
+        if (field.readonly) continue;
+        fields.push(`${ util_1.camelToSnake(field.name) }={{${ field.name }}}`);
     }
     var querySpec = `UPDATE ${ table } SET ${ fields.join(',') }`;
     return class extends queries_1.AbstractActionQuery {
@@ -255,25 +222,5 @@ function buildDeleteQuery(table) {
             this.text = `DELETE FROM ${ table } WHERE id = ${ model.id };`;
         }
     };
-}
-// HELPER FUNCTIONS
-// ================================================================================================
-function compareValues(value1, value2) {
-    if (value1 == value2) return true;
-    if (value1 == undefined || value2 == undefined) return false;
-    return value1.valueOf() === value2.valueOf();
-}
-function compareObjects(object1, object2) {
-    if (object1 == object2) return true;
-    if (object1 == undefined || object2 == undefined) return false;
-    if (object1.valueOf() === object2.valueOf()) return true;
-    if (typeof object1.isEqualTo === 'function') return object1.isEqualTo(object2);
-    return JSON.stringify(object1) === JSON.stringify(object2);
-}
-function cloneObject(source, field, model) {
-    if (source == undefined) return undefined;
-    if (typeof source.clone === 'function') return source.clone();
-    if (source.constructor === Object) return JSON.parse(JSON.stringify(source));
-    throw new errors_1.ModelError(`Cannot clone [${ field }] property of ${ model } model: no clone() method provided`);
 }
 //# sourceMappingURL=AbstractModel.js.map

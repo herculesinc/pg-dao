@@ -5,6 +5,7 @@ import * as pg from 'pg-io';
 import { Dao } from './lib/Dao'
 import { symHandler } from './lib/Model';
 import { symbols as modelSymbols } from './lib/AbstractModel';
+import { ArrayComparator } from './lib/util';
 
 // INTERFACES
 // ================================================================================================
@@ -32,7 +33,8 @@ export var symbols = {
     deleteQuery : modelSymbols.deleteQuery,
     dbTable     : modelSymbols.dbTable,
     dbSchema    : modelSymbols.dbSchema,
-    idGenerator : modelSymbols.idGenerator
+    idGenerator : modelSymbols.idGenerator,
+    arrayComparator: modelSymbols.arrayComparator
 }
 
 var defaults: pg.ConnectionOptions = {
@@ -40,7 +42,7 @@ var defaults: pg.ConnectionOptions = {
     startTransaction        : false,
     validateImmutability    : true,
     validateHandlerOutput   : true,
-    manageUpdatedOn         : true,
+    manageUpdatedOn         : true
 }
 
 pg.defaults = Object.assign(pg.defaults, defaults);

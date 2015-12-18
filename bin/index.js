@@ -17,7 +17,8 @@ exports.symbols = {
     deleteQuery: AbstractModel_1.symbols.deleteQuery,
     dbTable: AbstractModel_1.symbols.dbTable,
     dbSchema: AbstractModel_1.symbols.dbSchema,
-    idGenerator: AbstractModel_1.symbols.idGenerator
+    idGenerator: AbstractModel_1.symbols.idGenerator,
+    arrayComparator: AbstractModel_1.symbols.arrayComparator
 };
 var defaults = {
     collapseQueries: false,

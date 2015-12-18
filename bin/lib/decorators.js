@@ -4,33 +4,26 @@
 
 var AbstractModel_1 = require('./AbstractModel');
 var errors_1 = require('./errors');
+var schema_1 = require('./schema');
+var util_1 = require('./util');
 // DECORATOR DEFINITIONS
 // ================================================================================================
-function dbModel(table, idGenerator) {
-    if (table === undefined || table === null || table.trim() === '') throw new errors_1.ModelError('Model table name cannot be empty');
+function dbModel(table, idGenerator, arrayComparison) {
+    if (table == undefined || table.trim() === '') throw new errors_1.ModelError('Model table name cannot be empty');
+    if (!idGenerator) throw new errors_1.ModelError('Model ID generator cannot be empty');
     return function (classConstructor) {
         classConstructor[AbstractModel_1.symbols.dbTable] = table;
         var schemaMap = classConstructor.prototype[AbstractModel_1.symbols.dbSchema];
         classConstructor[AbstractModel_1.symbols.dbSchema] = Object.assign({}, schemaMap.get(AbstractModel_1.AbstractModel.name), schemaMap.get(classConstructor.name));
         classConstructor[AbstractModel_1.symbols.idGenerator] = idGenerator;
+        classConstructor[AbstractModel_1.symbols.arrayComparator] = arrayComparison === 1 /* strict */
+        ? util_1.compareArraysStrict : util_1.compareArraysAsSets;
     };
 }
 exports.dbModel = dbModel;
-function dbField(fieldType) {
-    switch (fieldType) {
-        case Number:
-        case Boolean:
-        case String:
-        case Date:
-        case Object:
-            break;
-        case Array:
-            throw new errors_1.ModelError('Arrays types are not yet supported in model schemas');
-        default:
-            throw new errors_1.ModelError(`Invalid field type in model schema`);
-    }
+function dbField(fieldType, readonly) {
     return function (classPrototype, property) {
-        if (typeof property !== 'string') throw new errors_1.ModelError('Database field property must be a string');
+        var field = new schema_1.DbField(property, fieldType, readonly);
         var schemaMap = classPrototype[AbstractModel_1.symbols.dbSchema];
         if (schemaMap === undefined) {
             schemaMap = new Map();
@@ -41,7 +34,7 @@ function dbField(fieldType) {
             schema = {};
             schemaMap.set(classPrototype.constructor.name, schema);
         }
-        schema[property] = fieldType;
+        schema[property] = field;
     };
 }
 exports.dbField = dbField;
