@@ -1,7 +1,6 @@
+"use strict";
 // IMPORTS
 // ================================================================================================
-'use strict';
-
 var pg_io_1 = require('pg-io');
 var Store_1 = require('./Store');
 var Model_1 = require('./Model');
@@ -99,7 +98,7 @@ class Dao extends pg_io_1.Connection {
                 this.log && this.log('Committing transaction and releasing connection back to the pool');
                 var queries = this.getModelSyncQueries(changes, true);
                 return this.execute(queries).then(() => {
-                    changes = this.store.applyChanges(changes);
+                    changes = this.store.applyChanges(changes); // TODO: potentially remove
                     this.releaseConnection();
                     this.log && this.log(`Transaction committed in ${ pg_io_1.utils.since(start) } ms; pool state: ${ this.database.getPoolDescription() }`);
                     return changes;

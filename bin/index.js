@@ -1,7 +1,6 @@
+"use strict";
 // IMPORTS
 // ================================================================================================
-'use strict';
-
 var pg = require('pg-io');
 var Dao_1 = require('./lib/Dao');
 var Model_1 = require('./lib/Model');

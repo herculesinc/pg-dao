@@ -33,7 +33,7 @@ gulp.task('transpile', ['compile'], function () {
     return gulp.src('./bin/**/*.js')
         .pipe(sourcemaps.init({ loadMaps: true }))
         .pipe(babel({'whitelist': [
-          'strict',
+          //'strict',
           //'es6.arrowFunctions',
           //'es6.blockScoping',
           //'es6.classes',

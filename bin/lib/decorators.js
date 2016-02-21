@@ -1,7 +1,6 @@
+"use strict";
 // IMPORTS
 // ================================================================================================
-'use strict';
-
 var AbstractModel_1 = require('./AbstractModel');
 var errors_1 = require('./errors');
 var schema_1 = require('./schema');

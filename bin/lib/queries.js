@@ -1,7 +1,6 @@
+"use strict";
 // ABSTRACT QUERY
 // ================================================================================================
-'use strict';
-
 class AbstractActionQuery {
     constructor(name, params) {
         this.name = name || this.constructor.name;

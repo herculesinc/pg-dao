@@ -1,7 +1,6 @@
+"use strict";
 // IMPORTS
 // ================================================================================================
-'use strict';
-
 var errors_1 = require('./errors');
 var Model_1 = require('./Model');
 // MODULE VARIABLES
@@ -151,7 +150,7 @@ class Store {
                     var original = model[symbols.original];
                     var current = model[symbols.destroyed] ? undefined : model;
                     if (handler.areEqual(original, current) === false) {
-                        syncInfo.push({ original, current });
+                        syncInfo.push({ original: original, current: current });
                     }
                 } else if (this.options.validateImmutability) {
                     var original = model[symbols.original];

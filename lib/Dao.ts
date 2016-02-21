@@ -157,7 +157,7 @@ export class Dao extends Connection {
                 this.log && this.log('Committing transaction and releasing connection back to the pool');
                 var queries = this.getModelSyncQueries(changes, true);
                 return this.execute(queries).then(() => {
-                    changes = this.store.applyChanges(changes);
+                    changes = this.store.applyChanges(changes); // TODO: potentially remove
                     this.releaseConnection();
                     this.log && this.log(`Transaction committed in ${utils.since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
                     return changes; 

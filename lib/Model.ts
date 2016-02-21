@@ -40,7 +40,7 @@ export interface IdGenerator {
 // ================================================================================================
 export function isModel(model: any): model is Model {
     return (typeof model.id === 'string')
-        && (isModelHandler(model[symHandler]));
+        && (isModelHandler(model[symHandler])) as any;
 }
 
 export function getModelHandler(model: Model): ModelHandler<any> {
@@ -61,7 +61,7 @@ export function isModelHandler(handler: any): handler is ModelHandler<any> {
 }
 
 export function isModelQuery(query: Query): query is ModelQuery<any> {
-    return isModelHandler(query['handler']);
+    return isModelHandler(query['handler']) as any;
 }
 
 // DEFAULT ID GENERATOR

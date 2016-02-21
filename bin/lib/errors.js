@@ -1,7 +1,6 @@
+"use strict";
 // IMPORTS
 // ================================================================================================
-'use strict';
-
 var pg_io_1 = require('pg-io');
 class ModelError extends pg_io_1.PgError {
     constructor(messageOrCause, cause) {
