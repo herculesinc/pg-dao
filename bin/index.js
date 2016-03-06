@@ -1,10 +1,10 @@
 "use strict";
 // IMPORTS
 // ================================================================================================
-var pg = require('pg-io');
-var Dao_1 = require('./lib/Dao');
-var Model_1 = require('./lib/Model');
-var AbstractModel_1 = require('./lib/AbstractModel');
+const pg = require('pg-io');
+const Dao_1 = require('./lib/Dao');
+const Model_1 = require('./lib/Model');
+const AbstractModel_1 = require('./lib/AbstractModel');
 ;
 // GLOBALS
 // ================================================================================================

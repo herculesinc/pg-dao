@@ -6,11 +6,11 @@ var __decorate = this && this.__decorate || function (decorators, target, key, d
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var Model_1 = require('./Model');
-var decorators_1 = require('./decorators');
-var queries_1 = require('./queries');
-var errors_1 = require('./errors');
-var util_1 = require('./util');
+const Model_1 = require('./Model');
+const decorators_1 = require('./decorators');
+const queries_1 = require('./queries');
+const errors_1 = require('./errors');
+const util_1 = require('./util');
 // MODULE VARIABLES
 // ================================================================================================
 exports.symbols = {
@@ -32,8 +32,14 @@ class AbstractModel {
         if (!seed) throw new errors_1.ModelError('Cannot instantiate a model: model seed is undefined');
         if (!seed.id) throw new errors_1.ModelError('Cannot instantiate a model: model id is undefined');
         this.id = seed.id;
-        this.createdOn = seed.createdOn ? seed.createdOn : new Date();
-        this.updatedOn = seed.updatedOn ? seed.updatedOn : new Date();
+        if (!seed.createdOn) {
+            let timestamp = new Date();
+            this.createdOn = timestamp;
+            this.updatedOn = timestamp;
+        } else {
+            this.createdOn = seed.createdOn instanceof Date ? seed.createdOn : new Date(seed.createdOn);
+            this.updatedOn = seed.updatedOn instanceof Date ? seed.updatedOn : new Date(seed.updatedOn);
+        }
     }
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------

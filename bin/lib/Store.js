@@ -1,8 +1,8 @@
 "use strict";
 // IMPORTS
 // ================================================================================================
-var errors_1 = require('./errors');
-var Model_1 = require('./Model');
+const errors_1 = require('./errors');
+const Model_1 = require('./Model');
 // MODULE VARIABLES
 // ================================================================================================
 var symbols = {

@@ -1,10 +1,10 @@
 "use strict";
 // IMPORTS
 // ================================================================================================
-var AbstractModel_1 = require('./AbstractModel');
-var errors_1 = require('./errors');
-var schema_1 = require('./schema');
-var util_1 = require('./util');
+const AbstractModel_1 = require('./AbstractModel');
+const errors_1 = require('./errors');
+const schema_1 = require('./schema');
+const util_1 = require('./util');
 // DECORATOR DEFINITIONS
 // ================================================================================================
 function dbModel(table, idGenerator, arrayComparison) {

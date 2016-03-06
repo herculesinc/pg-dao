@@ -50,8 +50,18 @@ export class AbstractModel implements Model {
         if (!seed.id) throw new ModelError('Cannot instantiate a model: model id is undefined');
          
         this.id = seed.id;
-        this.createdOn = seed.createdOn ? seed.createdOn : new Date();
-        this.updatedOn = seed.updatedOn ? seed.updatedOn : new Date();
+        
+        if (!seed.createdOn) {
+            let timestamp = new Date();
+            this.createdOn = timestamp;
+            this.updatedOn = timestamp;
+        }
+        else {
+            this.createdOn = seed.createdOn instanceof Date 
+                ? seed.createdOn : new Date(seed.createdOn);
+            this.updatedOn = seed.updatedOn instanceof Date 
+                ? seed.updatedOn : new Date(seed.updatedOn);
+        }
     }
   
     // MODEL HANDLER METHODS

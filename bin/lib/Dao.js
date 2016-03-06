@@ -1,11 +1,11 @@
 "use strict";
 // IMPORTS
 // ================================================================================================
-var pg_io_1 = require('pg-io');
-var Store_1 = require('./Store');
-var Model_1 = require('./Model');
-var errors_1 = require('./errors');
-var pg_io_2 = require('pg-io');
+const pg_io_1 = require('pg-io');
+const Store_1 = require('./Store');
+const Model_1 = require('./Model');
+const errors_1 = require('./errors');
+const pg_io_2 = require('pg-io');
 // DAO CLASS DEFINITION
 // ================================================================================================
 class Dao extends pg_io_1.Connection {
