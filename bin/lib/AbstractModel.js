@@ -116,6 +116,7 @@ class AbstractModel {
             }
             queries.push(new qDeleteModel(original));
         } else if (original !== undefined && current !== undefined) {
+            // TODO: only update fields that have change - structural changes required
             let qUpdateModel = this[exports.symbols.updateQuery];
             if (qUpdateModel === undefined) {
                 qUpdateModel = buildUpdateQuery(this[exports.symbols.dbTable], this[exports.symbols.dbSchema]);
@@ -215,7 +216,7 @@ function buildUpdateQuery(table, schema) {
     return class extends queries_1.AbstractActionQuery {
         constructor(model) {
             super(`qUpdate${ model[Model_1.symHandler].name }Model`, model);
-            this.text = querySpec + ` WHERE id = ${ model.id };`;
+            this.text = querySpec + ` WHERE id = '${ model.id }';`;
         }
     };
 }
@@ -224,7 +225,7 @@ function buildDeleteQuery(table) {
     return class extends queries_1.AbstractActionQuery {
         constructor(model) {
             super(`qDelete${ model[Model_1.symHandler].name }Model`);
-            this.text = `DELETE FROM ${ table } WHERE id = ${ model.id };`;
+            this.text = `DELETE FROM ${ table } WHERE id = '${ model.id }';`;
         }
     };
 }

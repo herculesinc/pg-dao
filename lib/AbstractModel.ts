@@ -11,14 +11,14 @@ import { camelToSnake, deepCompare, ArrayComparator, deepClone } from './util'
 // MODULE VARIABLES
 // ================================================================================================
 export var symbols = {
-    fetchQuery  : Symbol(),
-	updateQuery : Symbol(),
-	insertQuery : Symbol(),
-	deleteQuery : Symbol(),
-    dbTable     : Symbol(),
-    dbSchema    : Symbol(),
-    idGenerator : Symbol(),
-    arrayComparator: Symbol()
+    fetchQuery      : Symbol(),
+	updateQuery     : Symbol(),
+	insertQuery     : Symbol(),
+	deleteQuery     : Symbol(),
+    dbTable         : Symbol(),
+    dbSchema        : Symbol(),
+    idGenerator     : Symbol(),
+    arrayComparator : Symbol()
 }
 
 // INTERFACES
@@ -164,6 +164,7 @@ export class AbstractModel implements Model {
             queries.push(new qDeleteModel(original));
         }
         else if (original !== undefined && current !== undefined) {
+            // TODO: only update fields that have change - structural changes required
             let qUpdateModel = this[symbols.updateQuery];
             if (qUpdateModel === undefined) {
                 qUpdateModel = buildUpdateQuery(this[symbols.dbTable], this[symbols.dbSchema]);
@@ -284,7 +285,7 @@ function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
     return class extends AbstractActionQuery {
         constructor(model: Model) {
             super(`qUpdate${model[symHandler].name}Model`, model)
-            this.text = querySpec + ` WHERE id = ${model.id};`;
+            this.text = querySpec + ` WHERE id = '${model.id}';`;
         }
     };
 }
@@ -297,7 +298,7 @@ function buildDeleteQuery(table: string): ModelQueryConstructor {
     return class extends AbstractActionQuery {
         constructor(model: Model) {
             super(`qDelete${model[symHandler].name}Model`);
-            this.text = `DELETE FROM ${table} WHERE id = ${model.id};`;
+            this.text = `DELETE FROM ${table} WHERE id = '${model.id}';`;
         }
     };
 }

@@ -51,7 +51,7 @@ function deepCompare(valueA, valueB, compareArrays, parents) {
 exports.deepCompare = deepCompare;
 function compareArraysStrict(array1, array2, parents) {
     if (array1 == array2) return true;
-    if (array1 == undefined) return false;
+    if (array1 == undefined || array2 == undefined) return false;
     if (array1.length != array2.length) return false;
     if (array1.length === 0) return true;
     for (var i = 0; i < array1.length; i++) {
@@ -64,7 +64,7 @@ function compareArraysStrict(array1, array2, parents) {
 exports.compareArraysStrict = compareArraysStrict;
 function compareArraysAsSets(array1, array2, parents) {
     if (array1 == array2) return true;
-    if (array1 == undefined) return false;
+    if (array1 == undefined || array2 == undefined) return false;
     if (array1.length != array2.length) return false;
     if (array1.length == 0) return true;
     for (var i = 0; i < array1.length; i++) {
