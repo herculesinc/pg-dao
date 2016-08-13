@@ -11,7 +11,7 @@ import { User } from './setup';
 // ================================================================================================
 describe('Store: Initialization', function () {
     
-    var store = new Store(defaults);
+    var store = new Store(defaults.session);
     it('Empty store should have no changes', function () {
         assert.strictEqual(store.getChanges().length, 0);
         assert.strictEqual(store.hasChanges, false);
@@ -26,7 +26,7 @@ describe('Store: Loading Models', function () {
     var seedAlt = { id: '1', username: 'Yason', createdOn: new Date(), updatedOn: new Date() };
 
     it('Loading mutable models should populate the store', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user = users[0];
         
@@ -39,7 +39,7 @@ describe('Store: Loading Models', function () {
     });
 
     it('Loading immutable models should populate the store', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], false);
         var user = users[0];
         
@@ -52,14 +52,14 @@ describe('Store: Loading Models', function () {
     });
 
     it('Loading models with an invalid handler should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         assert.throws(function () {
             store.load(<any> {}, [seed], true);
         }, ModelError);
     });
     
     it('Loading an invalid model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         if (defaults.session.validateHandlerOutput) {
             assert.throws(function () {
                 store.load(User, [{}], true);
@@ -68,7 +68,7 @@ describe('Store: Loading Models', function () {
     });
     
     it('Reloading a model should update the original model data', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], false);
         var user: User = <User> users[0];
         
@@ -83,7 +83,7 @@ describe('Store: Loading Models', function () {
     });
     
     it('Reloading an immutable model can make the model mutable', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], false);
         var user: User = <User> users[0];
         
@@ -106,7 +106,7 @@ describe('Store: Updating Models', function () {
     var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
 
     it('Updating model property should mark it as modified', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -117,7 +117,7 @@ describe('Store: Updating Models', function () {
     });
 
     it('Updating a model should produce store changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -133,7 +133,7 @@ describe('Store: Updating Models', function () {
     });
     
     it('Reloading an updated model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -151,7 +151,7 @@ describe('Store: Destroying Models', function () {
     var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
     
     it('Destroying a model should mark it as destroyed', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -163,7 +163,7 @@ describe('Store: Destroying Models', function () {
     });
 
     it('Destroying a model should produce store changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -179,7 +179,7 @@ describe('Store: Destroying Models', function () {
     });
 
     it('Destroying an immutable model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], false);
         var user: User = <User> users[0];
         
@@ -189,7 +189,7 @@ describe('Store: Destroying Models', function () {
     });
 
     it('Destroying an non-loaded model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
         
         assert.throws(function () {
@@ -198,14 +198,14 @@ describe('Store: Destroying Models', function () {
     });
 
     it('Destroying a non-model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         assert.throws(function () {
             store.destroy(seed);
         }, ModelError);
     });
 
     it('Destroying a model twice should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -216,7 +216,7 @@ describe('Store: Destroying Models', function () {
     });
 
     it('Reloading a destoryed model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -227,7 +227,7 @@ describe('Store: Destroying Models', function () {
     });
     
     it('Destroying an inserted model should remove it from the store', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user: User = User.parse(seed);
         
         store.insert(user);
@@ -243,7 +243,7 @@ describe('Store: Inserting Models', function () {
     var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
 
     it('Inserting a model should mark it as new', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
         
         store.insert(user);
@@ -255,7 +255,7 @@ describe('Store: Inserting Models', function () {
     });
 
     it('Inserting a model should produce store changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
             
         store.insert(user);
@@ -268,7 +268,7 @@ describe('Store: Inserting Models', function () {
     });
     
     it('Inserting a non-model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         
         assert.throws(function () {
             store.insert(seed);
@@ -276,7 +276,7 @@ describe('Store: Inserting Models', function () {
     });
 
     it('Inserting an already loaded model throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
         
         assert.throws(function () {
@@ -286,7 +286,7 @@ describe('Store: Inserting Models', function () {
     });
 
     it('Inserting a model twice should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
             
         assert.throws(function () {
@@ -296,7 +296,7 @@ describe('Store: Inserting Models', function () {
     });
 
     it('Inserting a destroyed model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user = users[0];
             
@@ -307,7 +307,7 @@ describe('Store: Inserting Models', function () {
     });
     
     it('loading an inserted model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
                 
         assert.throws(function () {
@@ -317,7 +317,7 @@ describe('Store: Inserting Models', function () {
     });
     
     it('Inserting a perviously destroyed and synced model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -336,7 +336,7 @@ describe('Store: Cleaning Models', function () {
     var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
     
     it('Cleaning an updated model should revert model changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -351,7 +351,7 @@ describe('Store: Cleaning Models', function () {
     });
 
     it('Cleaning a deleted model should un-delete the model', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -366,7 +366,7 @@ describe('Store: Cleaning Models', function () {
     });
     
     it('Cleaning an inserted model should remove the model from the store', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user: User = User.parse(seed);
         
         assert.strictEqual(store.hasChanges, false);
@@ -380,7 +380,7 @@ describe('Store: Cleaning Models', function () {
     });
     
     it('Cleaning a non-loaded model should throw an error', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user: User = User.parse(seed);
             
         assert.throws(function () {            
@@ -397,7 +397,7 @@ describe('Store: Syncing store', function () {
     var seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
     
     it('Inserted model should be synchronized on apply changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
         store.insert(user);
         var changes = store.applyChanges(store.getChanges());
@@ -414,7 +414,7 @@ describe('Store: Syncing store', function () {
     });
 
     it('Modified model should be synchronized on apply changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -432,7 +432,7 @@ describe('Store: Syncing store', function () {
     });
 
     it('Destroyed model should be synchronized on apply changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user: User = <User> users[0];
         
@@ -447,20 +447,20 @@ describe('Store: Syncing store', function () {
     });
     
     it('Get changes should throw error if immutable models were modified', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], false);
         var user: User = <User> users[0];
-        
+
         user.username = 'Test';
         if (defaults.session.validateImmutability) {
             assert.throws(function () {
-                store.getChanges();   
+                store.getChanges();
             }, SyncError);
         }
     });
     
     it('Apply changes should aggregate changes over time', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var seeds = [
             { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
             { id: '2', username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
@@ -491,7 +491,7 @@ describe('Store: Syncing store', function () {
     });
     
     it('Reversing a change should remove it from the list of changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var seeds = [
             { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
             { id: '2', username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
@@ -519,7 +519,7 @@ describe('Store: Syncing store', function () {
     });
     
     it('Deleting a previously inserted and syncronized model should produce no changes', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
         
         store.insert(user);
@@ -536,7 +536,7 @@ describe('Store: Syncing store', function () {
     });
     
     it('Deleting a previously updated and syncronized model should produce a single change', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user = users[0] as User;
         
@@ -555,7 +555,7 @@ describe('Store: Syncing store', function () {
     });
     
     it('Updating a previously inserted and syncronized model should produce a single change', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var user = User.parse(seed);
         
         store.insert(user);
@@ -574,7 +574,7 @@ describe('Store: Syncing store', function () {
     });
     
     it('Updating a previously updated and syncronized model should produce a single change', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var users = store.load(User, [seed], true);
         var user = users[0] as User;
         
@@ -594,7 +594,7 @@ describe('Store: Syncing store', function () {
     });
     
     it('Multiple cycles of changes and syncing should execute correctly', function () {
-        var store = new Store(defaults);
+        var store = new Store(defaults.session);
         var seeds = [
             { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
             { id: '2', username: 'Yason', createdOn: new Date(), updatedOn: new Date() },

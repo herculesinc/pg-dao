@@ -1,71 +1,47 @@
 declare module "pg-dao" {
 
+    // IMPORTS AND RE-EXPORTS
+    // --------------------------------------------------------------------------------------------
+    import * as pg from 'pg-io';
+
+    export { 
+        defaults, DatabaseOptions, PoolState,
+        QueryMask, QuerySpec, Query, ResultQuery,
+        PgError, ConnectionError, TransactionError, QueryError, ParseError
+    } from 'pg-io';
+
     // GLOBAL
     // --------------------------------------------------------------------------------------------
-    export interface ConnectionSettings {
-        host        : string;
-        port?       : number;
-        user        : string;
-        password    : string;
-        database    : string;
-        poolSize?   : number;
-    }
-
-    export function db(settings: ConnectionSettings): Database;
-    
-    export var defaults: DaoOptions;
-    
-    export var symbols: {
-        handler     : symbol;
-        fetchQuery  : symbol;
-        updateQuery : symbol;
-        insertQuery : symbol;
-        deleteQuery : symbol;
-        dbTable     : symbol;
-        dbSchema    : symbol;
-        idGenerator : symbol;
-        arrayComparator: symbol;
+    export const symbols: {
+        handler         : symbol;
+        fetchQuery      : symbol;
+        updateQuery     : symbol;
+        insertQuery     : symbol;
+        deleteQuery     : symbol;
+        dbTable         : symbol;
+        dbSchema        : symbol;
+        idGenerator     : symbol;
+        arrayComparator : symbol;
     };
-    
-    export var config : {
-        logger: {
-            log(message: string);
-        }
-    }
-    
+
     // DATABASE
     // --------------------------------------------------------------------------------------------
-    export interface DaoOptions {
-        collapseQueries?        : boolean;
-        startTransaction?       : boolean;
+    export interface DaoOptions extends pg.SessionOptions {
         validateImmutability?   : boolean;
         validateHandlerOutput?  : boolean;
         manageUpdatedOn?        : boolean;
     }
 
-    export interface PoolState {
-        size        : number;
-        available   : number;
-    }
-    
-    export interface Database {
+    export class Database extends pg.Database {
         connect(options?: DaoOptions): Promise<Dao>;
-        getPoolState(): PoolState;
     }
 
     // DAO DEFINITION
     // --------------------------------------------------------------------------------------------
-    export interface Dao {
-        isActive        : boolean;
-        inTransaction   : boolean;
+    export interface Dao extends pg.Session {
+
         isSynchronized  : boolean;
-        
-        startTransaction(lazy?: boolean)    : Promise<void>;
-        sync()                              : Promise<SyncInfo[]>;
-        
-        release(action: 'commit')           : Promise<SyncInfo[]>;
-        release(action: 'rollback')         : Promise<void>;
-        release(action?: string)            : Promise<any>;
+        sync()          : Promise<any>;
 
         fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T>;
         fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T[]>;
@@ -76,21 +52,12 @@ declare module "pg-dao" {
         destroy<T extends Model>(model: T)  : T;
         clean<T extends Model>(model: T)    : T;
 
-        execute<T>(query: ResultQuery<T>)   : Promise<any>;
-        execute(query: Query)               : Promise<void>;
-        execute(queries: Query[])           : Promise<Map<string,any>>;
-
         hasModel(model: Model)              : boolean;
 
         isNew(model: Model)                 : boolean;
         isDestroyed(model: Model)           : boolean;
         isModified(model: Model)            : boolean;
         isMutable(model: Model)             : boolean;
-    }
-
-    export interface SyncInfo {
-        original: Model;
-        current : Model;
     }
 
     // MODEL DEFINITIONS
@@ -114,7 +81,7 @@ declare module "pg-dao" {
         static clone(seed: any): any;
         static infuse(target: Model, source: Model);
         static areEqual(model1: AbstractModel, model2: AbstractModel): boolean;
-        static getSyncQueries(original: AbstractModel, current: AbstractModel): Query[];
+        static getSyncQueries(original: AbstractModel, current: AbstractModel): pg.Query[];
         static getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
         static getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
         static getIdGenerator(): IdGenerator;
@@ -141,7 +108,7 @@ declare module "pg-dao" {
         clone(model: T): T;
         infuse(target: T, source: T);
         areEqual(model1: T, model2: T): boolean;
-        getSyncQueries(original: T, current: T): Query[];
+        getSyncQueries(original: T, current: T): pg.Query[];
         getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<T>;
         getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<T>;
         getIdGenerator(): IdGenerator;
@@ -154,30 +121,14 @@ declare module "pg-dao" {
     }
     
     export class PgIdGenerator implements IdGenerator {
-        idSequenceQuery: ResultQuery<string>;
+        idSequenceQuery: pg.ResultQuery<string>;
         constructor(idSequence: string);
         getNextId(dao: Dao): Promise<string>;
     }
         
     // QUERY DEFINITIONS
-    // --------------------------------------------------------------------------------------------
-    export interface Query {
-        text    : string;
-        name?   : string;
-        params? : any;
-    }
-    
-    export interface ResultQuery<T> extends Query {
-        mask    : string;
-        handler?: ResultHandler<T>;
-    }
-
-    export interface ModelQuery<T extends Model> extends ResultQuery<T> {
-        handler : ModelHandler<T>;
-        mutable?: boolean;
-    }
-    
-    export class AbstractActionQuery implements Query {
+    // --------------------------------------------------------------------------------------------    
+    export class AbstractActionQuery implements pg.Query {
         name: string;
         text: string;
         params: any;
@@ -185,32 +136,26 @@ declare module "pg-dao" {
         constructor(name?: string, params?: any);
     }
 
+    export interface ModelQuery<T extends Model> extends pg.ResultQuery<T> {
+        handler : ModelHandler<T>;
+        mutable?: boolean;
+    }
+
     export class AbstractModelQuery<T extends Model> implements ModelQuery<T> {
-        name: string;
-        mask: string;
-        mutable: boolean;
-        handler: ModelHandler<any>;
-        text: string;
-        params: any;
+        name    : string;
+        mask    : pg.QueryMask;
+        mutable : boolean;
+        handler : ModelHandler<any>;
+        text    : string;
+        params  : any;
     
         constructor(handler: ModelHandler<T>, mask: string, mutable?: boolean);
     }
     
     // ERROR CLASSES
     // --------------------------------------------------------------------------------------------
-    export class PgError extends Error {
-        cause: Error;
-        
-        constructor(cause: Error);
-	    constructor(message: string, cause?: Error);
-    }
-	
-    export class ConnectionError extends PgError {}
-    export class TransactionError extends PgError {}
-    export class QueryError extends PgError {}
-    export class ParseError extends PgError {}
-    export class StoreError extends PgError {}
-    export class SyncError extends PgError {}
-    export class ModelError extends PgError {}
+    export class StoreError extends pg.PgError {}
+    export class SyncError extends pg.PgError {}
+    export class ModelError extends pg.PgError {}
     export class ModelQueryError extends ModelError {}
 }

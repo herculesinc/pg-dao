@@ -768,8 +768,8 @@ describe('DAO: Lifecycle Tests', function () {
 
         const database: Database = new pg.Database(settings);
 
-        assert.strictEqual(database.getPoolState().size, 1);
-        assert.strictEqual(database.getPoolState().available, 1);
+        assert.strictEqual(database.getPoolState().size, 0);
+        assert.strictEqual(database.getPoolState().available, 0);
 
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
