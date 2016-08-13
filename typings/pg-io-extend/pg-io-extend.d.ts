@@ -1,11 +1,7 @@
 declare module "pg-io" {
-    export interface ConnectionOptions {
+    export interface SessionOptions {
         validateImmutability?   : boolean;
         validateHandlerOutput?  : boolean;
         manageUpdatedOn?        : boolean;
-    }
-    
-    export interface Database {
-        getPoolDescription(): string;
     }
 }

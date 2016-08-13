@@ -2,22 +2,16 @@
 // ================================================================================================
 import * as assert from 'assert';
 import * as pg from './../index';
-import { PoolState } from 'pg-io';
+import { PoolState, SessionOptions } from 'pg-io';
 import { Dao } from './../lib/Dao'
 import { User, prepareDatabase, qFetchUserById, qFetchUsersByIdList } from './setup';
+import { settings } from './settings';
 
 // CONNECTION SETTINGS
 // ================================================================================================
-var settings = {
-    host: 'localhost',
-    port: 5432,
-    user: 'postgres',
-    password: 'RepT%8&G5l1I',
-    database: 'postgres'
-};
 
 interface Database {
-    connect(options?: any): Promise<Dao>;
+    connect(options?: SessionOptions): Promise<Dao>;
     getPoolState(): PoolState;
 }
 
@@ -26,7 +20,7 @@ interface Database {
 describe('DAO: Fetching a Single Model', function () {
 
     it('Fetching a single model should added it to the store', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchOne(User, {id: 1}).then((user) =>{
@@ -40,12 +34,12 @@ describe('DAO: Fetching a Single Model', function () {
                     assert.strictEqual(dao.isDestroyed(user), false);
                     assert.strictEqual(dao.isMutable(user), false); 
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Fetching a locked model should make it mutable', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchOne(User, {id: 1}, true).then((user) =>{
@@ -57,12 +51,12 @@ describe('DAO: Fetching a Single Model', function () {
                     assert.strictEqual(dao.isDestroyed(user), false);
                     assert.strictEqual(dao.isMutable(user), true);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Fetching the same model multiple times should return the same object', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchOne(User, {id: 1}).then((user1) =>{
@@ -70,12 +64,12 @@ describe('DAO: Fetching a Single Model', function () {
                         assert.strictEqual(user1, user2);
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Re-fetching model as mutable should make it mutable', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchOne(User, {id: 1}).then((user1) =>{
@@ -85,12 +79,12 @@ describe('DAO: Fetching a Single Model', function () {
                         assert.strictEqual(dao.isMutable(user1), true);
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Fetching a single model with an invalid handler should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var nonHandler: any = {};
@@ -101,12 +95,12 @@ describe('DAO: Fetching a Single Model', function () {
                     assert.strictEqual(reason instanceof assert.AssertionError, false);
                     assert.strictEqual(reason instanceof Error, true);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Fetching a single model with an invalid selector should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchOne(User, {ids: 1}).then((user) =>{
@@ -116,7 +110,7 @@ describe('DAO: Fetching a Single Model', function () {
                     assert.strictEqual(reason instanceof assert.AssertionError, false);
                     assert.strictEqual(reason instanceof Error, true);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 });
@@ -124,7 +118,7 @@ describe('DAO: Fetching a Single Model', function () {
 describe('DAO: Fetching Multiple Models', function () {
 
     it('Fetching multiple models should add them to the store', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchAll(User, { id: [1, 3]}).then((users) => {
@@ -146,12 +140,12 @@ describe('DAO: Fetching Multiple Models', function () {
                     assert.strictEqual(dao.isDestroyed(users[1]), false);
                     assert.strictEqual(dao.isMutable(users[1]), false);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Fetching multiple locked models should make them mutable', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchAll(User, { id: [1, 3] }, true).then((users) => {
@@ -173,12 +167,12 @@ describe('DAO: Fetching Multiple Models', function () {
                     assert.strictEqual(dao.isDestroyed(users[1]), false);
                     assert.strictEqual(dao.isMutable(users[1]), true);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Fetching multiple model with an invalid handler should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var nonHandler: any = {};
@@ -189,12 +183,12 @@ describe('DAO: Fetching Multiple Models', function () {
                     assert.strictEqual(reason instanceof assert.AssertionError, false);
                     assert.strictEqual(reason instanceof Error, true);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Fetching a single model with an invalid selector should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.fetchAll(User, { ids: 1 }).then((user) =>{
@@ -204,7 +198,7 @@ describe('DAO: Fetching Multiple Models', function () {
                     assert.strictEqual(reason instanceof assert.AssertionError, false);
                     assert.strictEqual(reason instanceof Error, true);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 });
@@ -212,7 +206,7 @@ describe('DAO: Fetching Multiple Models', function () {
 describe('DAO: Fetching Models via execute() method', function () {
 
     it('Fetching a single model should added it to the store', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1);
@@ -225,12 +219,12 @@ describe('DAO: Fetching Models via execute() method', function () {
                     assert.strictEqual(dao.isDestroyed(user), false);
                     assert.strictEqual(dao.isMutable(user), false);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Fetching a locked model should make it mutable', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1, true);
@@ -243,12 +237,12 @@ describe('DAO: Fetching Models via execute() method', function () {
                     assert.strictEqual(dao.isDestroyed(user), false);
                     assert.strictEqual(dao.isMutable(user), true);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Fetching multiple models should add them to the store', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUsersByIdList([1, 3]);
@@ -271,12 +265,12 @@ describe('DAO: Fetching Models via execute() method', function () {
                     assert.strictEqual(dao.isDestroyed(users[1]), false);
                     assert.strictEqual(dao.isMutable(users[1]), false);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Fetching multiple locked models should make them mutable', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUsersByIdList([1, 3], true);
@@ -299,12 +293,12 @@ describe('DAO: Fetching Models via execute() method', function () {
                     assert.strictEqual(dao.isDestroyed(users[1]), false);
                     assert.strictEqual(dao.isMutable(users[1]), true);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Fetching the same model multiple times should return the same object', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1);
@@ -313,12 +307,12 @@ describe('DAO: Fetching Models via execute() method', function () {
                         assert.strictEqual(user1, user2);
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Re-fetching model as mutable should make it mutable', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUserById(1);
@@ -331,7 +325,7 @@ describe('DAO: Fetching Models via execute() method', function () {
                         assert.strictEqual(dao.isMutable(user1), true);
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 });
@@ -341,7 +335,7 @@ describe('DAO: Fetching Models via execute() method', function () {
 describe('DAO: creating models', function () {
 
     it('Creating a new model should create a model with new ID', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.create<User>(User, { username: 'newuser' }).then((user) =>{
@@ -351,7 +345,7 @@ describe('DAO: creating models', function () {
                     assert.strictEqual(user.updatedOn instanceof Date, true);
                     assert.strictEqual(dao.hasModel(user), false); 
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
@@ -362,7 +356,7 @@ describe('DAO: creating models', function () {
 describe('DAO: inserting models', function () {
 
     it('Inserting a model should add it to the database', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
 
@@ -395,12 +389,12 @@ describe('DAO: inserting models', function () {
                         assert.deepEqual(user, newUser);
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Inserting multiple models should add them to the database', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
 
@@ -438,12 +432,12 @@ describe('DAO: inserting models', function () {
                         assert.deepEqual(users[1], user2);
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Inserting a non-model should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var userSeed = {
@@ -452,12 +446,12 @@ describe('DAO: inserting models', function () {
                 assert.throws(() => {
                     dao.insert(userSeed);
                 }, Error);
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Inserting the same model twice should thrown an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var user = User.parse({
@@ -467,12 +461,12 @@ describe('DAO: inserting models', function () {
                     dao.insert(user);
                     dao.insert(user);
                 }, Error);
-            }).then(() => dao.release('rollback'));
+            }).then(() => dao.close('rollback'));
         });
     });
 
     it('Inserting a deleted model should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1, true);
@@ -482,7 +476,7 @@ describe('DAO: inserting models', function () {
                         dao.insert(user);
                     }, Error);
                 });
-            }).then(() => dao.release('rollback'));
+            }).then(() => dao.close('rollback'));
         });
     });
 });
@@ -492,7 +486,7 @@ describe('DAO: inserting models', function () {
 describe('DAO: Deleting Models', function () {
 
     it('Deleting a model should remove it from the database', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1, true);
@@ -517,12 +511,12 @@ describe('DAO: Deleting Models', function () {
                         });
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Deleting multiple models should remove them from the database', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUsersByIdList([1,2,3], true);
@@ -548,12 +542,12 @@ describe('DAO: Deleting Models', function () {
                         });
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Deleting a immutable model should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1);
@@ -562,12 +556,12 @@ describe('DAO: Deleting Models', function () {
                         dao.destroy(user);
                     }, Error);
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Deleting a model twice should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1, true);
@@ -577,12 +571,12 @@ describe('DAO: Deleting Models', function () {
                         dao.destroy(user);
                     }, Error);
                 });
-            }).then(() => dao.release('rollback'));
+            }).then(() => dao.close('rollback'));
         });
     });
 
     it('Deleting an inserted model should result in no changes', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var user = User.parse({
@@ -599,7 +593,7 @@ describe('DAO: Deleting Models', function () {
                     assert.strictEqual(changes.length, 0);
                 });
                 
-            }).then(() => dao.release('rollback'));
+            }).then(() => dao.close('rollback'));
         });
     });
     
@@ -611,7 +605,7 @@ describe('DAO: Deleting Models', function () {
 describe('DAO: Updating Models', function () {
 
     it('Updating a model should update it in the database', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUserById(1, true);
@@ -643,12 +637,12 @@ describe('DAO: Updating Models', function () {
                         });
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Updating a model should change updatedOn date', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUserById(1, true);
@@ -657,7 +651,7 @@ describe('DAO: Updating Models', function () {
                     return dao.sync().then((changes) => {
                         var original = changes[0].original;
                         var current = changes[0].current;
-                        if (pg.defaults.manageUpdatedOn) {
+                        if (pg.defaults.session.manageUpdatedOn) {
                             assert.ok(original.updatedOn.valueOf() < current.updatedOn.valueOf());
                         }
                         else {
@@ -665,12 +659,12 @@ describe('DAO: Updating Models', function () {
                         }
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
 
     it('Multiple changes should be persisted in the database', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query1 = new qFetchUsersByIdList([1, 2, 3], true);
@@ -695,12 +689,12 @@ describe('DAO: Updating Models', function () {
                         });
                     });
                 });
-            }).then(() => dao.release());
+            }).then(() => dao.close());
         });
     });
     
     it('Syncing changes to immutable model should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 var query = new qFetchUserById(1);
@@ -708,11 +702,11 @@ describe('DAO: Updating Models', function () {
                     user.username = 'Test123';
                     return dao.sync()
                         .then(() => {
-                            if (pg.defaults.validateImmutability) {
+                            if (pg.defaults.session.validateImmutability) {
                                 assert.fail();
                             }
                             else {
-                                return dao.release();
+                                return dao.close();
                             }
                         })
                         .catch((reason) => {
@@ -731,7 +725,7 @@ describe('DAO: Updating Models', function () {
 describe('DAO: Lifecycle Tests', function () {
 
     it('Starting a transaction should put Dao in transaction state', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
 
@@ -745,16 +739,16 @@ describe('DAO: Lifecycle Tests', function () {
                         assert.strictEqual(dao.inTransaction, true);
                         assert.strictEqual(dao.isSynchronized, true);
                     });
-            }).then(() => dao.release('rollback'));
+            }).then(() => dao.close('rollback'));
         });
     });
 
     it('Releasing an uncommitted Dao should throw an error', () => {
-        var database: Database = pg.db(settings);
+        const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
                 return dao.startTransaction().then(() => {
-                    return dao.release()
+                    return dao.close()
                         .then(() => {
                             assert.fail();
                         })
@@ -772,10 +766,11 @@ describe('DAO: Lifecycle Tests', function () {
 
     it('Syncing a Dao with commiting should put Dao in syncrhonized state', () => {
 
-        assert.strictEqual(pg.db(settings).getPoolState().size, 1);
-        assert.strictEqual(pg.db(settings).getPoolState().available, 1);
+        const database: Database = new pg.Database(settings);
 
-        var database: Database = pg.db(settings);
+        assert.strictEqual(database.getPoolState().size, 1);
+        assert.strictEqual(database.getPoolState().available, 1);
+
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
 
@@ -804,18 +799,18 @@ describe('DAO: Lifecycle Tests', function () {
                             assert.strictEqual(dao.inTransaction, true);
                             assert.strictEqual(dao.isSynchronized, true);
 
-                            assert.strictEqual(pg.db(settings).getPoolState().size, 1);
-                            assert.strictEqual(pg.db(settings).getPoolState().available, 0);
+                            assert.strictEqual(database.getPoolState().size, 1);
+                            assert.strictEqual(database.getPoolState().available, 0);
 
-                            return dao.release('commit').then((changes) => {
+                            return dao.close('commit').then((changes) => {
                                 assert.strictEqual(changes, undefined);
 
                                 assert.strictEqual(dao.isActive, false);
                                 assert.strictEqual(dao.inTransaction, false);
                                 assert.strictEqual(dao.isSynchronized, true);
 
-                                assert.strictEqual(pg.db(settings).getPoolState().size, 1);
-                                assert.strictEqual(pg.db(settings).getPoolState().available, 1);
+                                assert.strictEqual(database.getPoolState().size, 1);
+                                assert.strictEqual(database.getPoolState().available, 1);
                             });
                         });
                     });

@@ -1,5 +1,5 @@
 "use strict";
-// IMPORTS
+// IMPORTS 
 // ================================================================================================
 const errors_1 = require('./errors');
 // FIELD
@@ -7,7 +7,8 @@ const errors_1 = require('./errors');
 class DbField {
     constructor(name, type, readonly) {
         // validate and set name
-        if (typeof name !== 'string') throw new errors_1.ModelError('Database field property must be a string');
+        if (typeof name !== 'string')
+            throw new errors_1.ModelError('Database field property must be a string');
         this.name = name;
         // validate and set type
         switch (type) {

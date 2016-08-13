@@ -1,10 +1,10 @@
 // IMPORTS 
 // ================================================================================================
-import { Query } from 'pg-io';
+import { Query, QueryMask } from 'pg-io';
 import { Model, ModelQuery, ModelHandler, symHandler, IdGenerator } from './Model';
 import { DbField } from './schema';
 import { dbField } from './decorators'
-import { AbstractActionQuery, AbstractModelQuery} from './queries';
+import { AbstractActionQuery, AbstractModelQuery } from './queries';
 import { ModelError, ModelQueryError } from './errors';
 import { camelToSnake, deepCompare, ArrayComparator, deepClone } from './util'
 
@@ -219,7 +219,7 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
     var querySpec = `SELECT ${fields.join(',')} FROM ${table}`;
     
     return class extends AbstractModelQuery<any>{
-        constructor(selector: any, mask: string, name: string, forUpdate: boolean) {
+        constructor(selector: any, mask: QueryMask, name: string, forUpdate: boolean) {
             super(handler, mask, forUpdate);
             
             var criteria: string[] = [];

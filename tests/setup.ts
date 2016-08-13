@@ -1,6 +1,6 @@
 // IMPORTS
 // ================================================================================================
-import { Query } from 'pg-io';
+import { Query, QueryMask } from 'pg-io';
 import { ModelQuery, PgIdGenerator } from './../lib/Model';
 import { Dao } from './../lib/Dao';
 import { AbstractModel } from './../lib/AbstractModel';
@@ -49,7 +49,7 @@ export class Token extends AbstractModel {
 export class qFetchUserById implements ModelQuery<User> {
     text: string;
     handler = User;
-    mask = 'object';
+    mask = 'object' as QueryMask;
     mutable: boolean;
 
     constructor(userId: number, lock = false) {
@@ -65,7 +65,7 @@ export class qFetchUserById implements ModelQuery<User> {
 export class qFetchUsersByIdList implements ModelQuery<User> {
     text: string;
     handler = User;
-    mask = 'list';
+    mask = 'list' as QueryMask;
     mutable: boolean;
 
     constructor(userIdList: number[], lock = false) {

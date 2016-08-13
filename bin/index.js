@@ -5,7 +5,6 @@ const pg = require('pg-io');
 const Dao_1 = require('./lib/Dao');
 const Model_1 = require('./lib/Model');
 const AbstractModel_1 = require('./lib/AbstractModel');
-;
 // GLOBALS
 // ================================================================================================
 exports.symbols = {
@@ -19,21 +18,16 @@ exports.symbols = {
     idGenerator: AbstractModel_1.symbols.idGenerator,
     arrayComparator: AbstractModel_1.symbols.arrayComparator
 };
-var defaults = {
-    collapseQueries: false,
-    startTransaction: false,
-    validateImmutability: true,
-    validateHandlerOutput: true,
-    manageUpdatedOn: true
-};
-pg.defaults = Object.assign(pg.defaults, defaults);
-pg.config.connectionConstructor = Dao_1.Dao;
-//pg.config.logger = console;
+// set session constructor
+pg.defaults.SessionCtr = Dao_1.Dao;
+// set extended defaults
+pg.defaults.session.validateImmutability = true;
+pg.defaults.session.validateHandlerOutput = true;
+pg.defaults.session.manageUpdatedOn = true;
 // RE-EXPORTS
 // ================================================================================================
 var pg_io_1 = require('pg-io');
-exports.db = pg_io_1.db;
-exports.config = pg_io_1.config;
+exports.Database = pg_io_1.Database;
 exports.defaults = pg_io_1.defaults;
 exports.PgError = pg_io_1.PgError;
 exports.ConnectionError = pg_io_1.ConnectionError;

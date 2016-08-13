@@ -8,20 +8,26 @@ var camelPattern = /([A-Z]+)/g;
 // CASE CONVERTERS
 // ================================================================================================
 function camelToSnake(camel) {
-    return camel.replace(camelPattern, match => '_' + match.toLowerCase());
+    return camel.replace(camelPattern, (match) => '_' + match.toLowerCase());
 }
 exports.camelToSnake = camelToSnake;
 // COMPARATORS
 // ================================================================================================
 function deepCompare(valueA, valueB, compareArrays, parents) {
-    if (valueA === valueB || valueA !== valueA && valueB !== valueB) return true;
-    if ((valueA === null || valueA === undefined) && (valueB === null || valueB === undefined)) return true;
-    if (!valueA || !valueB) return false;
+    if (valueA === valueB || (valueA !== valueA && valueB !== valueB))
+        return true;
+    if ((valueA === null || valueA === undefined) && (valueB === null || valueB === undefined))
+        return true;
+    if (!valueA || !valueB)
+        return false;
     valueA = valueA.valueOf();
     valueB = valueB.valueOf();
-    if (valueA === valueB || valueA !== valueA && valueB !== valueB) return true;
-    if ((valueA === null || valueA === undefined) && (valueB === null || valueB === undefined)) return true;
-    if (!valueA || !valueB) return false;
+    if (valueA === valueB || (valueA !== valueA && valueB !== valueB))
+        return true;
+    if ((valueA === null || valueA === undefined) && (valueB === null || valueB === undefined))
+        return true;
+    if (!valueA || !valueB)
+        return false;
     switch (getType(valueA, valueB)) {
         case 1 /* primitive */:
         case 2 /* date */:
@@ -29,9 +35,11 @@ function deepCompare(valueA, valueB, compareArrays, parents) {
         case 3 /* array */:
             return compareArrays(valueA, valueB, parents);
         case 4 /* object */:
-            if (typeof valueA.isEqualTo === 'function') return valueA.isEqualTo(valueB);
+            if (typeof valueA.isEqualTo === 'function')
+                return valueA.isEqualTo(valueB);
             var keys = getKeys(valueA, valueB);
-            if (!keys) return false;
+            if (!keys)
+                return false;
             parents = parents ? parents : new WeakSet();
             parents.add(valueA);
             parents.add(valueB);
@@ -39,9 +47,11 @@ function deepCompare(valueA, valueB, compareArrays, parents) {
             for (var i = 0; i < keys.length; i++) {
                 var valueAi = valueA[keys[i]];
                 var valueBi = valueB[keys[i]];
-                if (parents.has(valueAi) || parents.has(valueBi)) throw new errors_1.ModelError('Circular reference detected during object comparison');
+                if (parents.has(valueAi) || parents.has(valueBi))
+                    throw new errors_1.ModelError('Circular reference detected during object comparison');
                 areEqual = deepCompare(valueAi, valueBi, compareArrays, parents);
-                if (!areEqual) break;
+                if (!areEqual)
+                    break;
             }
             return areEqual;
         default:
@@ -50,10 +60,14 @@ function deepCompare(valueA, valueB, compareArrays, parents) {
 }
 exports.deepCompare = deepCompare;
 function compareArraysStrict(array1, array2, parents) {
-    if (array1 == array2) return true;
-    if (array1 == undefined || array2 == undefined) return false;
-    if (array1.length != array2.length) return false;
-    if (array1.length === 0) return true;
+    if (array1 == array2)
+        return true;
+    if (array1 == undefined || array2 == undefined)
+        return false;
+    if (array1.length != array2.length)
+        return false;
+    if (array1.length === 0)
+        return true;
     for (var i = 0; i < array1.length; i++) {
         if (deepCompare(array1[i], array2[i], compareArraysStrict, parents) === false) {
             return false;
@@ -63,17 +77,23 @@ function compareArraysStrict(array1, array2, parents) {
 }
 exports.compareArraysStrict = compareArraysStrict;
 function compareArraysAsSets(array1, array2, parents) {
-    if (array1 == array2) return true;
-    if (array1 == undefined || array2 == undefined) return false;
-    if (array1.length != array2.length) return false;
-    if (array1.length == 0) return true;
+    if (array1 == array2)
+        return true;
+    if (array1 == undefined || array2 == undefined)
+        return false;
+    if (array1.length != array2.length)
+        return false;
+    if (array1.length == 0)
+        return true;
     for (var i = 0; i < array1.length; i++) {
         var found = false;
         for (var j = 0; j < array2.length; j++) {
             found = deepCompare(array1[i], array2[j], compareArraysAsSets, parents);
-            if (found) break;
+            if (found)
+                break;
         }
-        if (!found) break;
+        if (!found)
+            break;
     }
     return found;
 }
@@ -81,7 +101,8 @@ exports.compareArraysAsSets = compareArraysAsSets;
 // CLONERS
 // ================================================================================================
 function deepClone(source, parents) {
-    if (source === undefined || source === null) return undefined;
+    if (source === undefined || source === null)
+        return undefined;
     var type = getType(source, source);
     switch (type) {
         case 1 /* primitive */:
@@ -90,15 +111,18 @@ function deepClone(source, parents) {
         case 3 /* array */:
             return cloneArray(source, parents);
         case 4 /* object */:
-            if (typeof source.clone === 'function') return source.clone();
-            if (source.constructor !== Object) throw new errors_1.ModelError(`Cannot clone object: no clone() method provided for a class`);
+            if (typeof source.clone === 'function')
+                return source.clone();
+            if (source.constructor !== Object)
+                throw new errors_1.ModelError(`Cannot clone object: no clone() method provided for a class`);
             parents = parents ? parents : new WeakSet();
             parents.add(source);
             var clone = {};
             for (var key in source) {
                 var value = source[key];
                 if (typeof value !== 'function') {
-                    if (parents.has(value)) throw new errors_1.ModelError('Circular reference detected during object cloning');
+                    if (parents.has(value))
+                        throw new errors_1.ModelError('Circular reference detected during object cloning');
                     clone[key] = deepClone(value, parents);
                 }
             }
@@ -109,8 +133,10 @@ function deepClone(source, parents) {
 }
 exports.deepClone = deepClone;
 function cloneArray(source, parents) {
-    if (source == undefined) return undefined;
-    if (source.length == 0) return [];
+    if (source == undefined)
+        return undefined;
+    if (source.length == 0)
+        return [];
     var clone = [];
     for (var i = 0; i < source.length; i++) {
         clone.push(deepClone(source[i], parents));
@@ -130,7 +156,8 @@ function getKeys(objectA, objectB) {
     }
     for (var key in objectB) {
         if (typeof objectB[key] !== 'function') {
-            if (!keySet.has(key)) return undefined;
+            if (!keySet.has(key))
+                return undefined;
         }
     }
     return keys;
@@ -138,7 +165,8 @@ function getKeys(objectA, objectB) {
 function getType(valueA, valueB) {
     var typeA = typeof valueA;
     var typeB = typeof valueB;
-    if (typeA !== typeB) return 0 /* na */;
+    if (typeA !== typeB)
+        return 0 /* na */;
     switch (typeA) {
         case 'number':
         case 'string':
@@ -146,10 +174,13 @@ function getType(valueA, valueB) {
             return 1 /* primitive */;
         case 'object':
             if (valueA instanceof Date) {
-                return valueB instanceof Date ? 2 /* date */ : 0 /* na */;
-            } else if (valueA instanceof Array) {
-                    return valueB instanceof Array ? 3 /* array */ : 0 /* na */;
-                } else return 4 /* object */;
+                return (valueB instanceof Date) ? 2 /* date */ : 0 /* na */;
+            }
+            else if (valueA instanceof Array) {
+                return (valueB instanceof Array) ? 3 /* array */ : 0 /* na */;
+            }
+            else
+                return 4 /* object */;
         default:
             return 0 /* na */;
     }

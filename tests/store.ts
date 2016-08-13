@@ -60,7 +60,7 @@ describe('Store: Loading Models', function () {
     
     it('Loading an invalid model should throw an error', function () {
         var store = new Store(defaults);
-        if (defaults.validateHandlerOutput) {
+        if (defaults.session.validateHandlerOutput) {
             assert.throws(function () {
                 store.load(User, [{}], true);
             }, ModelError);
@@ -452,7 +452,7 @@ describe('Store: Syncing store', function () {
         var user: User = <User> users[0];
         
         user.username = 'Test';
-        if (defaults.validateImmutability) {
+        if (defaults.session.validateImmutability) {
             assert.throws(function () {
                 store.getChanges();   
             }, SyncError);

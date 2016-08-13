@@ -5,53 +5,32 @@ import * as pg from 'pg-io';
 import { Dao } from './lib/Dao'
 import { symHandler } from './lib/Model';
 import { symbols as modelSymbols } from './lib/AbstractModel';
-import { ArrayComparator } from './lib/util';
-
-// INTERFACES
-// ================================================================================================
-export interface Settings {
-    host        : string;
-    port?       : number;
-    user        : string;
-    password    : string;
-    database    : string;
-    poolSize?   : number;
-};
-
-export interface PoolState {
-    size        : number;
-    available   : number;
-}
 
 // GLOBALS
 // ================================================================================================
-export var symbols = {
-    handler     : symHandler,
-    fetchQuery  : modelSymbols.fetchQuery,
-    updateQuery : modelSymbols.updateQuery,
-    insertQuery : modelSymbols.insertQuery,
-    deleteQuery : modelSymbols.deleteQuery,
-    dbTable     : modelSymbols.dbTable,
-    dbSchema    : modelSymbols.dbSchema,
-    idGenerator : modelSymbols.idGenerator,
-    arrayComparator: modelSymbols.arrayComparator
+export const symbols = {
+    handler         : symHandler,
+    fetchQuery      : modelSymbols.fetchQuery,
+    updateQuery     : modelSymbols.updateQuery,
+    insertQuery     : modelSymbols.insertQuery,
+    deleteQuery     : modelSymbols.deleteQuery,
+    dbTable         : modelSymbols.dbTable,
+    dbSchema        : modelSymbols.dbSchema,
+    idGenerator     : modelSymbols.idGenerator,
+    arrayComparator : modelSymbols.arrayComparator
 }
 
-var defaults: pg.ConnectionOptions = {
-    collapseQueries         : false,
-    startTransaction        : false,
-    validateImmutability    : true,
-    validateHandlerOutput   : true,
-    manageUpdatedOn         : true
-}
+// set session constructor
+pg.defaults.SessionCtr = Dao;
 
-pg.defaults = Object.assign(pg.defaults, defaults);
-pg.config.connectionConstructor = Dao;
-//pg.config.logger = console;
+// set extended defaults
+pg.defaults.session.validateImmutability    = true;
+pg.defaults.session.validateHandlerOutput   = true;
+pg.defaults.session.manageUpdatedOn         = true;
 
 // RE-EXPORTS
 // ================================================================================================
-export { db, config, defaults, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
+export { Database, defaults, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
 export { ModelError, ModelQueryError, StoreError, SyncError } from './lib/errors';
 export { AbstractModel } from './lib/AbstractModel';
 export { dbModel, dbField } from './lib/decorators';

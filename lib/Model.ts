@@ -1,6 +1,6 @@
 // IMPORTS
 // ================================================================================================
-import { ResultHandler, Query, ResultQuery  } from 'pg-io';
+import { ResultHandler, Query, ResultQuery } from 'pg-io';
 import { Dao } from './Dao';
 
 // MODULE VARIABLES

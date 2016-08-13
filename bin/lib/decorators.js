@@ -1,5 +1,5 @@
 "use strict";
-// IMPORTS
+// IMPORTS 
 // ================================================================================================
 const AbstractModel_1 = require('./AbstractModel');
 const errors_1 = require('./errors');
@@ -8,15 +8,17 @@ const util_1 = require('./util');
 // DECORATOR DEFINITIONS
 // ================================================================================================
 function dbModel(table, idGenerator, arrayComparison) {
-    if (table == undefined || table.trim() === '') throw new errors_1.ModelError('Model table name cannot be empty');
-    if (!idGenerator) throw new errors_1.ModelError('Model ID generator cannot be empty');
+    if (table == undefined || table.trim() === '')
+        throw new errors_1.ModelError('Model table name cannot be empty');
+    if (!idGenerator)
+        throw new errors_1.ModelError('Model ID generator cannot be empty');
     return function (classConstructor) {
         classConstructor[AbstractModel_1.symbols.dbTable] = table;
         var schemaMap = classConstructor.prototype[AbstractModel_1.symbols.dbSchema];
         classConstructor[AbstractModel_1.symbols.dbSchema] = Object.assign({}, schemaMap.get(AbstractModel_1.AbstractModel.name), schemaMap.get(classConstructor.name));
         classConstructor[AbstractModel_1.symbols.idGenerator] = idGenerator;
         classConstructor[AbstractModel_1.symbols.arrayComparator] = arrayComparison === 1 /* strict */
-        ? util_1.compareArraysStrict : util_1.compareArraysAsSets;
+            ? util_1.compareArraysStrict : util_1.compareArraysAsSets;
     };
 }
 exports.dbModel = dbModel;
