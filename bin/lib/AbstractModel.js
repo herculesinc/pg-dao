@@ -44,25 +44,23 @@ class AbstractModel {
             this.updatedOn = seed.updatedOn instanceof Date
                 ? seed.updatedOn : new Date(seed.updatedOn);
         }
+        // set model handler
+        this[Model_1.symHandler] = this.constructor;
     }
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------
     static parse(row) {
-        const model = new this(row);
-        model[Model_1.symHandler] = this;
-        return model;
+        return new this(row);
     }
     static build(id, attributes) {
         if ('id' in attributes)
             throw new errors_1.ModelError('Cannot build a mode: model attributes contain id property');
         const timestamp = new Date();
-        const model = new this(Object.assign({
+        return new this(Object.assign({
             id: id,
             createdOn: timestamp,
             updatedOn: timestamp
         }, attributes));
-        model[Model_1.symHandler] = this;
-        return model;
     }
     static clone(model) {
         if (model == undefined)
@@ -90,9 +88,7 @@ class AbstractModel {
                     throw new errors_1.ModelError('Cannot clone model: field type is invalid');
             }
         }
-        const clone = new this(seed);
-        clone[Model_1.symHandler] = this;
-        return clone;
+        return new this(seed);
     }
     static infuse(target, source) {
         if (target == undefined || source == undefined)
@@ -264,7 +260,7 @@ function buildFetchQuery(table, schema, handler) {
         constructor(selector, mask, name, forUpdate) {
             super(handler, mask, forUpdate);
             var criteria = [];
-            for (var filter in selector) {
+            for (let filter in selector) {
                 if (filter in schema === false)
                     throw new errors_1.ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
                 if (selector[filter] && Array.isArray(selector[filter])) {

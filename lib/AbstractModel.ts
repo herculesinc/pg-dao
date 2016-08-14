@@ -70,14 +70,15 @@ export class AbstractModel implements Model {
             this.updatedOn = seed.updatedOn instanceof Date 
                 ? seed.updatedOn : new Date(seed.updatedOn);
         }
+
+        // set model handler
+        this[symHandler] = this.constructor;
     }
   
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------
     static parse(row: any): any {
-        const model = new this(row);
-        model[symHandler] = this;
-        return model;
+        return new this(row);
     }
     
     static build(id: string, attributes: any): any {
@@ -85,13 +86,11 @@ export class AbstractModel implements Model {
             throw new ModelError('Cannot build a mode: model attributes contain id property');
         
         const timestamp = new Date();
-        const model = new this(Object.assign({
+        return new this(Object.assign({
             id: id,
             createdOn: timestamp,
             updatedOn: timestamp
         }, attributes));
-        model[symHandler] = this;
-        return model;
     }
 
     static clone(model: Model): any {
@@ -118,10 +117,8 @@ export class AbstractModel implements Model {
                     throw new ModelError('Cannot clone model: field type is invalid')
             }
         }
-        
-        const clone = new this(seed);
-        clone[symHandler] = this;
-        return clone;
+
+        return new this(seed);
     }
     
     static infuse(target: Model, source: Model) {
@@ -282,7 +279,7 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
             super(handler, mask, forUpdate);
             
             var criteria: string[] = [];
-            for (var filter in selector) {
+            for (let filter in selector) {
                 if (filter in schema === false)
                     throw new ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
                 if (selector[filter] && Array.isArray(selector[filter])) {
