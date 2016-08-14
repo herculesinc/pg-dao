@@ -1,6 +1,6 @@
 // IMPORTS
 // ================================================================================================
-import { ResultHandler, Query, ResultQuery } from 'pg-io';
+import { ResultHandler, Query, ResultQuery, SingleResultQuery, ListResultQuery } from 'pg-io';
 import { Dao } from './Dao';
 
 // MODULE VARIABLES
@@ -17,6 +17,7 @@ export interface Model {
 
 export interface ModelHandler<T extends Model> extends ResultHandler<T> {
     name?: string;
+    
     build(id: string, attributes: any): T;
     clone(model: T): T;
     infuse(target: T, source: T);
@@ -27,10 +28,21 @@ export interface ModelHandler<T extends Model> extends ResultHandler<T> {
     getSyncQueries(original: T, current: T, changes?: string[]): Query[];
     getFetchOneQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
     getFetchAllQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
+
     getIdGenerator(): IdGenerator;
 }
 
 export interface ModelQuery<T extends Model> extends ResultQuery<T> {
+    handler : ModelHandler<T>;
+    mutable?: boolean;
+};
+
+export interface SingleModelQuery<T extends Model> extends SingleResultQuery<T> {
+    handler : ModelHandler<T>;
+    mutable?: boolean;
+}
+
+export interface ListModelQuery<T extends Model> extends ListResultQuery<T> {
     handler : ModelHandler<T>;
     mutable?: boolean;
 }

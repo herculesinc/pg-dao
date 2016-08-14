@@ -26,7 +26,7 @@
     "node": "6.3.x"
   },
   "dependencies": {
-    "pg-io": "0.7.1"
+    "pg-io": "0.7.2"
   },
   "devDependencies": {
     "del": "2.2.x",

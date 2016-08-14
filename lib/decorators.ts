@@ -4,6 +4,7 @@ import { AbstractModel, symbols } from './AbstractModel';
 import { IdGenerator } from './Model'
 import { ModelError } from './errors';
 import { DbField } from './schema';
+import { Comparator, Cloner} from './util';
 
 // INTERFACES
 // ================================================================================================
@@ -14,8 +15,8 @@ export const enum ArrayComparison {
 export interface dbFieldOptions {
     readonly?   : boolean;
     secret?     : string;
-    cloner?     : (value: any) => any;
-    comparator? : (value1: any, value2: any) => boolean;
+    cloner?     : Cloner<any>;
+    comparator? : Comparator;
 }
 
 // DECORATOR DEFINITIONS

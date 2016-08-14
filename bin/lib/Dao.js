@@ -187,15 +187,14 @@ class Dao extends pg_io_1.Session {
     // --------------------------------------------------------------------------------------------
     getModelSyncQueries(changes, commit = false) {
         let queries = [];
-        for (var i = 0; i < changes.length; i++) {
+        for (let i = 0; i < changes.length; i++) {
             let original = changes[i].original;
             let current = changes[i].current;
             if (this.options.manageUpdatedOn && original && current) {
                 current.updatedOn = new Date();
             }
-            var handler = current ? current[Model_1.symHandler] : original[Model_1.symHandler];
-            // TODO: improve naming
-            queries = queries.concat(handler.getSyncQueries(original, current, changes[i].changes));
+            const handler = current ? current[Model_1.symHandler] : original[Model_1.symHandler];
+            queries = queries.concat(handler.getSyncQueries(original, current, changes[i].updates));
         }
         if (commit) {
             // TODO: is this needed?

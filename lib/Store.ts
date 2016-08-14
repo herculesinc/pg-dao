@@ -16,7 +16,7 @@ const symbols = {
 export interface SyncInfo {
     original?   : Model;
     current?    : Model;
-    changes?    : string[];
+    updates?    : string[];
 }
 
 export interface Options {
@@ -225,9 +225,9 @@ export class Store {
                             syncInfo.push({ current: model });
                         }
                         else {
-                            const changes = handler.compare(original, model);
-                            if (changes && changes.length) {
-                                syncInfo.push({ original, current: model, changes });
+                            const updates = handler.compare(original, model);
+                            if (updates && updates.length) {
+                                syncInfo.push({ original, current: model, updates });
                             }
                         }
                     }

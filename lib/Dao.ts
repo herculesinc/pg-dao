@@ -245,16 +245,15 @@ export class Dao extends Session {
     // --------------------------------------------------------------------------------------------
     getModelSyncQueries(changes: SyncInfo[], commit = false) {
         let queries: Query[] = [];
-        for (var i = 0; i < changes.length; i++) {
+        for (let i = 0; i < changes.length; i++) {
             let original = changes[i].original;
             let current = changes[i].current;
             
             if (this.options.manageUpdatedOn && original && current) {
                 current.updatedOn = new Date();
             }
-            var handler: ModelHandler<any> = current ? current[symHandler] : original[symHandler];
-            // TODO: improve naming
-            queries = queries.concat(handler.getSyncQueries(original, current, changes[i].changes)); 
+            const handler: ModelHandler<any> = current ? current[symHandler] : original[symHandler];
+            queries = queries.concat(handler.getSyncQueries(original, current, changes[i].updates)); 
         }
         
         if (commit) {
