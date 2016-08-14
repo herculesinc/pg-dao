@@ -9,11 +9,6 @@ function isModel(model) {
         && (isModelHandler(model[exports.symHandler]));
 }
 exports.isModel = isModel;
-function getModelHandler(model) {
-    var handler = model[exports.symHandler];
-    return isModelHandler(handler) ? handler : undefined;
-}
-exports.getModelHandler = getModelHandler;
 function isModelHandler(handler) {
     return (handler !== undefined)
         && (typeof handler.build === 'function')

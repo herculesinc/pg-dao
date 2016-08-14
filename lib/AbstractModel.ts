@@ -10,7 +10,7 @@ import { camelToSnake, deepCompare, ArrayComparator, deepClone } from './util'
 
 // MODULE VARIABLES
 // ================================================================================================
-export var symbols = {
+export const symbols = {
     fetchQuery      : Symbol(),
 	updateQuery     : Symbol(),
 	insertQuery     : Symbol(),
@@ -19,16 +19,24 @@ export var symbols = {
     dbSchema        : Symbol(),
     idGenerator     : Symbol(),
     arrayComparator : Symbol()
-}
+};
 
 // INTERFACES
 // ================================================================================================
-interface ModelQueryConstructor {
+interface FetchQueryConstructor {
+    new(selector: any, mask: string, name: string, forUpdate: boolean): ModelQuery<any>;
+}
+
+interface InsertQueryConstructor {
     new (model: Model): Query;
 }
 
-interface FetchQueryConstructor {
-    new(selector: any, mask: string, name: string, forUpdate: boolean): ModelQuery<any>;
+interface UpdateQueryConstructor {
+    new (model: Model, changes: string[]): Query;
+}
+
+interface DeleteQueryConstructor {
+    new (model: Model): Query;
 }
 
 // ABSTRACT MODEL CLASS DEFINITION
@@ -127,28 +135,41 @@ export class AbstractModel implements Model {
             target[field.name] = deepClone(source[field.name]);
         }
     }
+
+    static compare(original: AbstractModel, current: AbstractModel): string[] {
+        if (original == undefined || current == undefined) return undefined;
+        if (original.constructor !== this || current.constructor !== this)
+            throw new ModelError('Cannot compare models: model constructors do not match');
+
+        const changes: string[] = [];
+        const schema = this[symbols.dbSchema];
+        const arrayComparator: ArrayComparator = this[symbols.arrayComparator];
+        for (let fieldName in schema) {
+            if (!deepCompare(original[fieldName], current[fieldName], arrayComparator)) {
+                changes.push(fieldName);
+            }
+        }
+        return changes;
+    }
     
     static areEqual(model1: AbstractModel, model2: AbstractModel): boolean {
+        if (model1 == undefined && model2 == undefined) return true;
         if (model1 == undefined || model2 == undefined) return false;
         if (model1.constructor !== this || model2.constructor !== this)
             throw new ModelError('Cannot compare models: model constructors do not match');
         
-        var retval = true;
-        var schema = this[symbols.dbSchema];
-        var arrayComparator: ArrayComparator = this[symbols.arrayComparator];
-        for (var fieldName in schema) {
-            var field: DbField = schema[fieldName];
-            retval = deepCompare(model1[field.name], model2[field.name], arrayComparator);
-            if (retval === false) break;
+        const schema = this[symbols.dbSchema];
+        const arrayComparator: ArrayComparator = this[symbols.arrayComparator];
+        for (let fieldName in schema) {
+            if (!deepCompare(model1[fieldName], model2[fieldName], arrayComparator)) return false;
         }
-        
-        return retval;
+        return true;
     }
 
     static getSyncQueries(original: AbstractModel, current: AbstractModel): Query[] {
         var queries: Query[] = [];
         if (original === undefined && current !== undefined) {
-            let qInsertModel = this[symbols.insertQuery];
+            let qInsertModel: InsertQueryConstructor = this[symbols.insertQuery];
             if (qInsertModel === undefined) {
                 qInsertModel = buildInsertQuery(this[symbols.dbTable], this[symbols.dbSchema]);
                 this[symbols.insertQuery] = qInsertModel;
@@ -156,7 +177,7 @@ export class AbstractModel implements Model {
             queries.push(new qInsertModel(current));
         }
         else if (original !== undefined && current === undefined) {
-            let qDeleteModel = this[symbols.deleteQuery];
+            let qDeleteModel: DeleteQueryConstructor = this[symbols.deleteQuery];
             if (qDeleteModel === undefined) {
                 qDeleteModel = buildDeleteQuery(this[symbols.dbTable]);
                 this[symbols.deleteQuery] = qDeleteModel;   
@@ -165,12 +186,13 @@ export class AbstractModel implements Model {
         }
         else if (original !== undefined && current !== undefined) {
             // TODO: only update fields that have change - structural changes required
-            let qUpdateModel = this[symbols.updateQuery];
+            let qUpdateModel: UpdateQueryConstructor = this[symbols.updateQuery];
             if (qUpdateModel === undefined) {
                 qUpdateModel = buildUpdateQuery(this[symbols.dbTable], this[symbols.dbSchema]);
                 this[symbols.updateQuery] = qUpdateModel;
             }
-            queries.push(new qUpdateModel(current));
+            // TODO: pass changes
+            queries.push(new qUpdateModel(current, undefined));
         }
 
         return queries;
@@ -241,7 +263,7 @@ function buildFetchQuery(table: string, schema: any, handler: ModelHandler<any>)
     };
 }
 
-function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
+function buildInsertQuery(table: string, schema: any): InsertQueryConstructor {
     
     if (table == undefined || table.trim() === '')
         throw new ModelError('Cannot build an insert query: model table is undefined');
@@ -249,24 +271,24 @@ function buildInsertQuery(table: string, schema: any): ModelQueryConstructor {
     if (schema == undefined)
         throw new ModelError('Cannot build an insert query: model schema is undefined');
     
-    var fields: string[] = [];
-    var params: string[] = [];
-    for (var fieldName in schema) {
-        var field: DbField = schema[fieldName];
+    const fields: string[] = [];
+    const params: string[] = [];
+    for (let fieldName in schema) {
+        let field: DbField = schema[fieldName];
         fields.push(camelToSnake(field.name));
         params.push(`{{${field.name}}}`)
     }
-    var querySpec = `INSERT INTO ${table} (${fields.join(',')}) VALUES (${params.join(',')});`;
+    const queryText = `INSERT INTO ${table} (${fields.join(',')}) VALUES (${params.join(',')});`;
     
     return class extends AbstractActionQuery {
         constructor(model: Model) {
             super(`qInsert${model[symHandler].name}Model`, model);
-            this.text = querySpec;
+            this.text = queryText;
         }
     };
 }
 
-function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
+function buildUpdateQuery(table: string, schema: any): UpdateQueryConstructor {
     
     if (table == undefined || table.trim() === '')
         throw new ModelError('Cannot build an update query: model table is undefined');
@@ -274,23 +296,31 @@ function buildUpdateQuery(table: string, schema: any): ModelQueryConstructor {
     if (schema == undefined)
         throw new ModelError('Cannot build an update query: model schema is undefined');
     
-    var fields: string[] = [];
-    for (var fieldName in schema) {
-        var field: DbField = schema[fieldName];
+    const fieldMap: Map<string, string> = new Map();
+    for (let fieldName in schema) {
+        let field: DbField = schema[fieldName];
         if (field.readonly) continue;
-        fields.push(`${camelToSnake(field.name)}={{${field.name}}}`);
+        fieldMap.set(field.name, `${camelToSnake(field.name)}={{${field.name}}}`);
     }
-    var querySpec = `UPDATE ${table} SET ${fields.join(',')}`;
+    const queryBase = `UPDATE ${table} SET `;
     
     return class extends AbstractActionQuery {
-        constructor(model: Model) {
-            super(`qUpdate${model[symHandler].name}Model`, model)
-            this.text = querySpec + ` WHERE id = '${model.id}';`;
+        constructor(model: Model, changes: string[]) {
+            super(`qUpdate${model[symHandler].name}Model`, model);
+            const fields: string[] = Array.from(fieldMap.values());
+            /*
+            for (let changedField of changes) {
+                let field = fieldMap.get(changedField);
+                if (!field) throw new ModelError(`Cannot create model quer: field '${changedField}' cannot be updated`);
+                fields.push(field);
+            }
+            */
+            this.text = queryBase + `${fields.join(',')} WHERE id = '${model.id}';`;
         }
     };
 }
 
-function buildDeleteQuery(table: string): ModelQueryConstructor {
+function buildDeleteQuery(table: string): DeleteQueryConstructor {
     
     if (table == undefined || table.trim() === '')
         throw new ModelError('Cannot build a delete query: model table is undefined');

@@ -16,9 +16,16 @@ class DbField {
             case Boolean:
             case String:
             case Date:
+                this.type = type;
+                // check if comparator was provided
+                break;
             case Object:
+                this.type = type;
+                //this.comparator = something || deepCompare
+                break;
             case Array:
                 this.type = type;
+                //this.comparator = compareArraysStrict;
                 break;
             default:
                 throw new errors_1.ModelError(`Invalid field type in model schema`);

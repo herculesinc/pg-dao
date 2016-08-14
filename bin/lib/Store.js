@@ -5,7 +5,7 @@ const errors_1 = require('./errors');
 const Model_1 = require('./Model');
 // MODULE VARIABLES
 // ================================================================================================
-var symbols = {
+const symbols = {
     original: Symbol(),
     mutable: Symbol(),
     destroyed: Symbol()
@@ -27,8 +27,8 @@ class Store {
             throw new errors_1.ModelError('Cannot insert a model: the model is invalid');
         if (model[symbols.destroyed])
             throw new errors_1.StoreError('Cannot insert a model: the model has been destroyed');
-        var handler = model[Model_1.symHandler];
-        var modelMap = this.getModelMap(handler, true);
+        const handler = model[Model_1.symHandler];
+        const modelMap = this.getModelMap(handler, true);
         if (modelMap.has(model.id))
             throw new errors_1.StoreError('Cannot insert a mode: the model is already in the store');
         model[symbols.mutable] = true;
@@ -45,7 +45,7 @@ class Store {
             throw new errors_1.StoreError('Cannot destroy a model: the model is immutable');
         model[symbols.destroyed] = true;
         if (model[symbols.original] === undefined) {
-            var modelMap = this.getModelMap(model[Model_1.symHandler]);
+            const modelMap = this.getModelMap(model[Model_1.symHandler]);
             modelMap.delete(model.id);
         }
         return model;
@@ -55,9 +55,9 @@ class Store {
             throw new errors_1.StoreError('Cannot clean a moadel: the model is not in the store');
         if (model[symbols.mutable] === false)
             return model;
-        var handler = model[Model_1.symHandler];
+        const handler = model[Model_1.symHandler];
         if (model[symbols.original] === undefined) {
-            var modelMap = this.getModelMap(handler);
+            const modelMap = this.getModelMap(handler);
             modelMap.delete(model.id);
         }
         else {
@@ -75,13 +75,13 @@ class Store {
     load(handler, rows, mutable) {
         if (Model_1.isModelHandler(handler) === false)
             throw new errors_1.ModelError('Cannot load a model: model handler is invalid');
-        var modelMap = this.getModelMap(handler, true);
-        var models = rows.map((row) => {
-            var model = handler.parse(row);
+        const modelMap = this.getModelMap(handler, true);
+        const models = rows.map((row) => {
+            const model = handler.parse(row);
             if (this.options.validateHandlerOutput && Model_1.isModel(model) === false)
                 throw new errors_1.ModelError('Cannot load a model: the model is invalid');
             if (modelMap.has(model.id)) {
-                var storeModel = modelMap.get(model.id);
+                const storeModel = modelMap.get(model.id);
                 if (storeModel[symbols.mutable]) {
                     if (storeModel[symbols.destroyed])
                         throw new errors_1.StoreError('Cannot reload a model: the model has been destroyed');
@@ -97,7 +97,7 @@ class Store {
             }
             else {
                 if (mutable || this.options.validateImmutability) {
-                    var clone = handler.clone(model);
+                    const clone = handler.clone(model);
                     if (this.options.validateHandlerOutput && model === clone)
                         throw new errors_1.ModelError('Cannot load a model: model cloning returned the same model');
                     model[symbols.original] = clone;
@@ -115,8 +115,8 @@ class Store {
     has(model, errorOnAbsent = false) {
         if (Model_1.isModel(model) === false)
             throw new errors_1.ModelError('The model is invalid');
-        var modelMap = this.cache.get(model[Model_1.symHandler]);
-        var storeModel = modelMap ? modelMap.get(model.id) : undefined;
+        const modelMap = this.cache.get(model[Model_1.symHandler]);
+        const storeModel = modelMap ? modelMap.get(model.id) : undefined;
         if (storeModel && model !== storeModel)
             throw new errors_1.StoreError('Different model with the same ID was found in the store');
         if (errorOnAbsent && storeModel === undefined)
@@ -148,15 +148,13 @@ class Store {
     // STORE STATE METHODS
     // --------------------------------------------------------------------------------------------
     get hasChanges() {
-        var changed = false;
-        for (let cacheEntry of this.cache) {
-            let handler = cacheEntry[0];
-            let modelMap = cacheEntry[1];
-            for (let modelEntry of modelMap) {
-                let model = modelEntry[1];
+        let changed = false;
+        for (let [handler, modelMap] of this.cache) {
+            for (let [id, model] of modelMap) {
                 if (model[symbols.mutable]) {
                     changed = model[symbols.destroyed]
-                        || (handler.areEqual(model, model[symbols.original]) === false);
+                        || !model[symbols.original]
+                        || !handler.areEqual(model, model[symbols.original]);
                     if (changed)
                         break;
                 }
@@ -167,25 +165,35 @@ class Store {
         return changed;
     }
     getChanges() {
-        var syncInfo = [];
-        this.cache.forEach((modelMap, handler) => {
-            modelMap.forEach((model) => {
+        const syncInfo = [];
+        for (let [handler, modelMap] of this.cache) {
+            for (let [id, model] of modelMap) {
                 if (model[symbols.mutable]) {
-                    var original = model[symbols.original];
-                    var current = model[symbols.destroyed] ? undefined : model;
-                    if (handler.areEqual(original, current) === false) {
-                        syncInfo.push({ original, current });
+                    const original = model[symbols.original];
+                    if (model[symbols.destroyed]) {
+                        syncInfo.push({ original });
+                    }
+                    else {
+                        if (!original) {
+                            syncInfo.push({ current: model });
+                        }
+                        else {
+                            const changes = handler.compare(original, model);
+                            if (changes && changes.length) {
+                                syncInfo.push({ original, current: model, changes });
+                            }
+                        }
                     }
                 }
                 else if (this.options.validateImmutability) {
-                    var original = model[symbols.original];
-                    var current = model[symbols.destroyed] ? undefined : model;
-                    if (handler.areEqual(original, current) === false) {
+                    const original = model[symbols.original];
+                    const current = model[symbols.destroyed] ? undefined : model;
+                    if (!handler.areEqual(original, current)) {
                         throw new errors_1.SyncError('Change to immutable model detected');
                     }
                 }
-            });
-        });
+            }
+        }
         return syncInfo;
     }
     applyChanges(changes) {
@@ -222,14 +230,12 @@ class Store {
                 modelMap.delete(original.id);
             }
         }
-        var allChanges = [];
-        this.changes.forEach((change) => allChanges.push(change));
-        return allChanges;
+        return Array.from(this.changes.values());
     }
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     getModelMap(handler, create = false) {
-        var modelMap = this.cache.get(handler);
+        let modelMap = this.cache.get(handler);
         if (create && modelMap === undefined) {
             modelMap = new Map();
             this.cache.set(handler, modelMap);

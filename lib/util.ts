@@ -69,10 +69,10 @@ export function deepCompare(valueA: any, valueB: any, compareArrays: ArrayCompar
 export function compareArraysStrict(array1: any[], array2: any[], parents?: WeakSet<any>): boolean {
     if (array1 == array2) return true;
     if (array1 == undefined || array2 == undefined) return false;
-    if (array1.length != array2.length) return false;
+    if (array1.length !== array2.length) return false;
     if (array1.length === 0) return true;
     
-    for (var i = 0; i < array1.length; i++) {
+    for (let i = 0; i < array1.length; i++) {
         if (deepCompare(array1[i], array2[i], compareArraysStrict, parents) === false) {
             return false;
         }

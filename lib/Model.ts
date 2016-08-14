@@ -5,7 +5,7 @@ import { Dao } from './Dao';
 
 // MODULE VARIABLES
 // ================================================================================================
-export var symHandler = Symbol();
+export const symHandler = Symbol();
 
 // ENUMS A ND INTERFACES
 // ================================================================================================
@@ -20,8 +20,11 @@ export interface ModelHandler<T extends Model> extends ResultHandler<T> {
     build(id: string, attributes: any): T;
     clone(model: T): T;
     infuse(target: T, source: T);
+    
+    compare(original: T, current: T): string[];
     areEqual(model1: T, model2: T): boolean;
-    getSyncQueries(original: T, current: T): Query[];
+
+    getSyncQueries(original: T, current: T, changes?: string[]): Query[];
     getFetchOneQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
     getFetchAllQuery(selector: any, forUpdate: boolean): ModelQuery<T>;
     getIdGenerator(): IdGenerator;
@@ -40,12 +43,7 @@ export interface IdGenerator {
 // ================================================================================================
 export function isModel(model: any): model is Model {
     return (typeof model.id === 'string')
-        && (isModelHandler(model[symHandler])) as any;
-}
-
-export function getModelHandler(model: Model): ModelHandler<any> {
-    var handler = model[symHandler];
-    return isModelHandler(handler) ? handler : undefined;
+        && (isModelHandler(model[symHandler]));
 }
 
 export function isModelHandler(handler: any): handler is ModelHandler<any> {
@@ -61,7 +59,7 @@ export function isModelHandler(handler: any): handler is ModelHandler<any> {
 }
 
 export function isModelQuery(query: Query): query is ModelQuery<any> {
-    return isModelHandler(query['handler']) as any;
+    return isModelHandler(query['handler']);
 }
 
 // DEFAULT ID GENERATOR
