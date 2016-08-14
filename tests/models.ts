@@ -5,7 +5,7 @@ import * as assert from 'assert';
 import { symbols } from './../lib/AbstractModel';
 import { User, Token } from './setup';
 import { ModelError } from './../lib/errors';
-import { deepClone, deepCompare, compareArraysStrict, compareArraysAsSets } from './../lib/util';
+import { cloneObject, areObjectsEqual, areArraysEqual, areSetsEqual } from './../lib/util';
 
 // MODEL DEFINITION
 // ================================================================================================
@@ -46,23 +46,23 @@ describe('Util: Comparators', function () {
         
     it('Comparing primitives should work correctly', function () {
 		
-        assert.strictEqual(deepCompare(1, 1, compareArraysStrict), 					true, 'number=number');
-        assert.strictEqual(deepCompare('test', 'test', compareArraysStrict), 		true, 'string=string');
-		assert.strictEqual(deepCompare(true, true, compareArraysStrict), 			true, 'boolean=boolean');
-		assert.strictEqual(deepCompare(undefined, undefined, compareArraysStrict), 	true, 'undefined=undefined');
-		assert.strictEqual(deepCompare(undefined, null, compareArraysStrict), 		true, 'null=undefined');
+        assert.strictEqual(areObjectsEqual(1, 1), 					true, 'number=number');
+        assert.strictEqual(areObjectsEqual('test', 'test'), 		true, 'string=string');
+		assert.strictEqual(areObjectsEqual(true, true), 			true, 'boolean=boolean');
+		assert.strictEqual(areObjectsEqual(undefined, undefined), 	true, 'undefined=undefined');
+		assert.strictEqual(areObjectsEqual(undefined, null), 		true, 'null=undefined');
 		
-		assert.strictEqual(deepCompare(1, '1', compareArraysStrict), 				false, 'number!=string');
-		assert.strictEqual(deepCompare('true', true, compareArraysStrict), 			false, 'string!=boolean');
-		assert.strictEqual(deepCompare(1, 2, compareArraysStrict), 					false, 'number!=number');
-		assert.strictEqual(deepCompare(true, false, compareArraysStrict), 			false, 'boolean!=boolean');
-		assert.strictEqual(deepCompare(false, undefined, compareArraysStrict), 		false, 'false!=undefined');
-		assert.strictEqual(deepCompare(false, null, compareArraysStrict), 			false, 'false!=null');
-		assert.strictEqual(deepCompare(0, undefined, compareArraysStrict), 			false, '0!=undefined');
-		assert.strictEqual(deepCompare(0, null, compareArraysStrict), 				false, '0!=null');
-		assert.strictEqual(deepCompare('', false, compareArraysStrict), 			false, 'empty stirng!=false');
-		assert.strictEqual(deepCompare('', null, compareArraysStrict), 				false, 'empty stirng!=null');
-		assert.strictEqual(deepCompare('', undefined, compareArraysStrict), 		false, 'empty stirng!=undefined');
+		assert.strictEqual(areObjectsEqual(1, '1'), 				false, 'number!=string');
+		assert.strictEqual(areObjectsEqual('true', true), 			false, 'string!=boolean');
+		assert.strictEqual(areObjectsEqual(1, 2), 					false, 'number!=number');
+		assert.strictEqual(areObjectsEqual(true, false), 			false, 'boolean!=boolean');
+		assert.strictEqual(areObjectsEqual(false, undefined), 		false, 'false!=undefined');
+		assert.strictEqual(areObjectsEqual(false, null), 			false, 'false!=null');
+		assert.strictEqual(areObjectsEqual(0, undefined), 			false, '0!=undefined');
+		assert.strictEqual(areObjectsEqual(0, null), 				false, '0!=null');
+		assert.strictEqual(areObjectsEqual('', false), 				false, 'empty stirng!=false');
+		assert.strictEqual(areObjectsEqual('', null), 				false, 'empty stirng!=null');
+		assert.strictEqual(areObjectsEqual('', undefined), 			false, 'empty stirng!=undefined');
     });
 	
 	it('Comparing dates should work correctly', function () {
@@ -71,11 +71,11 @@ describe('Util: Comparators', function () {
 		var date2 = new Date(date1.valueOf());
 		var date3 = new Date(date1.valueOf() + 1);
 		
-        assert.strictEqual(deepCompare(date1, date1, compareArraysStrict), 		true);
-        assert.strictEqual(deepCompare(date1, date2, compareArraysStrict), 		true);
+        assert.strictEqual(areObjectsEqual(date1, date1), 		true);
+        assert.strictEqual(areObjectsEqual(date1, date2), 		true);
 		
-		assert.strictEqual(deepCompare(date1, date3, compareArraysStrict), 		false);
-		assert.strictEqual(deepCompare(date2, date3, compareArraysStrict), 		false);
+		assert.strictEqual(areObjectsEqual(date1, date3), 		false);
+		assert.strictEqual(areObjectsEqual(date2, date3), 		false);
     });
 	
 	it('Comparing simple objects should work correctly', function () {
@@ -85,11 +85,11 @@ describe('Util: Comparators', function () {
 		var obj3 = { a: 'b', b: 2, c: true, d: undefined };
 		var obj4 = { a: 'a', b: 1, c: true, e: undefined };
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysStrict), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysStrict), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj2), 		true);
 		
-		assert.strictEqual(deepCompare(obj1, obj3, compareArraysStrict), 		false);
-		assert.strictEqual(deepCompare(obj1, obj4, compareArraysStrict), 		false);
+		assert.strictEqual(areObjectsEqual(obj1, obj3), 		false);
+		assert.strictEqual(areObjectsEqual(obj1, obj4), 		false);
     });
 	
 	it('Comparing nested objects should work correctly', function () {
@@ -99,11 +99,11 @@ describe('Util: Comparators', function () {
 		var obj3 = { a: 'b', b: { c: 'd' } };
 		var obj4 = { a: 'b', b: { d: 'c' } };
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysStrict), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysStrict), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj2), 		true);
 		
-		assert.strictEqual(deepCompare(obj1, obj3, compareArraysStrict), 		false);
-		assert.strictEqual(deepCompare(obj1, obj4, compareArraysStrict), 		false);
+		assert.strictEqual(areObjectsEqual(obj1, obj3), 		false);
+		assert.strictEqual(areObjectsEqual(obj1, obj4), 		false);
     });
 	
 	it('Comparing simple arrays should work correctly', function () {
@@ -113,11 +113,11 @@ describe('Util: Comparators', function () {
 		var obj3 = [1, 3, 4];
 		var obj4 = [2, 3, 1];
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysStrict), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysStrict), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj2), 		true);
 		
-		assert.strictEqual(deepCompare(obj1, obj3, compareArraysStrict), 		false);
-		assert.strictEqual(deepCompare(obj1, obj4, compareArraysStrict), 		false);
+		assert.strictEqual(areObjectsEqual(obj1, obj3), 		false);
+		assert.strictEqual(areObjectsEqual(obj1, obj4), 		false);
     });
 	
 	it('Comparing arrays with objects should work correctly', function () {
@@ -127,11 +127,11 @@ describe('Util: Comparators', function () {
 		var obj3 = [1, { a: 'a', d: { c: 'c' } }, 4];
 		var obj4 = [2, { a: 'a', b: { c: 'c' } }, 1];
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysStrict), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysStrict), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj2), 		true);
 		
-		assert.strictEqual(deepCompare(obj1, obj3, compareArraysStrict), 		false);
-		assert.strictEqual(deepCompare(obj1, obj4, compareArraysStrict), 		false);
+		assert.strictEqual(areObjectsEqual(obj1, obj3), 		false);
+		assert.strictEqual(areObjectsEqual(obj1, obj4), 		false);
     });
 	
 	it('Comparing simple arrays as sets should work correctly', function () {
@@ -141,11 +141,11 @@ describe('Util: Comparators', function () {
 		var obj3 = [1, 3, 4];
 		var obj4 = [2, 3, 1];
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysAsSets), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysAsSets), 		true);
+        assert.strictEqual(areSetsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areSetsEqual(obj1, obj2), 		true);
 		
-		assert.strictEqual(deepCompare(obj1, obj3, compareArraysAsSets), 		false);
-		assert.strictEqual(deepCompare(obj1, obj4, compareArraysAsSets), 		true);
+		assert.strictEqual(areSetsEqual(obj1, obj3), 		false);
+		assert.strictEqual(areSetsEqual(obj1, obj4), 		true);
     });
 	
 	it('Comparing arrays with objects as sets should work correctly', function () {
@@ -155,11 +155,11 @@ describe('Util: Comparators', function () {
 		var obj3 = [1, { a: 'a', d: { c: 'c' } }, 4];
 		var obj4 = [2, { a: 'a', b: { c: 'c' } }, 1];
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysAsSets), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysAsSets), 		true);
+        assert.strictEqual(areSetsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areSetsEqual(obj1, obj2), 		true);
 		
-		assert.strictEqual(deepCompare(obj1, obj3, compareArraysAsSets), 		false);
-		assert.strictEqual(deepCompare(obj1, obj4, compareArraysAsSets), 		false);
+		assert.strictEqual(areSetsEqual(obj1, obj3), 		false);
+		assert.strictEqual(areSetsEqual(obj1, obj4), 		false);
     });
 	
 	it('Comparing complex objects should work correctly', function () {
@@ -200,23 +200,10 @@ describe('Util: Comparators', function () {
 			d: [ { a: 'a' }, { a: 'b' }, { a: 'c' }	]
 		};
 		
-		var obj4 = {
-			b: [ 'b', 'c', 'a' ],
-			a: 'a',
-			c: {
-				e: 3,
-				d: 'd',
-				f: true,
-				g: [ 2, 3, 1 ]
-			},
-			d: [ { a: 'b' }, { a: 'a' }, { a: 'c' } ]
-		};
+        assert.strictEqual(areObjectsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj2), 		true);
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysAsSets), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysAsSets), 		true);
-		
-		assert.strictEqual(deepCompare(obj1, obj3, compareArraysAsSets), 		false);
-		assert.strictEqual(deepCompare(obj1, obj4, compareArraysAsSets), 		true);
+		assert.strictEqual(areObjectsEqual(obj1, obj3), 		false);
     });
 	
 	it('Funcitons should be ignorred during comparision', function () {
@@ -238,8 +225,8 @@ describe('Util: Comparators', function () {
 			}
 		};
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysAsSets), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysAsSets), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj2), 		true);
     });
 	
 	it('isEqualTo() should be used when present', function () {
@@ -261,8 +248,8 @@ describe('Util: Comparators', function () {
 			}
 		};
 		
-        assert.strictEqual(deepCompare(obj1, obj1, compareArraysAsSets), 		true);
-        assert.strictEqual(deepCompare(obj1, obj2, compareArraysAsSets), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj1), 		true);
+        assert.strictEqual(areObjectsEqual(obj1, obj2), 		true);
     });
 	
 	it('Circular references should throw an error', function () {
@@ -281,7 +268,7 @@ describe('Util: Comparators', function () {
 		obj2.c = obj2;
 		
 		assert.throws(() => {
-			deepCompare(obj1, obj2, compareArraysAsSets)
+			areObjectsEqual(obj1, obj2)
 		}, ModelError);
     });
 	
@@ -302,7 +289,7 @@ describe('Util: Comparators', function () {
 		obj2.c = obj1;
 		
 		assert.throws(() => {
-			deepCompare(obj1, obj2, compareArraysAsSets)
+			areObjectsEqual(obj1, obj2)
 		}, ModelError);
     });
 });
@@ -312,21 +299,21 @@ describe('Util: Comparators', function () {
 describe('Util: Cloners', function () {
         
     it('Cloning primitives should return the same value', function () {
-        assert.strictEqual(deepClone(1), 1);
-        assert.strictEqual(deepClone('test'), 'test');
-		assert.strictEqual(deepClone(true), true);
-		assert.strictEqual(deepClone(null), undefined);
-		assert.strictEqual(deepClone(undefined), undefined);
+        assert.strictEqual(cloneObject(1), 1);
+        assert.strictEqual(cloneObject('test'), 'test');
+		assert.strictEqual(cloneObject(true), true);
+		assert.strictEqual(cloneObject(null), undefined);
+		assert.strictEqual(cloneObject(undefined), undefined);
     });
 	
 	it('Cloning date should return the same date', function () {
 		var date = new Date();
-        assert.strictEqual(deepClone(date).valueOf(), date.valueOf());
+        assert.strictEqual(cloneObject(date).valueOf(), date.valueOf());
     });
 	
 	it('Cloning simple objects should return identical object', function () {
 		var object = { a: 'a', b: 1, c: true, d: undefined };
-        var clone = deepClone(object);
+        var clone = cloneObject(object);
 		
 		assert.notStrictEqual(clone, object);
 		assert.deepEqual(clone, object);
@@ -334,7 +321,7 @@ describe('Util: Cloners', function () {
 	
 	it('Cloning arrays of primitives should return identical arrays', function () {
 		var array = [1, 2, 3];
-        var clone = deepClone(array);
+        var clone = cloneObject(array);
 		
 		assert.notStrictEqual(clone, array);
 		assert.deepEqual(clone, array);
@@ -352,7 +339,7 @@ describe('Util: Cloners', function () {
 			g: new Date()
 		};
 		
-        var clone = deepClone(object);
+        var clone = cloneObject(object);
 		assert.notStrictEqual(clone, object);
 		assert.deepEqual(clone, object);
     });
@@ -367,7 +354,7 @@ describe('Util: Cloners', function () {
 		object.c = object;
 		
 		assert.throws(() => {
-			var clone = deepClone(object);
+			var clone = cloneObject(object);
 		}, ModelError);
     });
 });

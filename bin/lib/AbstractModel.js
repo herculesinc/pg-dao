@@ -48,15 +48,15 @@ class AbstractModel {
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------
     static parse(row) {
-        var model = new this(row);
+        const model = new this(row);
         model[Model_1.symHandler] = this;
         return model;
     }
     static build(id, attributes) {
         if ('id' in attributes)
             throw new errors_1.ModelError('Cannot build a mode: model attributes contain id property');
-        var timestamp = new Date();
-        var model = new this(Object.assign({
+        const timestamp = new Date();
+        const model = new this(Object.assign({
             id: id,
             createdOn: timestamp,
             updatedOn: timestamp
@@ -69,16 +69,28 @@ class AbstractModel {
             throw new errors_1.ModelError('Cannot clone model: source model is undefined');
         if (model.constructor !== this)
             throw new errors_1.ModelError('Cannot clone model: source model has a wrong constructor');
-        var schema = this[exports.symbols.dbSchema];
+        const schema = this[exports.symbols.dbSchema];
         if (!schema)
             throw new errors_1.ModelError('Cannot clone model: model schema is undefined');
-        // TODO: find a better mechanism for cloning models
-        var seed = {};
-        for (var fieldName in schema) {
-            var field = schema[fieldName];
-            seed[field.name] = util_1.deepClone(model[field.name]);
+        const seed = {};
+        for (let fieldName in schema) {
+            let field = schema[fieldName];
+            switch (field.type) {
+                case Number:
+                case Boolean:
+                case String:
+                    seed[field.name] = model[field.name];
+                    break;
+                case Date:
+                case Object:
+                case Array:
+                    seed[field.name] = field.clone(model[field.name]);
+                    break;
+                default:
+                    throw new errors_1.ModelError('Cannot clone model: field type is invalid');
+            }
         }
-        var clone = new this(seed);
+        const clone = new this(seed);
         clone[Model_1.symHandler] = this;
         return clone;
     }
@@ -89,14 +101,27 @@ class AbstractModel {
             throw new errors_1.ModelError('Cannot infuse source into target: either source or target have a wrong constructor');
         if (target.id !== source.id)
             throw new errors_1.ModelError('Cannot infuse source into target: source ID does not match target ID');
-        var schema = this[exports.symbols.dbSchema];
+        const schema = this[exports.symbols.dbSchema];
         if (!schema)
             throw new errors_1.ModelError('Cannot infuse source into target: model schema is undefined');
-        for (var fieldName in schema) {
-            var field = schema[fieldName];
+        for (let fieldName in schema) {
+            let field = schema[fieldName];
             if (field.readonly)
                 continue;
-            target[field.name] = util_1.deepClone(source[field.name]);
+            switch (field.type) {
+                case Number:
+                case Boolean:
+                case String:
+                    target[field.name] = source[field.name];
+                    break;
+                case Date:
+                case Object:
+                case Array:
+                    target[field.name] = field.clone(source[field.name]);
+                    break;
+                default:
+                    throw new errors_1.ModelError('Cannot infuse source into target: field type is invalid');
+            }
         }
     }
     static compare(original, current) {
@@ -106,10 +131,27 @@ class AbstractModel {
             throw new errors_1.ModelError('Cannot compare models: model constructors do not match');
         const changes = [];
         const schema = this[exports.symbols.dbSchema];
-        const arrayComparator = this[exports.symbols.arrayComparator];
         for (let fieldName in schema) {
-            if (!util_1.deepCompare(original[fieldName], current[fieldName], arrayComparator)) {
-                changes.push(fieldName);
+            let field = schema[fieldName];
+            if (field.readonly)
+                continue;
+            switch (field.type) {
+                case Number:
+                case Boolean:
+                case String:
+                    if (original[fieldName] != current[fieldName]) {
+                        changes.push(fieldName);
+                    }
+                    break;
+                case Date:
+                case Object:
+                case Array:
+                    if (!field.areEqual(original[fieldName], current[fieldName])) {
+                        changes.push(fieldName);
+                    }
+                    break;
+                default:
+                    throw new errors_1.ModelError('Cannot compare models: field type is invalid');
             }
         }
         return changes;
@@ -122,40 +164,54 @@ class AbstractModel {
         if (model1.constructor !== this || model2.constructor !== this)
             throw new errors_1.ModelError('Cannot compare models: model constructors do not match');
         const schema = this[exports.symbols.dbSchema];
-        const arrayComparator = this[exports.symbols.arrayComparator];
         for (let fieldName in schema) {
-            if (!util_1.deepCompare(model1[fieldName], model2[fieldName], arrayComparator))
-                return false;
+            let field = schema[fieldName];
+            if (field.readonly)
+                continue;
+            switch (field.type) {
+                case Number:
+                case Boolean:
+                case String:
+                    if (model1[fieldName] != model2[fieldName])
+                        return false;
+                    break;
+                case Date:
+                case Object:
+                case Array:
+                    if (!field.areEqual(model1[fieldName], model2[fieldName]))
+                        return false;
+                    break;
+                default:
+                    throw new errors_1.ModelError('Cannot compare models: field type is invalid');
+            }
         }
         return true;
     }
-    static getSyncQueries(original, current) {
-        var queries = [];
-        if (original === undefined && current !== undefined) {
+    static getSyncQueries(original, current, changes) {
+        const queries = [];
+        if (!original && current) {
             let qInsertModel = this[exports.symbols.insertQuery];
-            if (qInsertModel === undefined) {
+            if (!qInsertModel) {
                 qInsertModel = buildInsertQuery(this[exports.symbols.dbTable], this[exports.symbols.dbSchema]);
                 this[exports.symbols.insertQuery] = qInsertModel;
             }
             queries.push(new qInsertModel(current));
         }
-        else if (original !== undefined && current === undefined) {
+        else if (original && !current) {
             let qDeleteModel = this[exports.symbols.deleteQuery];
-            if (qDeleteModel === undefined) {
+            if (!qDeleteModel) {
                 qDeleteModel = buildDeleteQuery(this[exports.symbols.dbTable]);
                 this[exports.symbols.deleteQuery] = qDeleteModel;
             }
             queries.push(new qDeleteModel(original));
         }
-        else if (original !== undefined && current !== undefined) {
-            // TODO: only update fields that have change - structural changes required
+        else if (original && current) {
             let qUpdateModel = this[exports.symbols.updateQuery];
-            if (qUpdateModel === undefined) {
+            if (!qUpdateModel) {
                 qUpdateModel = buildUpdateQuery(this[exports.symbols.dbTable], this[exports.symbols.dbSchema]);
                 this[exports.symbols.updateQuery] = qUpdateModel;
             }
-            // TODO: pass changes
-            queries.push(new qUpdateModel(current, undefined));
+            queries.push(new qUpdateModel(current, changes));
         }
         return queries;
     }
@@ -182,10 +238,10 @@ class AbstractModel {
     }
 }
 __decorate([
-    decorators_1.dbField(String, true)
+    decorators_1.dbField(String, { readonly: true })
 ], AbstractModel.prototype, "id", void 0);
 __decorate([
-    decorators_1.dbField(Date, true)
+    decorators_1.dbField(Date, { readonly: true })
 ], AbstractModel.prototype, "createdOn", void 0);
 __decorate([
     decorators_1.dbField(Date)
@@ -262,14 +318,13 @@ function buildUpdateQuery(table, schema) {
     return class extends queries_1.AbstractActionQuery {
         constructor(model, changes) {
             super(`qUpdate${model[Model_1.symHandler].name}Model`, model);
-            const fields = Array.from(fieldMap.values());
-            /*
+            const fields = [];
             for (let changedField of changes) {
                 let field = fieldMap.get(changedField);
-                if (!field) throw new ModelError(`Cannot create model quer: field '${changedField}' cannot be updated`);
+                if (!field)
+                    throw new errors_1.ModelError(`Cannot create model quer: field '${changedField}' cannot be updated`);
                 fields.push(field);
             }
-            */
             this.text = queryBase + `${fields.join(',')} WHERE id = '${model.id}';`;
         }
     }

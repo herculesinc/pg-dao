@@ -6,7 +6,7 @@ import { DbField } from './schema';
 import { dbField } from './decorators'
 import { AbstractActionQuery, AbstractModelQuery } from './queries';
 import { ModelError, ModelQueryError } from './errors';
-import { camelToSnake, deepCompare, ArrayComparator, deepClone } from './util'
+import { camelToSnake } from './util'
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -28,24 +28,24 @@ interface FetchQueryConstructor {
 }
 
 interface InsertQueryConstructor {
-    new (model: Model): Query;
+    new(model: Model): Query;
 }
 
 interface UpdateQueryConstructor {
-    new (model: Model, changes: string[]): Query;
+    new(model: Model, changes: string[]): Query;
 }
 
 interface DeleteQueryConstructor {
-    new (model: Model): Query;
+    new(model: Model): Query;
 }
 
 // ABSTRACT MODEL CLASS DEFINITION
 // ================================================================================================
 export class AbstractModel implements Model {
-    @dbField(String, true)
+    @dbField(String, { readonly: true })
     id: string;
     
-    @dbField(Date, true)
+    @dbField(Date, { readonly: true })
     createdOn: Date;
     
     @dbField(Date)
@@ -75,7 +75,7 @@ export class AbstractModel implements Model {
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------
     static parse(row: any): any {
-        var model = new this(row);
+        const model = new this(row);
         model[symHandler] = this;
         return model;
     }
@@ -84,8 +84,8 @@ export class AbstractModel implements Model {
         if ('id' in attributes) 
             throw new ModelError('Cannot build a mode: model attributes contain id property');
         
-        var timestamp = new Date();
-        var model = new this(Object.assign({
+        const timestamp = new Date();
+        const model = new this(Object.assign({
             id: id,
             createdOn: timestamp,
             updatedOn: timestamp
@@ -101,17 +101,25 @@ export class AbstractModel implements Model {
         if (model.constructor !== this)
             throw new ModelError('Cannot clone model: source model has a wrong constructor');
         
-        var schema = this[symbols.dbSchema];
+        const schema = this[symbols.dbSchema];
         if (!schema) throw new ModelError('Cannot clone model: model schema is undefined')
 
-        // TODO: find a better mechanism for cloning models
-        var seed: any = {};
-        for (var fieldName in schema) {
-            var field: DbField = schema[fieldName];
-            seed[field.name] = deepClone(model[field.name]);
+        const seed: any = {};
+        for (let fieldName in schema) {
+            let field: DbField = schema[fieldName];
+            switch (field.type) {
+                case Number: case Boolean: case String:
+                    seed[field.name] = model[field.name];
+                    break;
+                case Date: case Object: case Array:
+                    seed[field.name] = field.clone(model[field.name]);
+                    break;
+                default:
+                    throw new ModelError('Cannot clone model: field type is invalid')
+            }
         }
         
-        var clone = new this(seed);
+        const clone = new this(seed);
         clone[symHandler] = this;
         return clone;
     }
@@ -126,13 +134,22 @@ export class AbstractModel implements Model {
         if (target.id !== source.id)
             throw new ModelError('Cannot infuse source into target: source ID does not match target ID');
 
-        var schema = this[symbols.dbSchema];
+        const schema = this[symbols.dbSchema];
         if (!schema) throw new ModelError('Cannot infuse source into target: model schema is undefined')
         
-        for (var fieldName in schema) {
-            var field: DbField = schema[fieldName];
+        for (let fieldName in schema) {
+            let field: DbField = schema[fieldName];
             if (field.readonly) continue;
-            target[field.name] = deepClone(source[field.name]);
+            switch (field.type) {
+                case Number: case Boolean: case String:
+                    target[field.name] = source[field.name];
+                    break;
+                case Date: case Object: case Array:
+                    target[field.name] = field.clone(source[field.name]);
+                    break;
+                default:
+                    throw new ModelError('Cannot infuse source into target: field type is invalid')
+            }
         }
     }
 
@@ -143,10 +160,22 @@ export class AbstractModel implements Model {
 
         const changes: string[] = [];
         const schema = this[symbols.dbSchema];
-        const arrayComparator: ArrayComparator = this[symbols.arrayComparator];
         for (let fieldName in schema) {
-            if (!deepCompare(original[fieldName], current[fieldName], arrayComparator)) {
-                changes.push(fieldName);
+            let field: DbField = schema[fieldName];
+            if (field.readonly) continue;
+            switch (field.type) {
+                case Number: case Boolean: case String:
+                    if (original[fieldName] != current[fieldName]) {
+                        changes.push(fieldName);
+                    }
+                    break;
+                case Date: case Object: case Array:
+                    if (!field.areEqual(original[fieldName], current[fieldName])) {
+                        changes.push(fieldName);
+                    }
+                    break;
+                default:
+                    throw new ModelError('Cannot compare models: field type is invalid')
             }
         }
         return changes;
@@ -159,40 +188,48 @@ export class AbstractModel implements Model {
             throw new ModelError('Cannot compare models: model constructors do not match');
         
         const schema = this[symbols.dbSchema];
-        const arrayComparator: ArrayComparator = this[symbols.arrayComparator];
         for (let fieldName in schema) {
-            if (!deepCompare(model1[fieldName], model2[fieldName], arrayComparator)) return false;
+            let field: DbField = schema[fieldName];
+            if (field.readonly) continue;
+            switch (field.type) {
+                case Number: case Boolean: case String:
+                    if (model1[fieldName] != model2[fieldName]) return false;
+                    break;
+                case Date: case Object: case Array:
+                    if (!field.areEqual(model1[fieldName], model2[fieldName])) return false;
+                    break;
+                default:
+                    throw new ModelError('Cannot compare models: field type is invalid')
+            }
         }
         return true;
     }
 
-    static getSyncQueries(original: AbstractModel, current: AbstractModel): Query[] {
-        var queries: Query[] = [];
-        if (original === undefined && current !== undefined) {
+    static getSyncQueries(original: AbstractModel, current: AbstractModel, changes?: string[]): Query[] {
+        const queries: Query[] = [];
+        if (!original && current) {
             let qInsertModel: InsertQueryConstructor = this[symbols.insertQuery];
-            if (qInsertModel === undefined) {
+            if (!qInsertModel) {
                 qInsertModel = buildInsertQuery(this[symbols.dbTable], this[symbols.dbSchema]);
                 this[symbols.insertQuery] = qInsertModel;
             }
             queries.push(new qInsertModel(current));
         }
-        else if (original !== undefined && current === undefined) {
+        else if (original && !current) {
             let qDeleteModel: DeleteQueryConstructor = this[symbols.deleteQuery];
-            if (qDeleteModel === undefined) {
+            if (!qDeleteModel) {
                 qDeleteModel = buildDeleteQuery(this[symbols.dbTable]);
                 this[symbols.deleteQuery] = qDeleteModel;   
             }
             queries.push(new qDeleteModel(original));
         }
-        else if (original !== undefined && current !== undefined) {
-            // TODO: only update fields that have change - structural changes required
+        else if (original && current) {
             let qUpdateModel: UpdateQueryConstructor = this[symbols.updateQuery];
-            if (qUpdateModel === undefined) {
+            if (!qUpdateModel) {
                 qUpdateModel = buildUpdateQuery(this[symbols.dbTable], this[symbols.dbSchema]);
                 this[symbols.updateQuery] = qUpdateModel;
             }
-            // TODO: pass changes
-            queries.push(new qUpdateModel(current, undefined));
+            queries.push(new qUpdateModel(current, changes));
         }
 
         return queries;
@@ -307,14 +344,12 @@ function buildUpdateQuery(table: string, schema: any): UpdateQueryConstructor {
     return class extends AbstractActionQuery {
         constructor(model: Model, changes: string[]) {
             super(`qUpdate${model[symHandler].name}Model`, model);
-            const fields: string[] = Array.from(fieldMap.values());
-            /*
+            const fields: string[] = [];
             for (let changedField of changes) {
                 let field = fieldMap.get(changedField);
                 if (!field) throw new ModelError(`Cannot create model quer: field '${changedField}' cannot be updated`);
                 fields.push(field);
             }
-            */
             this.text = queryBase + `${fields.join(',')} WHERE id = '${model.id}';`;
         }
     };

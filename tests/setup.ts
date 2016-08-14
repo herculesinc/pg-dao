@@ -8,7 +8,24 @@ import { dbField, dbModel } from './../lib/decorators';
 
 // SETUP
 // ================================================================================================
-var userIdGenerator = new PgIdGenerator('tmp_users_id_seq');
+const userIdGenerator = new PgIdGenerator('tmp_users_id_seq');
+
+interface Profile {
+    city: string;
+}
+
+namespace Profile {
+    export function clone(profile: Profile): Profile {
+        if (!profile) return undefined;
+        return { city: profile.city };
+    }
+
+    export function areEqual(p1: Profile, p2: Profile): boolean {
+        if (p1 == p2) return true;
+        if (p1 == undefined || p2 == undefined) return false;
+        return (p1.city == p2.city);
+    }
+}
 
 @dbModel('tmp_users', userIdGenerator)
 export class User extends AbstractModel {
@@ -16,17 +33,21 @@ export class User extends AbstractModel {
     @dbField(String)
     username: string;
     
+    @dbField(Object, { cloner: Profile.clone, comparator: Profile.areEqual })
+    profile: Profile;
+
     @dbField(Array)
     tags: string[];
     
     constructor(seed: any) {
         super(seed);
         this.username = seed.username;
+        this.profile = seed.profile;
         this.tags = seed.tags;
     }
     
     // needed because applying decorators removes class names in TS1.7
-    static get name(): string { return 'User' };
+    // static get name(): string { return 'User' };
 }
 
 @dbModel('tmp_tokens', userIdGenerator)
@@ -41,7 +62,7 @@ export class Token extends AbstractModel {
     }
     
     // needed because applying decorators removes class names in TS1.7
-    static get name(): string { return 'Token' };
+    // static get name(): string { return 'Token' };
 }
 
 // QUERIES
@@ -89,10 +110,10 @@ export function prepareDatabase(dao: Dao): Promise<any> {
         {
             text: `SELECT * INTO TEMPORARY tmp_users
                 FROM (VALUES 
-		            (1::bigint, 'Irakliy'::VARCHAR, '["tag1", "tag2"]'::jsonb, now()::timestamptz, now()::timestamptz),
-		            (2::bigint, 'Yason'::VARCHAR, 	'["tag3", "tag4"]'::jsonb, now()::timestamptz, now()::timestamptz),
-		            (3::bigint, 'George'::VARCHAR,  '["tag5", "tag6"]'::jsonb, now()::timestamptz, now()::timestamptz)
-	            ) AS q (id, username, tags, created_on, updated_on);`
+		            (1::bigint, 'Irakliy'::VARCHAR, '{"city": "Los Angeles"}'::jsonb, '["tag1", "tag2"]'::jsonb, now()::timestamptz, now()::timestamptz),
+		            (2::bigint, 'Yason'::VARCHAR, 	'{"city": "Portland"}'::jsonb,    '["tag3", "tag4"]'::jsonb, now()::timestamptz, now()::timestamptz),
+		            (3::bigint, 'George'::VARCHAR,  '{"city": "San Diego"}'::jsonb,   '["tag5", "tag6"]'::jsonb, now()::timestamptz, now()::timestamptz)
+	            ) AS q (id, username, profile, tags, created_on, updated_on);`
         },
         {
           text: 'DROP SEQUENCE IF EXISTS tmp_users_id_seq;'

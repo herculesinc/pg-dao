@@ -4,7 +4,6 @@ import { AbstractModel, symbols } from './AbstractModel';
 import { IdGenerator } from './Model'
 import { ModelError } from './errors';
 import { DbField } from './schema';
-import { ArrayComparator, compareArraysAsSets, compareArraysStrict } from './util';
 
 // INTERFACES
 // ================================================================================================
@@ -12,9 +11,16 @@ export const enum ArrayComparison {
     strict = 1, set
 }
 
+export interface dbFieldOptions {
+    readonly?   : boolean;
+    secret?     : string;
+    cloner?     : (value: any) => any;
+    comparator? : (value1: any, value2: any) => boolean;
+}
+
 // DECORATOR DEFINITIONS
 // ================================================================================================
-export function dbModel(table: string, idGenerator: IdGenerator, arrayComparison?: ArrayComparison): ClassDecorator {
+export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator {
     if (table == undefined || table.trim() === '')
         throw new ModelError('Model table name cannot be empty');
         
@@ -23,29 +29,30 @@ export function dbModel(table: string, idGenerator: IdGenerator, arrayComparison
     return function (classConstructor: any) {
         classConstructor[symbols.dbTable] = table;
         
-        var schemaMap: Map<string, any> = classConstructor.prototype[symbols.dbSchema];
+        const schemaMap: Map<string, any> = classConstructor.prototype[symbols.dbSchema];
         classConstructor[symbols.dbSchema] = Object.assign({},
             schemaMap.get(AbstractModel.name), schemaMap.get(classConstructor.name));
 
         classConstructor[symbols.idGenerator] = idGenerator;
-       
-        classConstructor[symbols.arrayComparator] = arrayComparison === ArrayComparison.strict 
-            ? compareArraysStrict : compareArraysAsSets;
     }
 }
 
-export function dbField(fieldType: any, readonly?: boolean): PropertyDecorator {
+export function dbField(fieldType: any, options?: dbFieldOptions): PropertyDecorator {
+    // make sure options are set
+    options = Object.assign({ readonly: false }, options);
+
     return function (classPrototype: any, property: string) {
-        var field = new DbField(property, fieldType, readonly);
+        const field = new DbField(property, fieldType, 
+            options.readonly, options.secret, options.cloner, options.comparator);
         
-        var schemaMap: Map<string, any> = classPrototype[symbols.dbSchema];
-        if (schemaMap === undefined) {
+        let schemaMap: Map<string, any> = classPrototype[symbols.dbSchema];
+        if (!schemaMap) {
             schemaMap = new Map<string, any>();
             classPrototype[symbols.dbSchema] = schemaMap; 
         }
         
-        var schema = schemaMap.get(classPrototype.constructor.name);
-        if (schema === undefined) {
+        let schema = schemaMap.get(classPrototype.constructor.name);
+        if (!schema) {
             schema = {};
             schemaMap.set(classPrototype.constructor.name, schema);
         }

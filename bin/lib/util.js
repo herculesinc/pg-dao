@@ -4,7 +4,7 @@
 const errors_1 = require('./errors');
 // MODULE VARIABLES
 // ================================================================================================
-var camelPattern = /([A-Z]+)/g;
+const camelPattern = /([A-Z]+)/g;
 // CASE CONVERTERS
 // ================================================================================================
 function camelToSnake(camel) {
@@ -13,7 +13,7 @@ function camelToSnake(camel) {
 exports.camelToSnake = camelToSnake;
 // COMPARATORS
 // ================================================================================================
-function deepCompare(valueA, valueB, compareArrays, parents) {
+function areObjectsEqual(valueA, valueB, parents) {
     if (valueA === valueB || (valueA !== valueA && valueB !== valueB))
         return true;
     if ((valueA === null || valueA === undefined) && (valueB === null || valueB === undefined))
@@ -33,23 +33,23 @@ function deepCompare(valueA, valueB, compareArrays, parents) {
         case 2 /* date */:
             return false;
         case 3 /* array */:
-            return compareArrays(valueA, valueB, parents);
+            return areArraysEqual(valueA, valueB, parents);
         case 4 /* object */:
             if (typeof valueA.isEqualTo === 'function')
                 return valueA.isEqualTo(valueB);
-            var keys = getKeys(valueA, valueB);
+            const keys = getKeys(valueA, valueB);
             if (!keys)
                 return false;
             parents = parents ? parents : new WeakSet();
             parents.add(valueA);
             parents.add(valueB);
-            var areEqual = true;
-            for (var i = 0; i < keys.length; i++) {
-                var valueAi = valueA[keys[i]];
-                var valueBi = valueB[keys[i]];
+            let areEqual = true;
+            for (let i = 0; i < keys.length; i++) {
+                let valueAi = valueA[keys[i]];
+                let valueBi = valueB[keys[i]];
                 if (parents.has(valueAi) || parents.has(valueBi))
                     throw new errors_1.ModelError('Circular reference detected during object comparison');
-                areEqual = deepCompare(valueAi, valueBi, compareArrays, parents);
+                areEqual = areObjectsEqual(valueAi, valueBi, parents);
                 if (!areEqual)
                     break;
             }
@@ -58,8 +58,8 @@ function deepCompare(valueA, valueB, compareArrays, parents) {
             return false;
     }
 }
-exports.deepCompare = deepCompare;
-function compareArraysStrict(array1, array2, parents) {
+exports.areObjectsEqual = areObjectsEqual;
+function areArraysEqual(array1, array2, parents) {
     if (array1 == array2)
         return true;
     if (array1 == undefined || array2 == undefined)
@@ -69,26 +69,26 @@ function compareArraysStrict(array1, array2, parents) {
     if (array1.length === 0)
         return true;
     for (let i = 0; i < array1.length; i++) {
-        if (deepCompare(array1[i], array2[i], compareArraysStrict, parents) === false) {
+        if (areObjectsEqual(array1[i], array2[i], parents) === false) {
             return false;
         }
     }
     return true;
 }
-exports.compareArraysStrict = compareArraysStrict;
-function compareArraysAsSets(array1, array2, parents) {
-    if (array1 == array2)
+exports.areArraysEqual = areArraysEqual;
+function areSetsEqual(set1, set2, parents) {
+    if (set1 == set2)
         return true;
-    if (array1 == undefined || array2 == undefined)
+    if (set1 == undefined || set2 == undefined)
         return false;
-    if (array1.length != array2.length)
+    if (set1.length != set2.length)
         return false;
-    if (array1.length == 0)
+    if (set1.length == 0)
         return true;
-    for (var i = 0; i < array1.length; i++) {
+    for (let i = 0; i < set1.length; i++) {
         var found = false;
-        for (var j = 0; j < array2.length; j++) {
-            found = deepCompare(array1[i], array2[j], compareArraysAsSets, parents);
+        for (let j = 0; j < set2.length; j++) {
+            found = areObjectsEqual(set1[i], set2[j], parents);
             if (found)
                 break;
         }
@@ -97,13 +97,21 @@ function compareArraysAsSets(array1, array2, parents) {
     }
     return found;
 }
-exports.compareArraysAsSets = compareArraysAsSets;
+exports.areSetsEqual = areSetsEqual;
+function areDatesEqual(date1, date2) {
+    if (date1 == date2)
+        return true;
+    if (date1 == undefined || date2 == undefined)
+        return false;
+    return (date1.valueOf() === date2.valueOf());
+}
+exports.areDatesEqual = areDatesEqual;
 // CLONERS
 // ================================================================================================
-function deepClone(source, parents) {
+function cloneObject(source, parents) {
     if (source === undefined || source === null)
         return undefined;
-    var type = getType(source, source);
+    const type = getType(source, source);
     switch (type) {
         case 1 /* primitive */:
         case 2 /* date */:
@@ -117,13 +125,13 @@ function deepClone(source, parents) {
                 throw new errors_1.ModelError(`Cannot clone object: no clone() method provided for a class`);
             parents = parents ? parents : new WeakSet();
             parents.add(source);
-            var clone = {};
-            for (var key in source) {
-                var value = source[key];
+            const clone = {};
+            for (let key in source) {
+                const value = source[key];
                 if (typeof value !== 'function') {
                     if (parents.has(value))
                         throw new errors_1.ModelError('Circular reference detected during object cloning');
-                    clone[key] = deepClone(value, parents);
+                    clone[key] = cloneObject(value, parents);
                 }
             }
             return clone;
@@ -131,30 +139,37 @@ function deepClone(source, parents) {
             return undefined;
     }
 }
-exports.deepClone = deepClone;
+exports.cloneObject = cloneObject;
 function cloneArray(source, parents) {
     if (source == undefined)
         return undefined;
     if (source.length == 0)
         return [];
-    var clone = [];
-    for (var i = 0; i < source.length; i++) {
-        clone.push(deepClone(source[i], parents));
+    const clone = [];
+    for (let i = 0; i < source.length; i++) {
+        clone.push(cloneObject(source[i], parents));
     }
     return clone;
 }
+exports.cloneArray = cloneArray;
+function cloneDate(date) {
+    if (!date)
+        return;
+    return new Date(date.valueOf());
+}
+exports.cloneDate = cloneDate;
 // HELPER FUNCTIONS
 // ================================================================================================
 function getKeys(objectA, objectB) {
-    var keys = [];
-    var keySet = new Set();
-    for (var key in objectA) {
+    const keys = [];
+    const keySet = new Set();
+    for (let key in objectA) {
         if (typeof objectA[key] !== 'function') {
             keys.push(key);
             keySet.add(key);
         }
     }
-    for (var key in objectB) {
+    for (let key in objectB) {
         if (typeof objectB[key] !== 'function') {
             if (!keySet.has(key))
                 return undefined;
@@ -163,8 +178,8 @@ function getKeys(objectA, objectB) {
     return keys;
 }
 function getType(valueA, valueB) {
-    var typeA = typeof valueA;
-    var typeB = typeof valueB;
+    const typeA = typeof valueA;
+    const typeB = typeof valueB;
     if (typeA !== typeB)
         return 0 /* na */;
     switch (typeA) {
