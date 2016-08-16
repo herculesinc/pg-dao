@@ -26,45 +26,57 @@ class Dao extends pg_io_1.Session {
     // FETCH METHODS
     // --------------------------------------------------------------------------------------------
     fetchOne(handler, selector, forUpdate = false) {
-        if (this.isActive === false)
+        if (!this.isActive) {
             return Promise.reject(new pg_io_2.ConnectionError('Cannot fetch a model: connection has already been released'));
-        if (Model_1.isModelHandler(handler) === false)
+        }
+        if (!Model_1.isModelHandler(handler)) {
             return Promise.reject(new errors_1.ModelError('Cannot fetch a model: model handler is invalid'));
+        }
         try {
             var query = handler.getFetchOneQuery(selector, forUpdate);
         }
         catch (error) {
             return Promise.reject(error);
         }
-        if (query === undefined)
+        if (!query) {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
-        if (Model_1.isModelQuery(query) === false)
+        }
+        if (!Model_1.isModelQuery(query)) {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch a model: fetch query is not a model query`));
-        if (query.mask !== 'object')
+        }
+        if (query.mask !== 'object') {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch a model: fetch query is not a single result query`));
-        if (query.mutable !== forUpdate)
+        }
+        if (query.mutable !== forUpdate) {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch a model: fetch query mutable flag is not set correctly`));
+        }
         return this.execute(query);
     }
     fetchAll(handler, selector, forUpdate = false) {
-        if (this.isActive === false)
+        if (!this.isActive) {
             return Promise.reject(new pg_io_2.ConnectionError('Cannot fetch models: connection has already been released'));
-        if (Model_1.isModelHandler(handler) === false)
+        }
+        if (!Model_1.isModelHandler(handler)) {
             return Promise.reject(new errors_1.ModelError('Cannot fetch models: model handler is invalid'));
+        }
         try {
             var query = handler.getFetchAllQuery(selector, forUpdate);
         }
         catch (error) {
             return Promise.reject(error);
         }
-        if (query === undefined)
+        if (!query) {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch models: fetch query for selector (${selector}) was not found`));
-        if (Model_1.isModelQuery(query) === false)
+        }
+        if (!Model_1.isModelQuery(query)) {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch models: fetch query is not a model query`));
-        if (query.mask !== 'list')
+        }
+        if (query.mask !== 'list') {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch models: fetch query is not a list result query`));
-        if (query.mutable !== forUpdate)
+        }
+        if (query.mutable !== forUpdate) {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch models: fetch query mutable flag is not set correctly`));
+        }
         return this.execute(query);
     }
     // LIFECYCLE METHODS
@@ -74,34 +86,41 @@ class Dao extends pg_io_1.Session {
             return Promise.reject(new pg_io_2.ConnectionError('Cannot sync: connection has already been released'));
         }
         const start = process.hrtime();
-        this.logger && this.logger.debug('Synchronizing Dao');
-        let changes;
-        return Promise.resolve().then(() => {
-            changes = this.store.getChanges();
-            return this.getModelSyncQueries(changes);
-        })
-            .catch((reason) => this.rollbackAndRelease(reason))
-            .then((queries) => {
-            if (!queries.length) {
+        try {
+            this.logger && this.logger.debug('Preparing to release Dao connection; checking for changes');
+            var changes = this.store.getChanges();
+            if (!changes.length) {
                 this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
                 return Promise.resolve();
             }
-            return this.execute(queries).then(() => {
-                this.store.applyChanges(changes);
-                this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
-            });
-        }).catch((reason) => {
-            if (reason instanceof errors_1.SyncError === false) {
-                reason = new errors_1.SyncError('DAO Sync failed', reason);
+            else {
+                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+                var queries = this.getModelSyncQueries(changes);
             }
-            return Promise.reject(reason);
+        }
+        catch (error) {
+            if (error instanceof errors_1.SyncError === false) {
+                error = new errors_1.SyncError('DAO Sync failed', error);
+            }
+            return this.rollbackAndRelease(error);
+        }
+        return this.execute(queries).then(() => {
+            this.store.applyChanges(changes);
+            this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
+        })
+            .catch((error) => {
+            if (error instanceof errors_1.SyncError === false) {
+                error = new errors_1.SyncError('DAO Sync failed', error);
+            }
+            return Promise.reject(error);
         });
     }
     // OVERRIDEN CONNECTION METHODS
     // --------------------------------------------------------------------------------------------
     close(action) {
-        if (this.isActive === false)
+        if (!this.isActive) {
             return Promise.reject(new pg_io_2.ConnectionError('Cannot close session: session has already been closed'));
+        }
         let start = process.hrtime();
         try {
             this.logger && this.logger.debug('Preparing to release Dao connection; checking for changes');
@@ -111,32 +130,24 @@ class Dao extends pg_io_1.Session {
         catch (error) {
             return this.rollbackAndRelease(error);
         }
-        if (changes.length === 0)
+        if (!changes.length)
             return super.close(action);
         start = process.hrtime();
         switch (action) {
             case 'commit':
-                this.logger && this.logger.debug('Committing transaction and releasing connection back to the pool');
-                var queries = this.getModelSyncQueries(changes, true);
-                return this.execute(queries).then(() => {
-                    this.releaseConnection();
-                    //this.logger && this.logger.debug(`Transaction committed in ${since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
-                    return changes;
-                });
+                this.logger && this.logger.debug('Committing transaction and closing the session');
+                const queries = this.getModelSyncQueries(changes, true);
+                return this.execute(queries).then(this.releaseConnection);
             case 'rollback':
-                this.logger && this.logger.debug('Rolling back transaction and releasing connection back to the pool');
-                return this.rollbackAndRelease()
-                    .then((result) => {
-                    //this.logger && this.logger.debug(`Transaction rolled back in ${since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
-                    return result;
-                });
+                this.logger && this.logger.debug('Rolling back transaction and closing the session');
+                return this.rollbackAndRelease();
             default:
                 return this.rollbackAndRelease(new errors_1.SyncError('Unsynchronized models detected during connection release'));
         }
     }
     processQueryResult(query, result) {
         if (Model_1.isModelQuery(query)) {
-            var handler = query.handler;
+            const handler = query.handler;
             return this.store.load(handler, result.rows, query.mutable);
         }
         else {
@@ -146,17 +157,20 @@ class Dao extends pg_io_1.Session {
     // CREATE METHODS
     // --------------------------------------------------------------------------------------------
     create(handler, attributes) {
-        if (this.isActive === false)
+        if (!this.isActive) {
             throw Promise.reject(new pg_io_2.ConnectionError('Cannot create a model: connection has already been released'));
-        var start = process.hrtime();
+        }
+        const start = process.hrtime();
         this.logger && this.logger.debug(`Creating a new ${handler.name || 'Unnamed'} model`);
-        if (Model_1.isModelHandler(handler) === false)
+        if (!Model_1.isModelHandler(handler)) {
             return Promise.reject(new errors_1.ModelError('Cannot create a model: model handler is invalid'));
-        var idGenerator = handler.getIdGenerator();
-        if (!idGenerator)
+        }
+        const idGenerator = handler.getIdGenerator();
+        if (!idGenerator) {
             return Promise.reject(new errors_1.ModelError('Cannot create a model: model id generator is undefined'));
+        }
         return idGenerator.getNextId(this).then((nextId) => {
-            var model = handler.build(nextId, attributes);
+            const model = handler.build(nextId, attributes);
             this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`);
             return model;
         });
@@ -164,18 +178,21 @@ class Dao extends pg_io_1.Session {
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
     insert(model) {
-        if (this.isActive === false)
+        if (!this.isActive) {
             throw new pg_io_2.ConnectionError('Cannot insert a model: connection has already been released');
+        }
         return this.store.insert(model);
     }
     destroy(model) {
-        if (this.isActive === false)
+        if (!this.isActive) {
             throw new pg_io_2.ConnectionError('Cannot destroy a model: connection has already been released');
+        }
         return this.store.destroy(model);
     }
     clean(model) {
-        if (this.isActive === false)
+        if (!this.isActive) {
             throw new pg_io_2.ConnectionError('Cannot clean a model: connection has already been released');
+        }
         return this.store.clean(model);
     }
     hasModel(model) { return this.store.has(model); }
@@ -196,10 +213,7 @@ class Dao extends pg_io_1.Session {
             queries = queries.concat(handler.getSyncQueries(original, current, updates));
         }
         if (commit) {
-            // TODO: is this needed?
-            if (queries.length > 0 || this.transaction === 2 /* active */) {
-                queries.push(COMMIT_TRANSACTION);
-            }
+            queries.push(COMMIT_TRANSACTION);
         }
         return queries;
     }

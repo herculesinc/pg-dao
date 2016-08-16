@@ -53,7 +53,7 @@ class AbstractModel {
         return new this(row);
     }
     static build(id, attributes) {
-        if ('id' in attributes)
+        if (attributes.id)
             throw new errors_1.ModelError('Cannot build a mode: model attributes contain id property');
         return new this(Object.assign({ id: id }, attributes));
     }
@@ -313,7 +313,7 @@ function buildUpdateQuery(table, schema) {
             for (let changedField of changes) {
                 let field = fieldMap.get(changedField);
                 if (!field)
-                    throw new errors_1.ModelError(`Cannot create model quer: field '${changedField}' cannot be updated`);
+                    throw new errors_1.ModelQueryError(`Cannot create model quer: field '${changedField}' cannot be updated`);
                 fields.push(field);
             }
             this.text = queryBase + `${fields.join(',')} WHERE id = '${model.id}';`;

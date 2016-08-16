@@ -32,72 +32,72 @@ export class Dao extends Session {
     // FETCH METHODS
     // --------------------------------------------------------------------------------------------
     fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T> {
-        if(this.isActive === false)
-            return <any> Promise.reject(
-                new ConnectionError('Cannot fetch a model: connection has already been released'));
-                
-        if (isModelHandler(handler) === false)
-            return <any> Promise.reject(
-                new ModelError('Cannot fetch a model: model handler is invalid'));
+        if(!this.isActive) {
+            return Promise.reject(new ConnectionError('Cannot fetch a model: connection has already been released'));
+        }
+
+        if (!isModelHandler(handler)) {
+            return Promise.reject(new ModelError('Cannot fetch a model: model handler is invalid'));
+        }
         
         try {    
             var query = handler.getFetchOneQuery(selector, forUpdate);
         }
         catch (error) {
-            return <any> Promise.reject(error);    
+            return Promise.reject(error);    
         }
         
-        if (query === undefined)
-            return <any> Promise.reject(
-                new ModelQueryError(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
+        if (!query) {
+            return Promise.reject(new ModelQueryError(`Cannot fetch a model: fetch query for selector (${selector}) was not found`));
+        }
             
-        if (isModelQuery(query) === false)
-            return <any> Promise.reject(
-                new ModelQueryError(`Cannot fetch a model: fetch query is not a model query`));
+        if (!isModelQuery(query)) {
+            return Promise.reject(new ModelQueryError(`Cannot fetch a model: fetch query is not a model query`));
+        }
             
-        if (query.mask !== 'object') 
-            return <any> Promise.reject(
-                new ModelQueryError(`Cannot fetch a model: fetch query is not a single result query`));
+        if (query.mask !== 'object') {
+            return Promise.reject(new ModelQueryError(`Cannot fetch a model: fetch query is not a single result query`));
+        }
             
-        if (query.mutable !== forUpdate)
-            return <any> Promise.reject(
-                new ModelQueryError(`Cannot fetch a model: fetch query mutable flag is not set correctly`));
+        if (query.mutable !== forUpdate) {
+            return Promise.reject(new ModelQueryError(`Cannot fetch a model: fetch query mutable flag is not set correctly`));
+        }
             
         return this.execute(query);
     }
     
     fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T[]> {
-        if(this.isActive === false)
-            return <any> Promise.reject(
-                new ConnectionError('Cannot fetch models: connection has already been released'));
-                
-        if (isModelHandler(handler) === false)
-            return <any> Promise.reject(
-                new ModelError('Cannot fetch models: model handler is invalid'));
-        
-        try {
+        if(!this.isActive) {
+            return Promise.reject(new ConnectionError('Cannot fetch models: connection has already been released'));
+        }
+    
+        if (!isModelHandler(handler)) {
+            return Promise.reject(new ModelError('Cannot fetch models: model handler is invalid'));
+        }
+
+        try {    
             var query = handler.getFetchAllQuery(selector, forUpdate);
         }
         catch (error) {
-            return <any> Promise.reject(error);    
+            return Promise.reject(error);    
         }
-        
-        if (query === undefined)
-            return <any> Promise.reject(
-                new ModelQueryError(`Cannot fetch models: fetch query for selector (${selector}) was not found`));
+
+        if (!query) {
+            return Promise.reject(new ModelQueryError(`Cannot fetch models: fetch query for selector (${selector}) was not found`));
+        }
             
-        if (isModelQuery(query) === false)
-            return <any> Promise.reject(
-                new ModelQueryError(`Cannot fetch models: fetch query is not a model query`));
+        if (!isModelQuery(query)) {
+            return Promise.reject(new ModelQueryError(`Cannot fetch models: fetch query is not a model query`));
+        }
             
-        if (query.mask !== 'list') 
-            return <any> Promise.reject(
-                new ModelQueryError(`Cannot fetch models: fetch query is not a list result query`));
-            
-        if (query.mutable !== forUpdate)
-            return <any> Promise.reject(
-                new ModelQueryError(`Cannot fetch models: fetch query mutable flag is not set correctly`));
-            
+        if (query.mask !== 'list') {
+            return Promise.reject(new ModelQueryError(`Cannot fetch models: fetch query is not a list result query`));
+        }
+
+        if (query.mutable !== forUpdate) {
+            return Promise.reject(new ModelQueryError(`Cannot fetch models: fetch query mutable flag is not set correctly`));
+        }
+
         return this.execute(query);
     }
     
@@ -108,40 +108,45 @@ export class Dao extends Session {
             return Promise.reject(new ConnectionError('Cannot sync: connection has already been released'));
         }
 
+        this.logger && this.logger.debug('Preparing to release Dao connection; checking for changes');
         const start = process.hrtime();
-        this.logger && this.logger.debug('Synchronizing Dao');
-       
-        let changes: SyncInfo[]; 
-        return Promise.resolve().then(() => {
-            changes = this.store.getChanges();
-            return this.getModelSyncQueries(changes);
-        })
-        .catch((reason) => this.rollbackAndRelease(reason))
-        .then((queries) => {
-            if (!queries.length) {
+        try {
+            var changes = this.store.getChanges();
+            if (!changes.length) {
                 this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
                 return Promise.resolve();
             }
-            
-            return this.execute(queries).then(() => {
-                this.store.applyChanges(changes);
-                this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
-            });          
-        }).catch((reason) => {
-            if (reason instanceof SyncError === false) {
-                reason = new SyncError('DAO Sync failed', reason);
+            else {
+                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+                var queries = this.getModelSyncQueries(changes);
             }
-            return Promise.reject(reason);
+        }
+        catch (error) {
+            if (error instanceof SyncError === false) {
+                error = new SyncError('DAO Sync failed', error);
+            }
+            return this.rollbackAndRelease(error);
+        }
+
+        return this.execute(queries).then(() => {
+            this.store.applyChanges(changes);
+            this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
+        })
+        .catch((error) => {
+            if (error instanceof SyncError === false) {
+                error = new SyncError('DAO Sync failed', error);
+            }
+            return Promise.reject(error);
         });
     }
         
 	// OVERRIDEN CONNECTION METHODS
     // --------------------------------------------------------------------------------------------
     close(action?: 'commit' | 'rollback'): Promise<any> {
-        if(this.isActive === false)
-            return Promise.reject(
-                new ConnectionError('Cannot close session: session has already been closed'));
-        
+        if(!this.isActive) {
+            return Promise.reject(new ConnectionError('Cannot close session: session has already been closed'));
+        }
+
         let start = process.hrtime();
         try {
             this.logger && this.logger.debug('Preparing to release Dao connection; checking for changes');
@@ -152,26 +157,17 @@ export class Dao extends Session {
             return this.rollbackAndRelease(error);
         }
         
-        if (changes.length === 0)
-            return super.close(action);
+        if (!changes.length) return super.close(action);
         
         start = process.hrtime();
         switch (action) {
             case 'commit':
-                this.logger && this.logger.debug('Committing transaction and releasing connection back to the pool');
-                var queries = this.getModelSyncQueries(changes, true);
-                return this.execute(queries).then(() => {
-                    this.releaseConnection();
-                    //this.logger && this.logger.debug(`Transaction committed in ${since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
-                    return changes; 
-                });
+                this.logger && this.logger.debug('Committing transaction and closing the session');
+                const queries = this.getModelSyncQueries(changes, true);
+                return this.execute(queries).then(this.releaseConnection);
             case 'rollback':
-                this.logger && this.logger.debug('Rolling back transaction and releasing connection back to the pool');
-                return this.rollbackAndRelease()
-                    .then((result) => {
-                        //this.logger && this.logger.debug(`Transaction rolled back in ${since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
-                        return result;
-                    });
+                this.logger && this.logger.debug('Rolling back transaction and closing the session');
+                return this.rollbackAndRelease();
             default:
                 return this.rollbackAndRelease(
                     new SyncError('Unsynchronized models detected during connection release'));
@@ -180,7 +176,7 @@ export class Dao extends Session {
     
 	protected processQueryResult(query: Query, result: DbQueryResult): any[] {
         if (isModelQuery(query)) {
-            var handler = query.handler;
+            const handler = query.handler;
             return this.store.load(handler, result.rows, query.mutable);
         }
         else {
@@ -191,23 +187,23 @@ export class Dao extends Session {
     // CREATE METHODS
     // --------------------------------------------------------------------------------------------
     create<T extends Model>(handler: ModelHandler<T>, attributes: any): Promise<T> {
-        if(this.isActive === false)
-            throw <any> Promise.reject(
-                new ConnectionError('Cannot create a model: connection has already been released'));
+        if(!this.isActive) {
+            throw Promise.reject(new ConnectionError('Cannot create a model: connection has already been released'));
+        }
         
-        var start = process.hrtime();
+        const start = process.hrtime();
         this.logger && this.logger.debug(`Creating a new ${handler.name || 'Unnamed'} model`);
-        if (isModelHandler(handler) === false)
-            return <any> Promise.reject(
-                new ModelError('Cannot create a model: model handler is invalid'));
-        
-        var idGenerator = handler.getIdGenerator();
-        if (!idGenerator)
-            return <any> Promise.reject(
-                new ModelError('Cannot create a model: model id generator is undefined'));
-        
+        if (!isModelHandler(handler)) {
+            return Promise.reject(new ModelError('Cannot create a model: model handler is invalid'));
+        }
+
+        const idGenerator = handler.getIdGenerator();
+        if (!idGenerator) {
+            return Promise.reject(new ModelError('Cannot create a model: model id generator is undefined'));
+        }
+            
         return idGenerator.getNextId(this).then((nextId) => {
-            var model = handler.build(nextId, attributes);
+            const model = handler.build(nextId, attributes);
             this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`);
             return model;
         });
@@ -216,20 +212,23 @@ export class Dao extends Session {
     // STORE PASS THROUGH METHODS
     // --------------------------------------------------------------------------------------------
     insert(model: Model) : Model {
-        if(this.isActive === false)
-            throw new ConnectionError('Cannot insert a model: connection has already been released'); 
+        if(!this.isActive) {
+            throw new ConnectionError('Cannot insert a model: connection has already been released');
+        }
         return this.store.insert(model); 
     }
     
     destroy(model: Model): Model {
-        if(this.isActive === false)
-            throw new ConnectionError('Cannot destroy a model: connection has already been released'); 
+        if(!this.isActive) {
+            throw new ConnectionError('Cannot destroy a model: connection has already been released');
+        } 
         return this.store.destroy(model); 
     }
     
     clean(model: Model): Model {
-        if(this.isActive === false)
-            throw new ConnectionError('Cannot clean a model: connection has already been released'); 
+        if(!this.isActive) {
+            throw new ConnectionError('Cannot clean a model: connection has already been released');
+        }
         return this.store.clean(model); 
     }
 
@@ -255,10 +254,7 @@ export class Dao extends Session {
         }
         
         if (commit) {
-            // TODO: is this needed?
-            if (queries.length > 0 || this.transaction === TransactionState.active) {
-                queries.push(COMMIT_TRANSACTION);
-            }
+            queries.push(COMMIT_TRANSACTION);
         }
         return queries;
     }
