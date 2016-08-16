@@ -6,7 +6,7 @@ declare module "pg-dao" {
 
     export { 
         defaults, DatabaseOptions, PoolState,
-        QueryMask, QuerySpec, Query, ResultQuery,
+        QueryMask, QuerySpec, Query, ResultQuery, SingleResultQuery, ListResultQuery, ResultHandler,
         PgError, ConnectionError, TransactionError, QueryError, ParseError
     } from 'pg-io';
 
@@ -28,7 +28,6 @@ declare module "pg-dao" {
     // --------------------------------------------------------------------------------------------
     export interface DaoOptions extends pg.SessionOptions {
         validateImmutability?   : boolean;
-        validateHandlerOutput?  : boolean;
         manageUpdatedOn?        : boolean;
     }
 
@@ -41,7 +40,7 @@ declare module "pg-dao" {
     export interface Dao extends pg.Session {
 
         isSynchronized  : boolean;
-        sync()          : Promise<any>;
+        sync()          : Promise<void>;
 
         fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T>;
         fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T[]>;
@@ -76,41 +75,54 @@ declare module "pg-dao" {
         constructor(seed: any);
         
         static name: string;
+
         static parse(row: any): any;
         static build(id: string, attributes: any): Model;
         static clone(seed: any): any;
         static infuse(target: Model, source: Model);
+
+        static compare(original: AbstractModel, current: AbstractModel): string[];
         static areEqual(model1: AbstractModel, model2: AbstractModel): boolean;
+
         static getSyncQueries(original: AbstractModel, current: AbstractModel): pg.Query[];
         static getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
         static getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
+
         static getIdGenerator(): IdGenerator;
     }
     
     // DECORATORS
     // --------------------------------------------------------------------------------------------
-    export function dbModel(table: string, idGenerator: IdGenerator, arrayComparator?: ArrayComparison): ClassDecorator;
-    export function dbField(fieldType: any, readonly?: boolean): PropertyDecorator;
+    export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator;
+    export function dbField(fieldType: any, options?: dbFieldOptions): PropertyDecorator;
 
-    export const enum ArrayComparison {
-        strict = 1, set
+    export interface dbFieldOptions {
+        readonly?   : boolean;
+        secret?     : string;
+        handler?    : FieldHandler;
+    }
+
+    export interface FieldHandler {
+        clone<T>(value: T): T;
+        areEqual(value1: any, value2: any): boolean;
     }
 
     // RESULT/MODEL HANDLER DEFINITIONS
     // --------------------------------------------------------------------------------------------
-    export interface ResultHandler<T> {
-        parse(row: any): T;
-    }
-
-    export interface ModelHandler<T extends Model> extends ResultHandler<T> {
+    export interface ModelHandler<T extends Model> extends pg.ResultHandler<T> {
         name?: string;
+
         build(id: string, attributes: any): T;
         clone(model: T): T;
         infuse(target: T, source: T);
+        
+        compare(original: T, current: T): string[];
         areEqual(model1: T, model2: T): boolean;
+
         getSyncQueries(original: T, current: T): pg.Query[];
         getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<T>;
         getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<T>;
+        
         getIdGenerator(): IdGenerator;
     }
     
@@ -129,14 +141,24 @@ declare module "pg-dao" {
     // QUERY DEFINITIONS
     // --------------------------------------------------------------------------------------------    
     export class AbstractActionQuery implements pg.Query {
-        name: string;
-        text: string;
-        params: any;
+        name    : string;
+        text    : string;
+        params  : any;
     
         constructor(name?: string, params?: any);
     }
 
     export interface ModelQuery<T extends Model> extends pg.ResultQuery<T> {
+        handler : ModelHandler<T>;
+        mutable?: boolean;
+    }
+
+    export interface SingleModelQuery<T extends Model> extends pg.SingleResultQuery<T> {
+        handler : ModelHandler<T>;
+        mutable?: boolean;
+    }
+
+    export interface ListModelQuery<T extends Model> extends pg.ListResultQuery<T> {
         handler : ModelHandler<T>;
         mutable?: boolean;
     }

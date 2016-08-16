@@ -18,7 +18,7 @@ export const symbols = {
     dbSchema        : modelSymbols.dbSchema,
     idGenerator     : modelSymbols.idGenerator,
     arrayComparator : modelSymbols.arrayComparator
-}
+};
 
 // set session constructor
 pg.defaults.SessionCtr = Dao;

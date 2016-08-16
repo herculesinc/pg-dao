@@ -8,7 +8,6 @@ import {
 
 // INTERFACES
 // ================================================================================================
-
 export interface FieldHandler {
     clone       : Cloner<any>;
     areEqual    : Comparator;

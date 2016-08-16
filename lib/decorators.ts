@@ -8,10 +8,6 @@ import { Comparator, Cloner} from './util';
 
 // INTERFACES
 // ================================================================================================
-export const enum ArrayComparison {
-    strict = 1, set
-}
-
 export interface dbFieldOptions {
     readonly?   : boolean;
     secret?     : string;
