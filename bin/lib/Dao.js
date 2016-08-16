@@ -27,7 +27,7 @@ class Dao extends pg_io_1.Session {
     // --------------------------------------------------------------------------------------------
     fetchOne(handler, selector, forUpdate = false) {
         if (!this.isActive) {
-            return Promise.reject(new pg_io_2.ConnectionError('Cannot fetch a model: connection has already been released'));
+            return Promise.reject(new pg_io_2.ConnectionError('Cannot fetch a model: session has already been closed'));
         }
         if (!Model_1.isModelHandler(handler)) {
             return Promise.reject(new errors_1.ModelError('Cannot fetch a model: model handler is invalid'));
@@ -54,7 +54,7 @@ class Dao extends pg_io_1.Session {
     }
     fetchAll(handler, selector, forUpdate = false) {
         if (!this.isActive) {
-            return Promise.reject(new pg_io_2.ConnectionError('Cannot fetch models: connection has already been released'));
+            return Promise.reject(new pg_io_2.ConnectionError('Cannot fetch models: session has already been closed'));
         }
         if (!Model_1.isModelHandler(handler)) {
             return Promise.reject(new errors_1.ModelError('Cannot fetch models: model handler is invalid'));
@@ -83,11 +83,11 @@ class Dao extends pg_io_1.Session {
     // --------------------------------------------------------------------------------------------
     sync() {
         if (this.isActive === false) {
-            return Promise.reject(new pg_io_2.ConnectionError('Cannot sync: connection has already been released'));
+            return Promise.reject(new pg_io_2.ConnectionError('Cannot sync: session has already been closed'));
         }
+        this.logger && this.logger.debug('Preparing to sync; checking for changes');
         const start = process.hrtime();
         try {
-            this.logger && this.logger.debug('Preparing to release Dao connection; checking for changes');
             var changes = this.store.getChanges();
             if (!changes.length) {
                 this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
@@ -95,55 +95,51 @@ class Dao extends pg_io_1.Session {
             }
             else {
                 this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
-                var queries = this.getModelSyncQueries(changes);
+                var syncQueries = this.getModelSyncQueries(changes);
             }
         }
         catch (error) {
-            if (error instanceof errors_1.SyncError === false) {
-                error = new errors_1.SyncError('DAO Sync failed', error);
-            }
             return this.rollbackAndRelease(error);
         }
-        return this.execute(queries).then(() => {
+        return this.execute(syncQueries).then(() => {
             this.store.applyChanges(changes);
             this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
-        })
-            .catch((error) => {
-            if (error instanceof errors_1.SyncError === false) {
-                error = new errors_1.SyncError('DAO Sync failed', error);
-            }
-            return Promise.reject(error);
         });
     }
-    // OVERRIDEN CONNECTION METHODS
+    // OVERRIDEN SESSION METHODS
     // --------------------------------------------------------------------------------------------
     close(action) {
         if (!this.isActive) {
             return Promise.reject(new pg_io_2.ConnectionError('Cannot close session: session has already been closed'));
         }
-        let start = process.hrtime();
+        // delegate rollbacks to the super
+        if (action === 'rollback')
+            return super.close(action);
+        this.logger && this.logger.debug('Preparing to close session; checking for changes');
+        const start = process.hrtime();
         try {
-            this.logger && this.logger.debug('Preparing to release Dao connection; checking for changes');
             var changes = this.store.getChanges();
-            this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+            if (!changes.length) {
+                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
+                return super.close(action);
+            }
+            else {
+                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+                if (action !== 'commit') {
+                    throw new errors_1.SyncError('Unsynchronized models detected during session close');
+                }
+                var syncQueries = this.getModelSyncQueries(changes);
+                console.log(syncQueries);
+            }
         }
         catch (error) {
             return this.rollbackAndRelease(error);
         }
-        if (!changes.length)
-            return super.close(action);
-        start = process.hrtime();
-        switch (action) {
-            case 'commit':
-                this.logger && this.logger.debug('Committing transaction and closing the session');
-                const queries = this.getModelSyncQueries(changes, true);
-                return this.execute(queries).then(this.releaseConnection);
-            case 'rollback':
-                this.logger && this.logger.debug('Rolling back transaction and closing the session');
-                return this.rollbackAndRelease();
-            default:
-                return this.rollbackAndRelease(new errors_1.SyncError('Unsynchronized models detected during connection release'));
-        }
+        this.logger && this.logger.debug('Committing transaction and closing the session');
+        return this.execute(syncQueries).then(() => {
+            this.store.clear();
+            this.releaseConnection();
+        });
     }
     processQueryResult(query, result) {
         if (Model_1.isModelQuery(query)) {
@@ -158,7 +154,7 @@ class Dao extends pg_io_1.Session {
     // --------------------------------------------------------------------------------------------
     create(handler, attributes) {
         if (!this.isActive) {
-            throw Promise.reject(new pg_io_2.ConnectionError('Cannot create a model: connection has already been released'));
+            throw Promise.reject(new pg_io_2.ConnectionError('Cannot create a model: session has already been closed'));
         }
         const start = process.hrtime();
         this.logger && this.logger.debug(`Creating a new ${handler.name || 'Unnamed'} model`);
@@ -179,19 +175,19 @@ class Dao extends pg_io_1.Session {
     // --------------------------------------------------------------------------------------------
     insert(model) {
         if (!this.isActive) {
-            throw new pg_io_2.ConnectionError('Cannot insert a model: connection has already been released');
+            throw new pg_io_2.ConnectionError('Cannot insert a model: session has already been closed');
         }
         return this.store.insert(model);
     }
     destroy(model) {
         if (!this.isActive) {
-            throw new pg_io_2.ConnectionError('Cannot destroy a model: connection has already been released');
+            throw new pg_io_2.ConnectionError('Cannot destroy a model: session has already been closed');
         }
         return this.store.destroy(model);
     }
     clean(model) {
         if (!this.isActive) {
-            throw new pg_io_2.ConnectionError('Cannot clean a model: connection has already been released');
+            throw new pg_io_2.ConnectionError('Cannot clean a model: session has already been closed');
         }
         return this.store.clean(model);
     }
@@ -221,16 +217,8 @@ class Dao extends pg_io_1.Session {
 exports.Dao = Dao;
 // COMMON QUERIES
 // ================================================================================================
-var BEGIN_TRANSACTION = {
-    name: 'qBeginTransaction',
-    text: 'BEGIN;'
-};
-var COMMIT_TRANSACTION = {
+const COMMIT_TRANSACTION = {
     name: 'qCommitTransaction',
     text: 'COMMIT;'
-};
-var ROLLBACK_TRANSACTION = {
-    name: 'qRollbackTransaction',
-    text: 'ROLLBACK;'
 };
 //# sourceMappingURL=Dao.js.map

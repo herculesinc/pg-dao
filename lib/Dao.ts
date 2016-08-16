@@ -33,7 +33,7 @@ export class Dao extends Session {
     // --------------------------------------------------------------------------------------------
     fetchOne<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T> {
         if(!this.isActive) {
-            return Promise.reject(new ConnectionError('Cannot fetch a model: connection has already been released'));
+            return Promise.reject(new ConnectionError('Cannot fetch a model: session has already been closed'));
         }
 
         if (!isModelHandler(handler)) {
@@ -68,7 +68,7 @@ export class Dao extends Session {
     
     fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate = false): Promise<T[]> {
         if(!this.isActive) {
-            return Promise.reject(new ConnectionError('Cannot fetch models: connection has already been released'));
+            return Promise.reject(new ConnectionError('Cannot fetch models: session has already been closed'));
         }
     
         if (!isModelHandler(handler)) {
@@ -105,10 +105,10 @@ export class Dao extends Session {
     // --------------------------------------------------------------------------------------------
 	sync(): Promise<void> {
         if(this.isActive === false) {
-            return Promise.reject(new ConnectionError('Cannot sync: connection has already been released'));
+            return Promise.reject(new ConnectionError('Cannot sync: session has already been closed'));
         }
 
-        this.logger && this.logger.debug('Preparing to release Dao connection; checking for changes');
+        this.logger && this.logger.debug('Preparing to sync; checking for changes');
         const start = process.hrtime();
         try {
             var changes = this.store.getChanges();
@@ -118,60 +118,55 @@ export class Dao extends Session {
             }
             else {
                 this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
-                var queries = this.getModelSyncQueries(changes);
+                var syncQueries = this.getModelSyncQueries(changes);
             }
         }
         catch (error) {
-            if (error instanceof SyncError === false) {
-                error = new SyncError('DAO Sync failed', error);
-            }
             return this.rollbackAndRelease(error);
         }
 
-        return this.execute(queries).then(() => {
+        return this.execute(syncQueries).then(() => {
             this.store.applyChanges(changes);
             this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
         })
-        .catch((error) => {
-            if (error instanceof SyncError === false) {
-                error = new SyncError('DAO Sync failed', error);
-            }
-            return Promise.reject(error);
-        });
     }
         
-	// OVERRIDEN CONNECTION METHODS
+	// OVERRIDEN SESSION METHODS
     // --------------------------------------------------------------------------------------------
     close(action?: 'commit' | 'rollback'): Promise<any> {
         if(!this.isActive) {
             return Promise.reject(new ConnectionError('Cannot close session: session has already been closed'));
         }
 
-        let start = process.hrtime();
+        // delegate rollbacks to the super
+        if (action === 'rollback') return super.close(action);
+
+        this.logger && this.logger.debug('Preparing to close session; checking for changes');
+        const start = process.hrtime();
         try {
-            this.logger && this.logger.debug('Preparing to release Dao connection; checking for changes');
             var changes = this.store.getChanges();
-            this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+            if (!changes.length) {
+                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
+                return super.close(action);
+            }
+            else {
+                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+                if (action !== 'commit') {
+                    throw new SyncError('Unsynchronized models detected during session close');
+                }
+                var syncQueries = this.getModelSyncQueries(changes);
+                console.log(syncQueries);
+            }
         }
         catch (error) {
             return this.rollbackAndRelease(error);
         }
         
-        if (!changes.length) return super.close(action);
-        
-        start = process.hrtime();
-        switch (action) {
-            case 'commit':
-                this.logger && this.logger.debug('Committing transaction and closing the session');
-                const queries = this.getModelSyncQueries(changes, true);
-                return this.execute(queries).then(this.releaseConnection);
-            case 'rollback':
-                this.logger && this.logger.debug('Rolling back transaction and closing the session');
-                return this.rollbackAndRelease();
-            default:
-                return this.rollbackAndRelease(
-                    new SyncError('Unsynchronized models detected during connection release'));
-           }
+        this.logger && this.logger.debug('Committing transaction and closing the session');        
+        return this.execute(syncQueries).then(() => {
+            this.store.clear();
+            this.releaseConnection();
+        });
 	}
     
 	protected processQueryResult(query: Query, result: DbQueryResult): any[] {
@@ -188,7 +183,7 @@ export class Dao extends Session {
     // --------------------------------------------------------------------------------------------
     create<T extends Model>(handler: ModelHandler<T>, attributes: any): Promise<T> {
         if(!this.isActive) {
-            throw Promise.reject(new ConnectionError('Cannot create a model: connection has already been released'));
+            throw Promise.reject(new ConnectionError('Cannot create a model: session has already been closed'));
         }
         
         const start = process.hrtime();
@@ -213,21 +208,21 @@ export class Dao extends Session {
     // --------------------------------------------------------------------------------------------
     insert(model: Model) : Model {
         if(!this.isActive) {
-            throw new ConnectionError('Cannot insert a model: connection has already been released');
+            throw new ConnectionError('Cannot insert a model: session has already been closed');
         }
         return this.store.insert(model); 
     }
     
     destroy(model: Model): Model {
         if(!this.isActive) {
-            throw new ConnectionError('Cannot destroy a model: connection has already been released');
+            throw new ConnectionError('Cannot destroy a model: session has already been closed');
         } 
         return this.store.destroy(model); 
     }
     
     clean(model: Model): Model {
         if(!this.isActive) {
-            throw new ConnectionError('Cannot clean a model: connection has already been released');
+            throw new ConnectionError('Cannot clean a model: session has already been closed');
         }
         return this.store.clean(model); 
     }
@@ -262,17 +257,7 @@ export class Dao extends Session {
 
 // COMMON QUERIES
 // ================================================================================================
-var BEGIN_TRANSACTION: Query = {
-    name: 'qBeginTransaction',
-    text: 'BEGIN;'
-};
-
-var COMMIT_TRANSACTION: Query = {
+const COMMIT_TRANSACTION: Query = {
     name: 'qCommitTransaction',
     text: 'COMMIT;'
-};
-
-var ROLLBACK_TRANSACTION: Query = {
-    name: 'qRollbackTransaction',
-    text: 'ROLLBACK;'
 };

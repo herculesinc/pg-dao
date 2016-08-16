@@ -711,7 +711,7 @@ describe('DAO: Lifecycle Tests', function () {
         });
     });
 
-    it('Releasing an uncommitted Dao should throw an error', () => {
+    it('Closing an uncommitted Dao should throw an error', () => {
         const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
@@ -732,7 +732,7 @@ describe('DAO: Lifecycle Tests', function () {
         });
     });
 
-    it('Syncing a Dao with commiting should put Dao in syncrhonized state', () => {
+    it('Closing Dao with commiting should put Dao in syncrhonized state', () => {
 
         const database: Database = new pg.Database(settings);
 
@@ -760,24 +760,13 @@ describe('DAO: Lifecycle Tests', function () {
                         assert.strictEqual(dao.inTransaction, true);
                         assert.strictEqual(dao.isSynchronized, false);
 
-                        return dao.sync().then(() => {
-                            assert.strictEqual(dao.isActive, true);
-                            assert.strictEqual(dao.inTransaction, true);
+                        return dao.close('commit').then(() => {
+                            assert.strictEqual(dao.isActive, false);
+                            assert.strictEqual(dao.inTransaction, false);
                             assert.strictEqual(dao.isSynchronized, true);
 
                             assert.strictEqual(database.getPoolState().size, 1);
-                            assert.strictEqual(database.getPoolState().available, 0);
-
-                            return dao.close('commit').then((changes) => {
-                                assert.strictEqual(changes, undefined);
-
-                                assert.strictEqual(dao.isActive, false);
-                                assert.strictEqual(dao.inTransaction, false);
-                                assert.strictEqual(dao.isSynchronized, true);
-
-                                assert.strictEqual(database.getPoolState().size, 1);
-                                assert.strictEqual(database.getPoolState().available, 1);
-                            });
+                            assert.strictEqual(database.getPoolState().available, 1);
                         });
                     });
                 });

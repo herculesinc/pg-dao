@@ -109,6 +109,9 @@ class Store {
         });
         return models;
     }
+    clear() {
+        this.cache.clear();
+    }
     // STATE CHECK METHODS
     // --------------------------------------------------------------------------------------------
     has(model, errorOnAbsent = false) {

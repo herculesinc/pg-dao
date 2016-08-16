@@ -143,6 +143,10 @@ export class Store {
         return models;
     }
 
+    clear() {
+        this.cache.clear();
+    }
+
     // STATE CHECK METHODS
     // --------------------------------------------------------------------------------------------
     has(model: Model, errorOnAbsent = false): boolean {
