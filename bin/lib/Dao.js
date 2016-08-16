@@ -70,29 +70,30 @@ class Dao extends pg_io_1.Session {
     // LIFECYCLE METHODS
     // --------------------------------------------------------------------------------------------
     sync() {
-        if (this.isActive === false)
+        if (this.isActive === false) {
             return Promise.reject(new pg_io_2.ConnectionError('Cannot sync: connection has already been released'));
-        var start = process.hrtime();
+        }
+        const start = process.hrtime();
         this.logger && this.logger.debug('Synchronizing Dao');
-        var changes;
+        let changes;
         return Promise.resolve().then(() => {
             changes = this.store.getChanges();
             return this.getModelSyncQueries(changes);
         })
             .catch((reason) => this.rollbackAndRelease(reason))
             .then((queries) => {
-            if (queries.length === 0) {
+            if (!queries.length) {
                 this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
-                return Promise.resolve(changes);
+                return Promise.resolve();
             }
             return this.execute(queries).then(() => {
                 this.store.applyChanges(changes);
                 this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
-                return changes;
             });
         }).catch((reason) => {
-            if (reason instanceof errors_1.SyncError)
+            if (reason instanceof errors_1.SyncError === false) {
                 reason = new errors_1.SyncError('DAO Sync failed', reason);
+            }
             return Promise.reject(reason);
         });
     }
@@ -118,7 +119,6 @@ class Dao extends pg_io_1.Session {
                 this.logger && this.logger.debug('Committing transaction and releasing connection back to the pool');
                 var queries = this.getModelSyncQueries(changes, true);
                 return this.execute(queries).then(() => {
-                    changes = this.store.applyChanges(changes); // TODO: potentially remove
                     this.releaseConnection();
                     //this.logger && this.logger.debug(`Transaction committed in ${since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
                     return changes;
@@ -186,15 +186,14 @@ class Dao extends pg_io_1.Session {
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     getModelSyncQueries(changes, commit = false) {
+        const timestamp = new Date();
         let queries = [];
-        for (let i = 0; i < changes.length; i++) {
-            let original = changes[i].original;
-            let current = changes[i].current;
+        for (let [original, current, updates] of changes) {
             if (this.options.manageUpdatedOn && original && current) {
-                current.updatedOn = new Date();
+                current.updatedOn = timestamp;
             }
             const handler = current ? current[Model_1.symHandler] : original[Model_1.symHandler];
-            queries = queries.concat(handler.getSyncQueries(original, current, changes[i].updates));
+            queries = queries.concat(handler.getSyncQueries(original, current, updates));
         }
         if (commit) {
             // TODO: is this needed?

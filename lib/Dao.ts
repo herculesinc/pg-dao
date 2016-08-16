@@ -103,34 +103,34 @@ export class Dao extends Session {
     
 	// LIFECYCLE METHODS
     // --------------------------------------------------------------------------------------------
-	sync(): Promise<SyncInfo[]> {
-        if(this.isActive === false)
-            return <any> Promise.reject(
-                new ConnectionError('Cannot sync: connection has already been released'));
+	sync(): Promise<void> {
+        if(this.isActive === false) {
+            return Promise.reject(new ConnectionError('Cannot sync: connection has already been released'));
+        }
 
-        var start = process.hrtime();
+        const start = process.hrtime();
         this.logger && this.logger.debug('Synchronizing Dao');
        
-        var changes: SyncInfo[]; 
+        let changes: SyncInfo[]; 
         return Promise.resolve().then(() => {
             changes = this.store.getChanges();
             return this.getModelSyncQueries(changes);
         })
         .catch((reason) => this.rollbackAndRelease(reason))
         .then((queries) => {
-            if (queries.length === 0) {
+            if (!queries.length) {
                 this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
-                return Promise.resolve(changes);
+                return Promise.resolve();
             }
             
             return this.execute(queries).then(() => {
                 this.store.applyChanges(changes);
                 this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
-                return changes;
             });          
         }).catch((reason) => {
-            if (reason instanceof SyncError)
+            if (reason instanceof SyncError === false) {
                 reason = new SyncError('DAO Sync failed', reason);
+            }
             return Promise.reject(reason);
         });
     }
@@ -149,7 +149,7 @@ export class Dao extends Session {
             this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
         }
         catch (error) {
-            return  this.rollbackAndRelease(error);
+            return this.rollbackAndRelease(error);
         }
         
         if (changes.length === 0)
@@ -161,7 +161,6 @@ export class Dao extends Session {
                 this.logger && this.logger.debug('Committing transaction and releasing connection back to the pool');
                 var queries = this.getModelSyncQueries(changes, true);
                 return this.execute(queries).then(() => {
-                    changes = this.store.applyChanges(changes); // TODO: potentially remove
                     this.releaseConnection();
                     //this.logger && this.logger.debug(`Transaction committed in ${since(start)} ms; pool state: ${this.database.getPoolDescription()}`);
                     return changes; 
@@ -244,16 +243,15 @@ export class Dao extends Session {
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     getModelSyncQueries(changes: SyncInfo[], commit = false) {
+        const timestamp = new Date();
+        
         let queries: Query[] = [];
-        for (let i = 0; i < changes.length; i++) {
-            let original = changes[i].original;
-            let current = changes[i].current;
-            
+        for (let [ original, current, updates ] of changes) {            
             if (this.options.manageUpdatedOn && original && current) {
-                current.updatedOn = new Date();
+                current.updatedOn = timestamp;
             }
             const handler: ModelHandler<any> = current ? current[symHandler] : original[symHandler];
-            queries = queries.concat(handler.getSyncQueries(original, current, changes[i].updates)); 
+            queries = queries.concat(handler.getSyncQueries(original, current, updates)); 
         }
         
         if (commit) {

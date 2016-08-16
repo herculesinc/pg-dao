@@ -13,11 +13,7 @@ const symbols = {
 
 // INTERFACES
 // ================================================================================================
-export interface SyncInfo {
-    original?   : Model;
-    current?    : Model;
-    updates?    : string[];
-}
+export type SyncInfo = [Model, Model, string[]]; // [original, current, dirty fields]
 
 export interface Options {
     validateImmutability?   : boolean;
@@ -30,14 +26,12 @@ export class Store {
 
     private options : Options;
     private cache   : Map<ModelHandler<any>, Map<string, Model>>;
-    private changes : Map<Model, SyncInfo>;
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
     constructor(options: Options) {
         this.options = options;
         this.cache   = new Map<ModelHandler<any>, Map<string, Model>>();
-        this.changes = new Map<Model, SyncInfo>();        
     }
 
     // STATE CHANGE METHODS
@@ -213,21 +207,21 @@ export class Store {
     getChanges(): SyncInfo[]{
         const syncInfo: SyncInfo[] = [];
 
-        for (let [handler, modelMap] of this.cache) {
-            for (let [id, model] of modelMap) {
+        for (let [ handler, modelMap ] of this.cache) {
+            for (let [ id, model ] of modelMap) {
                 if (model[symbols.mutable]) {
-                    const original = model[symbols.original];
+                    let original = model[symbols.original];
                     if (model[symbols.destroyed]) {
-                        syncInfo.push({ original });
+                        syncInfo.push([ original, undefined, undefined ]);
                     }
                     else {
                         if (!original) {
-                            syncInfo.push({ current: model });
+                            syncInfo.push([ undefined, model, undefined ]);
                         }
                         else {
                             const updates = handler.compare(original, model);
                             if (updates && updates.length) {
-                                syncInfo.push({ original, current: model, updates });
+                                syncInfo.push([ original, model, updates ]);
                             }
                         }
                     }
@@ -246,42 +240,20 @@ export class Store {
     }
 
     applyChanges(changes: SyncInfo[]) {
-        for (var i = 0; i < changes.length; i++) {
-            let original = changes[i].original;
-            let current = changes[i].current;
-            
+        if (!changes || !changes.length) return;
+
+        for (let [ original, current ] of changes) {            
             if (current) {
                 let handler = current[symHandler];
                 current[symbols.original] = handler.clone(current);
-                let previousChange = this.changes.get(current);
-                if (previousChange === undefined) {
-                    this.changes.set(current, changes[i]);
-                }
-                else if (handler.areEqual(previousChange.original, current)) {
-                    this.changes.delete(current);
-                }
             }
             else {
                 let handler = original[symHandler];
                 let modelMap = this.getModelMap(handler);
                 let model = modelMap.get(original.id);
-                let previousChange = this.changes.get(model);
-                if (previousChange === undefined) {
-                    this.changes.set(current, changes[i]);
-                }
-                else {
-                    if (previousChange.original === undefined) {
-                        this.changes.delete(model);
-                    }
-                    else {
-                        previousChange.current = undefined;
-                    }
-                }
                 modelMap.delete(original.id);
             }
         }
-        
-        return Array.from(this.changes.values());
     }
 
     // PRIVATE METHODS

@@ -371,7 +371,7 @@ describe('DAO: inserting models', function () {
                 assert.strictEqual(dao.isModified(user), false);
                 assert.strictEqual(dao.isDestroyed(user), false);
 
-                return dao.sync().then((changes) => {
+                return dao.sync().then(() => {
                     assert.strictEqual(dao.hasModel(user), true);
                     assert.strictEqual(dao.isSynchronized, true);
 
@@ -379,10 +379,6 @@ describe('DAO: inserting models', function () {
                     assert.strictEqual(dao.isModified(user), false);
                     assert.strictEqual(dao.isDestroyed(user), false);
                     assert.strictEqual(dao.isMutable(user), true);
-
-                    assert.strictEqual(changes.length, 1);
-                    assert.deepEqual(changes[0].current, user);
-                    assert.strictEqual(changes[0].original, undefined);
 
                     var query = new qFetchUserById(4);
                     return dao.execute(query).then((newUser) => {
@@ -414,14 +410,8 @@ describe('DAO: inserting models', function () {
                 assert.strictEqual(dao.isNew(user1), true);
                 assert.strictEqual(dao.isNew(user2), true);
 
-                return dao.sync().then((changes) => {
+                return dao.sync().then(() => {
                     assert.strictEqual(dao.isSynchronized, true);
-                    
-                    assert.strictEqual(changes.length, 2);
-                    assert.deepEqual(changes[0].current, user1);
-                    assert.strictEqual(changes[0].original, undefined);
-                    assert.deepEqual(changes[1].current, user2);
-                    assert.strictEqual(changes[1].original, undefined);
                     assert.strictEqual(dao.isNew(user1), false);
                     assert.strictEqual(dao.isNew(user2), false);
 
@@ -499,13 +489,10 @@ describe('DAO: Deleting Models', function () {
                     assert.strictEqual(dao.isNew(user), false);
                     assert.strictEqual(dao.isModified(user), false);
                     
-                    return dao.sync().then((changes) => {
+                    return dao.sync().then(() => {
                         assert.strictEqual(dao.hasModel(user), false);
                         assert.strictEqual(dao.isSynchronized, true);
 
-                        assert.strictEqual(changes.length, 1);
-                        assert.strictEqual(changes[0].current, undefined);
-                        assert.deepEqual(changes[0].original, user);
                         return dao.execute(query).then((newUser) => {
                             assert.strictEqual(newUser, undefined);
                         });
@@ -526,14 +513,8 @@ describe('DAO: Deleting Models', function () {
                     dao.destroy(users[2]);
                     assert.strictEqual(dao.isSynchronized, false);
                     
-                    return dao.sync().then((changes) => {
+                    return dao.sync().then(() => {
                         assert.strictEqual(dao.isSynchronized, true);
-
-                        assert.strictEqual(changes.length, 2);
-                        assert.strictEqual(changes[0].current, undefined);
-                        assert.deepEqual(changes[0].original, users[0]);
-                        assert.strictEqual(changes[1].current, undefined);
-                        assert.deepEqual(changes[1].original, users[2]);
 
                         var query2 = new qFetchUsersByIdList([1, 2, 3]);
                         return dao.execute(query2).then((newUsers) => {
@@ -588,11 +569,6 @@ describe('DAO: Deleting Models', function () {
 
                 assert.strictEqual(dao.hasModel(user), false);
                 assert.strictEqual(dao.isSynchronized, true);
-
-                dao.sync().then((changes) => {
-                    assert.strictEqual(changes.length, 0);
-                });
-                
             }).then(() => dao.close('rollback'));
         });
     });
@@ -619,15 +595,9 @@ describe('DAO: Updating Models', function () {
                     assert.strictEqual(dao.isNew(user), false);
                     assert.strictEqual(dao.isModified(user), true);
 
-                    return dao.sync().then((changes) => {
+                    return dao.sync().then(() => {
                         assert.strictEqual(dao.hasModel(user), true);
                         assert.strictEqual(dao.isSynchronized, true);
-
-                        assert.strictEqual(changes.length, 1);
-                        assert.strictEqual(changes[0].current, user);
-                        assert.strictEqual(changes[0].current['username'], 'Test');
-                        assert.strictEqual(changes[0].original.id, user.id);
-                        assert.strictEqual(changes[0].original['username'], 'Irakliy');
 
                         var query2 = new qFetchUserById(1);
                         return dao.execute(query2).then((newUser) => {
@@ -645,17 +615,16 @@ describe('DAO: Updating Models', function () {
         const database: Database = new pg.Database(settings);
         return database.connect().then((dao) => {
             return prepareDatabase(dao).then(() => {
-                var query1 = new qFetchUserById(1, true);
+                const query1 = new qFetchUserById(1, true);
                 return dao.execute(query1).then((user) => {
+                    const originalUpdatedOn = user.updatedOn;
                     user.username = 'Test';
-                    return dao.sync().then((changes) => {
-                        var original = changes[0].original;
-                        var current = changes[0].current;
+                    return dao.sync().then(() => {
                         if (pg.defaults.session.manageUpdatedOn) {
-                            assert.ok(original.updatedOn.valueOf() < current.updatedOn.valueOf());
+                            assert.ok(originalUpdatedOn.valueOf() < user.updatedOn.valueOf());
                         }
                         else {
-                            assert.strictEqual(original.updatedOn.valueOf(), current.updatedOn.valueOf());
+                            assert.strictEqual(originalUpdatedOn.valueOf(), user.updatedOn.valueOf());
                         }
                     });
                 });
@@ -679,8 +648,7 @@ describe('DAO: Updating Models', function () {
 
                     users[1].username = 'Test';
 
-                    return dao.sync().then((changes) => {
-                        assert.strictEqual(changes.length, 4);
+                    return dao.sync().then(() => {
                         var query2 = new qFetchUsersByIdList([1, 2, 3, 4, 5]);
                         return dao.execute(query2).then((users2) => {
                             assert.strictEqual(users2.length, 2);
@@ -792,9 +760,7 @@ describe('DAO: Lifecycle Tests', function () {
                         assert.strictEqual(dao.inTransaction, true);
                         assert.strictEqual(dao.isSynchronized, false);
 
-                        return dao.sync().then((changes) => {
-                            assert.strictEqual(changes.length, 1);
-
+                        return dao.sync().then(() => {
                             assert.strictEqual(dao.isActive, true);
                             assert.strictEqual(dao.inTransaction, true);
                             assert.strictEqual(dao.isSynchronized, true);
