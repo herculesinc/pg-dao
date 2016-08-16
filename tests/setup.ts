@@ -1,7 +1,7 @@
 // IMPORTS
 // ================================================================================================
 import { Query, QueryMask } from 'pg-io';
-import { ModelQuery, PgIdGenerator } from './../lib/Model';
+import { ModelQuery, PgIdGenerator, ModelHandler } from './../lib/Model';
 import { Dao } from './../lib/Dao';
 import { AbstractModel } from './../lib/AbstractModel';
 import { dbField, dbModel } from './../lib/decorators';
@@ -33,7 +33,7 @@ export class User extends AbstractModel {
     @dbField(String)
     username: string;
     
-    @dbField(Object, { cloner: Profile.clone, comparator: Profile.areEqual })
+    @dbField(Object, { handler: Profile })
     profile: Profile;
 
     @dbField(Array)
@@ -68,10 +68,10 @@ export class Token extends AbstractModel {
 // QUERIES
 // ================================================================================================
 export class qFetchUserById implements ModelQuery<User> {
-    text: string;
-    handler = User;
-    mask = 'object' as QueryMask;
-    mutable: boolean;
+    text    : string;
+    handler : ModelHandler<User> = User;
+    mask    : 'object' = 'object';
+    mutable : boolean;
 
     constructor(userId: number, lock = false) {
         this.mutable = lock;
@@ -84,10 +84,10 @@ export class qFetchUserById implements ModelQuery<User> {
 }
 
 export class qFetchUsersByIdList implements ModelQuery<User> {
-    text: string;
-    handler = User;
-    mask = 'list' as QueryMask;
-    mutable: boolean;
+    text    : string;
+    handler : ModelHandler<User> = User;
+    mask    : 'list' = 'list';
+    mutable : boolean;
 
     constructor(userIdList: number[], lock = false) {
         this.mutable = lock;

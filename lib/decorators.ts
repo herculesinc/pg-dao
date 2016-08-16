@@ -3,7 +3,7 @@
 import { AbstractModel, symbols } from './AbstractModel';
 import { IdGenerator } from './Model'
 import { ModelError } from './errors';
-import { DbField } from './schema';
+import { DbField, FieldHandler } from './schema';
 import { Comparator, Cloner} from './util';
 
 // INTERFACES
@@ -15,8 +15,7 @@ export const enum ArrayComparison {
 export interface dbFieldOptions {
     readonly?   : boolean;
     secret?     : string;
-    cloner?     : Cloner<any>;
-    comparator? : Comparator;
+    handler?    : FieldHandler;
 }
 
 // DECORATOR DEFINITIONS
@@ -43,8 +42,7 @@ export function dbField(fieldType: any, options?: dbFieldOptions): PropertyDecor
     options = Object.assign({ readonly: false }, options);
 
     return function (classPrototype: any, property: string) {
-        const field = new DbField(property, fieldType, 
-            options.readonly, options.secret, options.cloner, options.comparator);
+        const field = new DbField(property, fieldType, options.readonly, options.secret, options.handler);
         
         let schemaMap: Map<string, any> = classPrototype[symbols.dbSchema];
         if (!schemaMap) {

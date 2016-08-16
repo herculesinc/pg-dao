@@ -23,7 +23,7 @@ function dbField(fieldType, options) {
     // make sure options are set
     options = Object.assign({ readonly: false }, options);
     return function (classPrototype, property) {
-        const field = new schema_1.DbField(property, fieldType, options.readonly, options.secret, options.cloner, options.comparator);
+        const field = new schema_1.DbField(property, fieldType, options.readonly, options.secret, options.handler);
         let schemaMap = classPrototype[AbstractModel_1.symbols.dbSchema];
         if (!schemaMap) {
             schemaMap = new Map();

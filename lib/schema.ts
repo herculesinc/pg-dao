@@ -6,6 +6,13 @@ import {
 	Comparator, areObjectsEqual, areArraysEqual, areDatesEqual 
 } from './util';
 
+// INTERFACES
+// ================================================================================================
+
+export interface FieldHandler {
+    clone       : Cloner<any>;
+    areEqual    : Comparator;
+}
 
 // FIELD
 // ================================================================================================
@@ -17,7 +24,7 @@ export class DbField {
 	clone?		: Cloner<any>;
 	areEqual?	: Comparator;
 	
-	constructor(name: string, type: any, readonly: boolean, secret: string, cloner: Cloner<any>, comparator: Comparator) {
+	constructor(name: string, type: any, readonly: boolean, secret: string, handler: FieldHandler) {
 		// validate and set name
 		if (typeof name !== 'string') 
 			throw new ModelError('Database field name must be a string');
@@ -36,38 +43,26 @@ export class DbField {
 		// validate type and set coloner and comparator, when needed
     	switch (type) {
         	case Number: case Boolean: case String:	
-				if (cloner)
-					throw new ModelError('Cannot specify a cloner for Number, Boolean, or String field');
-				if (comparator)
-					throw new ModelError('Cannot specify a comparator for Number, Boolean, or String field');
+				if (handler)
+					throw new ModelError('Cannot specify a field handler for Number, Boolean, or String field');
             	break;
 
 			case Date:
-				if (cloner)
-					throw new ModelError('Cannot specify a custom cloner for Date field');
-				if (comparator)
-					throw new ModelError('Cannot specify a custom comparator for Date field');
+				if (handler)
+					throw new ModelError('Cannot specify a custom field handler for Date field');
 
 				this.clone = cloneDate;
 				this.areEqual = areDatesEqual;
 				break;
 
 			case Object:
-				if (cloner && typeof cloner !== 'function')
-					throw new ModelError('Object cloner must be a function');
-				if (comparator && typeof comparator !== 'function')
-					throw new ModelError('Object comparator must be a function');
-
+				var { cloner, comparator } = validateFieldHandler(handler);
 				this.clone = cloner || cloneObject;
 				this.areEqual = comparator || areObjectsEqual;
 				break;
 
 			case Array:
-				if (cloner && typeof cloner !== 'function')
-					throw new ModelError('Array cloner must be a function');
-				if (comparator && typeof comparator !== 'function')
-					throw new ModelError('Array comparator must be a function');
-
+				var { cloner, comparator } = validateFieldHandler(handler);
 				this.clone = cloner || cloneArray;
 				this.areEqual = comparator || areArraysEqual;
 				break;
@@ -79,4 +74,20 @@ export class DbField {
 		// set the type
 		this.type = type;
 	}
+}
+
+// HELPER FUNCTIONS
+// ================================================================================================
+function validateFieldHandler(handler: FieldHandler): { cloner?: Cloner<any>, comparator?: Comparator} {
+	if (!handler) return {};
+
+	const cloner = handler.clone;
+	if (!cloner) throw new ModelError('Undefined cloner in field handler');
+	if (typeof cloner !== 'function') throw new ModelError('Invalid cloner in field handler');
+
+	const comparator = handler.areEqual;
+	if (!comparator) throw new ModelError('Undefined comparator in field handler');
+	if (typeof comparator !== 'function') throw new ModelError('Invalid comparator in field handler');
+
+	return { cloner, comparator };
 }

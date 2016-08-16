@@ -85,12 +85,7 @@ export class AbstractModel implements Model {
         if ('id' in attributes) 
             throw new ModelError('Cannot build a mode: model attributes contain id property');
         
-        const timestamp = new Date();
-        return new this(Object.assign({
-            id: id,
-            createdOn: timestamp,
-            updatedOn: timestamp
-        }, attributes));
+        return new this(Object.assign({ id: id }, attributes));
     }
 
     static clone(model: Model): any {
