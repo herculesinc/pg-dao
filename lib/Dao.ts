@@ -155,7 +155,6 @@ export class Dao extends Session {
                     throw new SyncError('Unsynchronized models detected during session close');
                 }
                 var syncQueries = this.getModelSyncQueries(changes);
-                console.log(syncQueries);
             }
         }
         catch (error) {

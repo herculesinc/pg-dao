@@ -1,6 +1,4 @@
 "use strict";
-// IMPORTS 
-// ================================================================================================
 const errors_1 = require('./errors');
 const util_1 = require('./util');
 // FIELD

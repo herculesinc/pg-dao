@@ -1,5 +1,6 @@
 // IMPORTS 
 // ================================================================================================
+import { IdGenerator } from './MOdel';
 import { ModelError } from './errors';
 import { 
 	Cloner, cloneObject, cloneArray, cloneDate,
@@ -8,6 +9,13 @@ import {
 
 // INTERFACES
 // ================================================================================================
+export interface DbSchema {
+	tableName	: string;
+	idGenerator	: IdGenerator;
+	fields		: Map<string, DbField>;
+	secretFields: Map<string, DbField>;
+}
+
 export interface FieldHandler {
     clone       : Cloner<any>;
     areEqual    : Comparator;

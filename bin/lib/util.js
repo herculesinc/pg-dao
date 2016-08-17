@@ -1,10 +1,13 @@
 "use strict";
 // IMPORTS
 // ================================================================================================
+const crypto = require('crypto');
+const pg_io_1 = require('pg-io');
 const errors_1 = require('./errors');
 // MODULE VARIABLES
 // ================================================================================================
 const camelPattern = /([A-Z]+)/g;
+const cryptoAlgorithm = 'aes-256-ctr';
 // CASE CONVERTERS
 // ================================================================================================
 function camelToSnake(camel) {
@@ -158,6 +161,40 @@ function cloneDate(date) {
     return new Date(date.valueOf());
 }
 exports.cloneDate = cloneDate;
+// CRYPTO
+// ================================================================================================
+function encryptField(value, fieldSecret) {
+    if (!value)
+        return undefined;
+    const text = JSON.stringify(value);
+    const cipher = crypto.createCipher(cryptoAlgorithm, fieldSecret);
+    let encoded = cipher.update(text, 'utf8', 'base64');
+    encoded += cipher.final('base64');
+    return encoded;
+}
+exports.encryptField = encryptField;
+function decryptField(text, fieldSecret, type) {
+    if (!text || text === '')
+        return undefined;
+    const decipher = crypto.createDecipher(cryptoAlgorithm, fieldSecret);
+    let decoded = decipher.update(text, 'base64', 'utf8');
+    decoded += decipher.final('utf8');
+    switch (type) {
+        case String:
+            return decoded;
+        case Object:
+        case Array:
+            try {
+                return JSON.parse(decoded);
+            }
+            catch (err) {
+                throw new pg_io_1.QueryError(`Failed to decrypt a field: ${err.message}`);
+            }
+        default:
+            throw new errors_1.ModelError('Failed to decrypt a field: field type is invalid');
+    }
+}
+exports.decryptField = decryptField;
 // HELPER FUNCTIONS
 // ================================================================================================
 function getKeys(objectA, objectB) {

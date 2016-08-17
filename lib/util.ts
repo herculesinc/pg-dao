@@ -1,10 +1,13 @@
 // IMPORTS
 // ================================================================================================
+import * as crypto from 'crypto';
+import { QueryError } from 'pg-io';
 import { ModelError } from './errors';
 
 // MODULE VARIABLES
 // ================================================================================================
 const camelPattern = /([A-Z]+)/g;
+const cryptoAlgorithm = 'aes-256-ctr';
 
 // INTERFACES
 // ================================================================================================
@@ -153,6 +156,41 @@ export function cloneArray(source: any[], parents?: WeakSet<any>): any[] {
 export function cloneDate(date: Date): Date {
 	if (!date) return;
 	return new Date(date.valueOf());
+}
+
+// CRYPTO
+// ================================================================================================
+export function encryptField(value: any, fieldSecret: string): string {
+    if (!value) return undefined;
+
+    const text = JSON.stringify(value);
+    const cipher = crypto.createCipher(cryptoAlgorithm, fieldSecret);
+    let encoded = cipher.update(text, 'utf8', 'base64');
+    encoded += cipher.final('base64');
+
+    return encoded;
+}
+
+export function decryptField(text: string, fieldSecret: string, type: any): any {
+    if (!text || text === '') return undefined;
+
+    const decipher = crypto.createDecipher(cryptoAlgorithm, fieldSecret);
+    let decoded = decipher.update(text, 'base64', 'utf8');
+    decoded += decipher.final('utf8');
+
+	switch (type) {  
+		case String:
+			return decoded;
+		case Object: case Array:
+			try {
+				return JSON.parse(decoded);
+			}
+			catch (err) {
+				throw new QueryError(`Failed to decrypt a field: ${err.message}`);
+			}		
+		default:
+			throw new ModelError('Failed to decrypt a field: field type is invalid')
+	}
 }
 
 // HELPER FUNCTIONS

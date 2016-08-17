@@ -3,6 +3,7 @@
 import * as assert from 'assert';
 
 import { symbols } from './../lib/AbstractModel';
+import { DbSchema} from './../lib/schema';
 import { User, Token } from './setup';
 import { ModelError } from './../lib/errors';
 import { cloneObject, areObjectsEqual, areArraysEqual, areSetsEqual } from './../lib/util';
@@ -12,31 +13,27 @@ import { cloneObject, areObjectsEqual, areArraysEqual, areSetsEqual } from './..
 describe('Models: Definition', function () {
         
     it('User model should be defined correctly', function () {
-		var dbTable = User[symbols.dbTable];
-		var dbSchema = User[symbols.dbSchema];
+		var dbSchema: DbSchema = User[symbols.dbSchema];
 		
 		assert.strictEqual(User.name, 'User');
 		
-        assert.strictEqual(dbTable, 'tmp_users');
-        assert.strictEqual('id' in dbSchema, true);
-		assert.strictEqual('createdOn' in dbSchema, true);
-		assert.strictEqual('updatedOn' in dbSchema, true);
-		assert.strictEqual('username' in dbSchema, true);
-		assert.strictEqual('status' in dbSchema, false);
+        assert.strictEqual(dbSchema.tableName, 'tmp_users');
+        assert.strictEqual(dbSchema.fields.has('id'), true);
+		assert.strictEqual(dbSchema.fields.has('createdOn'), true);
+		assert.strictEqual(dbSchema.fields.has('updatedOn'), true);
+		assert.strictEqual(dbSchema.fields.has('username'), true);
     });
 	
 	it('Token model should be defined correctly', function () {
-		var dbTable = Token[symbols.dbTable];
-		var dbSchema = Token[symbols.dbSchema];
+		var dbSchema: DbSchema = Token[symbols.dbSchema];
 		
 		assert.strictEqual(Token.name, 'Token');
 		
-        assert.strictEqual(dbTable, 'tmp_tokens');
-        assert.strictEqual('id' in dbSchema, true);
-		assert.strictEqual('createdOn' in dbSchema, true);
-		assert.strictEqual('updatedOn' in dbSchema, true);
-		assert.strictEqual('username' in dbSchema, false);
-		assert.strictEqual('status' in dbSchema, true);
+        assert.strictEqual(dbSchema.tableName, 'tmp_tokens');
+		assert.strictEqual(dbSchema.fields.has('id'), true);
+		assert.strictEqual(dbSchema.fields.has('createdOn'), true);
+		assert.strictEqual(dbSchema.fields.has('updatedOn'), true);
+		assert.strictEqual(dbSchema.fields.has('status'), true);
     });
 });
 

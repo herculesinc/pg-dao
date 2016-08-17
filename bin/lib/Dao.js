@@ -129,7 +129,6 @@ class Dao extends pg_io_1.Session {
                     throw new errors_1.SyncError('Unsynchronized models detected during session close');
                 }
                 var syncQueries = this.getModelSyncQueries(changes);
-                console.log(syncQueries);
             }
         }
         catch (error) {

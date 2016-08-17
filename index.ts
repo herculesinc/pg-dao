@@ -9,15 +9,8 @@ import { symbols as modelSymbols } from './lib/AbstractModel';
 // GLOBALS
 // ================================================================================================
 export const symbols = {
-    handler         : symHandler,
-    fetchQuery      : modelSymbols.fetchQuery,
-    updateQuery     : modelSymbols.updateQuery,
-    insertQuery     : modelSymbols.insertQuery,
-    deleteQuery     : modelSymbols.deleteQuery,
-    dbTable         : modelSymbols.dbTable,
-    dbSchema        : modelSymbols.dbSchema,
-    idGenerator     : modelSymbols.idGenerator,
-    arrayComparator : modelSymbols.arrayComparator
+    handler     : symHandler,
+    dbSchema    : modelSymbols.dbSchema,
 };
 
 // set session constructor

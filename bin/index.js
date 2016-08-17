@@ -9,14 +9,7 @@ const AbstractModel_1 = require('./lib/AbstractModel');
 // ================================================================================================
 exports.symbols = {
     handler: Model_1.symHandler,
-    fetchQuery: AbstractModel_1.symbols.fetchQuery,
-    updateQuery: AbstractModel_1.symbols.updateQuery,
-    insertQuery: AbstractModel_1.symbols.insertQuery,
-    deleteQuery: AbstractModel_1.symbols.deleteQuery,
-    dbTable: AbstractModel_1.symbols.dbTable,
     dbSchema: AbstractModel_1.symbols.dbSchema,
-    idGenerator: AbstractModel_1.symbols.idGenerator,
-    arrayComparator: AbstractModel_1.symbols.arrayComparator
 };
 // set session constructor
 pg.defaults.SessionCtr = Dao_1.Dao;

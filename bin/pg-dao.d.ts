@@ -14,14 +14,7 @@ declare module "pg-dao" {
     // --------------------------------------------------------------------------------------------
     export const symbols: {
         handler         : symbol;
-        fetchQuery      : symbol;
-        updateQuery     : symbol;
-        insertQuery     : symbol;
-        deleteQuery     : symbol;
-        dbTable         : symbol;
         dbSchema        : symbol;
-        idGenerator     : symbol;
-        arrayComparator : symbol;
     };
 
     // DATABASE

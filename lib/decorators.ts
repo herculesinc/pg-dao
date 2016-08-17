@@ -23,13 +23,27 @@ export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator
     if (!idGenerator) throw new ModelError('Model ID generator cannot be empty');
     
     return function (classConstructor: any) {
-        classConstructor[symbols.dbTable] = table;
         
-        const schemaMap: Map<string, any> = classConstructor.prototype[symbols.dbSchema];
-        classConstructor[symbols.dbSchema] = Object.assign({},
+        const schemaMap: Map<string, any> = classConstructor.prototype[symbols.dbFields];
+        const fields = Object.assign({},
             schemaMap.get(AbstractModel.name), schemaMap.get(classConstructor.name));
 
-        classConstructor[symbols.idGenerator] = idGenerator;
+        const fieldMap: Map<string, DbField> = new Map();
+        const secretFieldMap: Map<string, DbField> = new Map();
+        for (let fieldName in fields) {
+            let field: DbField = fields[fieldName];
+            fieldMap.set(fieldName, field);
+            if (field.secret) {
+                secretFieldMap.set(fieldName, field);
+            }
+        }
+
+        classConstructor[symbols.dbSchema] = {
+            tableName	: table,
+            idGenerator	: idGenerator,
+            fields		: fieldMap,
+            secretFields: secretFieldMap
+        };
     }
 }
 
@@ -40,10 +54,10 @@ export function dbField(fieldType: any, options?: dbFieldOptions): PropertyDecor
     return function (classPrototype: any, property: string) {
         const field = new DbField(property, fieldType, options.readonly, options.secret, options.handler);
         
-        let schemaMap: Map<string, any> = classPrototype[symbols.dbSchema];
+        let schemaMap: Map<string, any> = classPrototype[symbols.dbFields];
         if (!schemaMap) {
             schemaMap = new Map<string, any>();
-            classPrototype[symbols.dbSchema] = schemaMap; 
+            classPrototype[symbols.dbFields] = schemaMap; 
         }
         
         let schema = schemaMap.get(classPrototype.constructor.name);
