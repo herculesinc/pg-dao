@@ -166,7 +166,16 @@ exports.cloneDate = cloneDate;
 function encryptField(value, fieldSecret) {
     if (!value)
         return undefined;
-    const text = JSON.stringify(value);
+    switch (typeof value) {
+        case 'object':
+            var text = JSON.stringify(value);
+            break;
+        case 'string':
+            var text = value;
+            break;
+        default:
+            throw new errors_1.ModelError(`Failed to encrypt a field: value type is not supported`);
+    }
     const cipher = crypto.createCipher(cryptoAlgorithm, fieldSecret);
     let encoded = cipher.update(text, 'utf8', 'base64');
     encoded += cipher.final('base64');

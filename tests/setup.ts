@@ -33,6 +33,9 @@ export class User extends AbstractModel {
     @dbField(String)
     username: string;
     
+    @dbField(String, { secret: 'secret' })
+    password: string;
+
     @dbField(Object, { handler: Profile })
     profile: Profile;
 
@@ -42,6 +45,7 @@ export class User extends AbstractModel {
     constructor(seed: any) {
         super(seed);
         this.username = seed.username;
+        this.password = seed.password;
         this.profile = seed.profile;
         this.tags = seed.tags;
     }
@@ -76,7 +80,7 @@ export class qFetchUserById implements ModelQuery<User> {
     constructor(userId: number, lock = false) {
         this.mutable = lock;
         this.text = `
-            SELECT id, username, tags, created_on AS "createdOn", updated_on AS "updatedOn"
+            SELECT id, username, password, profile, tags, created_on AS "createdOn", updated_on AS "updatedOn"
             FROM tmp_users WHERE id = ${userId};`;
     }
 
@@ -92,7 +96,7 @@ export class qFetchUsersByIdList implements ModelQuery<User> {
     constructor(userIdList: number[], lock = false) {
         this.mutable = lock;
         this.text = `
-            SELECT id, username, tags, created_on AS "createdOn", updated_on AS "updatedOn"
+            SELECT id, username, password, profile, tags, created_on AS "createdOn", updated_on AS "updatedOn"
             FROM tmp_users WHERE id in (${userIdList.join(',') })
             ORDER BY id;`;
     }
@@ -110,10 +114,10 @@ export function prepareDatabase(dao: Dao): Promise<any> {
         {
             text: `SELECT * INTO TEMPORARY tmp_users
                 FROM (VALUES 
-		            (1::bigint, 'Irakliy'::VARCHAR, '{"city": "Los Angeles"}'::jsonb, '["tag1", "tag2"]'::jsonb, now()::timestamptz, now()::timestamptz),
-		            (2::bigint, 'Yason'::VARCHAR, 	'{"city": "Portland"}'::jsonb,    '["tag3", "tag4"]'::jsonb, now()::timestamptz, now()::timestamptz),
-		            (3::bigint, 'George'::VARCHAR,  '{"city": "San Diego"}'::jsonb,   '["tag5", "tag6"]'::jsonb, now()::timestamptz, now()::timestamptz)
-	            ) AS q (id, username, profile, tags, created_on, updated_on);`
+		            (1::bigint, 'Irakliy'::VARCHAR, 'KpEHgJcsvbg8AtQ='::VARCHAR, '{"city": "Los Angeles"}'::jsonb, '["tag1", "tag2"]'::jsonb, now()::timestamptz, now()::timestamptz),
+		            (2::bigint, 'Yason'::VARCHAR, 	'KpEHgJcsvbg5BtA='::VARCHAR, '{"city": "Portland"}'::jsonb,    '["tag3", "tag4"]'::jsonb, now()::timestamptz, now()::timestamptz),
+		            (3::bigint, 'George'::VARCHAR,  'KpEHgJcsvbg8AtQ='::VARCHAR, '{"city": "San Diego"}'::jsonb,   '["tag5", "tag6"]'::jsonb, now()::timestamptz, now()::timestamptz)
+	            ) AS q (id, username, password, profile, tags, created_on, updated_on);`
         },
         {
           text: 'DROP SEQUENCE IF EXISTS tmp_users_id_seq;'

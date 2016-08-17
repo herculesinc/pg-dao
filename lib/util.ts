@@ -163,7 +163,17 @@ export function cloneDate(date: Date): Date {
 export function encryptField(value: any, fieldSecret: string): string {
     if (!value) return undefined;
 
-    const text = JSON.stringify(value);
+	switch (typeof value) {
+		case 'object':
+			var text = JSON.stringify(value);
+			break;
+		case 'string':
+			var text = value as string;
+			break;
+		default:
+			throw new ModelError(`Failed to encrypt a field: value type is not supported`);
+	}
+
     const cipher = crypto.createCipher(cryptoAlgorithm, fieldSecret);
     let encoded = cipher.update(text, 'utf8', 'base64');
     encoded += cipher.final('base64');
