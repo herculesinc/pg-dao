@@ -6,6 +6,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 const Model_1 = require('./Model');
+const schema_1 = require('./schema');
 const decorators_1 = require('./decorators');
 const queries_1 = require('./queries');
 const errors_1 = require('./errors');
@@ -44,6 +45,16 @@ class AbstractModel {
         }
         // set model handler
         this[Model_1.symHandler] = this.constructor;
+    }
+    // SCHEMA SETTER
+    // --------------------------------------------------------------------------------------------
+    static setSchema(tableName, idGenerator, fields) {
+        fields = Object.assign({}, fields, {
+            id: { type: String, readonly: true },
+            createdOn: { type: Date, readonly: true },
+            updatedOn: { type: Date }
+        });
+        this[exports.symbols.dbSchema] = schema_1.buildModelSchema(tableName, idGenerator, fields);
     }
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------

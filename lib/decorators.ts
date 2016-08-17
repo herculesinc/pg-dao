@@ -3,8 +3,7 @@
 import { AbstractModel, symbols } from './AbstractModel';
 import { IdGenerator } from './Model'
 import { ModelError } from './errors';
-import { DbField, FieldHandler } from './schema';
-import { Comparator, Cloner} from './util';
+import { DbField, FieldHandler, buildModelSchema } from './schema';
 
 // INTERFACES
 // ================================================================================================
@@ -17,33 +16,20 @@ export interface dbFieldOptions {
 // DECORATOR DEFINITIONS
 // ================================================================================================
 export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator {
-    if (table == undefined || table.trim() === '')
-        throw new ModelError('Model table name cannot be empty');
+	// validate table name
+	if (!table) throw new ModelError('Cannot build model schema: table name is undefined');
+	if (table.trim() === '') throw new ModelError('Cannot build model schema: table name is invalid');
+
+	// vlaidate ID Generator
+	if (!idGenerator) throw new ModelError('Cannot build model schema: ID Generator is undefined');
+	if (typeof idGenerator.getNextId !== 'function')
+		throw new ModelError('Cannot build model schema: ID Generator is invalid');
         
-    if (!idGenerator) throw new ModelError('Model ID generator cannot be empty');
-    
     return function (classConstructor: any) {
-        
         const schemaMap: Map<string, any> = classConstructor.prototype[symbols.dbFields];
         const fields = Object.assign({},
             schemaMap.get(AbstractModel.name), schemaMap.get(classConstructor.name));
-
-        const fieldMap: Map<string, DbField> = new Map();
-        const secretFieldMap: Map<string, DbField> = new Map();
-        for (let fieldName in fields) {
-            let field: DbField = fields[fieldName];
-            fieldMap.set(fieldName, field);
-            if (field.secret) {
-                secretFieldMap.set(fieldName, field);
-            }
-        }
-
-        classConstructor[symbols.dbSchema] = {
-            tableName	: table,
-            idGenerator	: idGenerator,
-            fields		: fieldMap,
-            secretFields: secretFieldMap
-        };
+        classConstructor[symbols.dbSchema] = buildModelSchema(table, idGenerator, fields);
     }
 }
 

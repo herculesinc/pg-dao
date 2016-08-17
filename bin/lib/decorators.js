@@ -7,28 +7,20 @@ const schema_1 = require('./schema');
 // DECORATOR DEFINITIONS
 // ================================================================================================
 function dbModel(table, idGenerator) {
-    if (table == undefined || table.trim() === '')
-        throw new errors_1.ModelError('Model table name cannot be empty');
+    // validate table name
+    if (!table)
+        throw new errors_1.ModelError('Cannot build model schema: table name is undefined');
+    if (table.trim() === '')
+        throw new errors_1.ModelError('Cannot build model schema: table name is invalid');
+    // vlaidate ID Generator
     if (!idGenerator)
-        throw new errors_1.ModelError('Model ID generator cannot be empty');
+        throw new errors_1.ModelError('Cannot build model schema: ID Generator is undefined');
+    if (typeof idGenerator.getNextId !== 'function')
+        throw new errors_1.ModelError('Cannot build model schema: ID Generator is invalid');
     return function (classConstructor) {
         const schemaMap = classConstructor.prototype[AbstractModel_1.symbols.dbFields];
         const fields = Object.assign({}, schemaMap.get(AbstractModel_1.AbstractModel.name), schemaMap.get(classConstructor.name));
-        const fieldMap = new Map();
-        const secretFieldMap = new Map();
-        for (let fieldName in fields) {
-            let field = fields[fieldName];
-            fieldMap.set(fieldName, field);
-            if (field.secret) {
-                secretFieldMap.set(fieldName, field);
-            }
-        }
-        classConstructor[AbstractModel_1.symbols.dbSchema] = {
-            tableName: table,
-            idGenerator: idGenerator,
-            fields: fieldMap,
-            secretFields: secretFieldMap
-        };
+        classConstructor[AbstractModel_1.symbols.dbSchema] = schema_1.buildModelSchema(table, idGenerator, fields);
     };
 }
 exports.dbModel = dbModel;

@@ -2,7 +2,7 @@
 // ================================================================================================
 import { Query, QueryMask } from 'pg-io';
 import { Model, ModelQuery, ModelHandler, symHandler, IdGenerator } from './Model';
-import { DbSchema, DbField } from './schema';
+import { DbSchema, DbField, buildModelSchema, FieldMap } from './schema';
 import { dbField } from './decorators'
 import { AbstractActionQuery, AbstractModelQuery } from './queries';
 import { ModelError, ModelQueryError } from './errors';
@@ -73,6 +73,17 @@ export class AbstractModel implements Model {
         this[symHandler] = this.constructor;
     }
   
+    // SCHEMA SETTER
+    // --------------------------------------------------------------------------------------------
+    static setSchema(tableName: string, idGenerator: IdGenerator, fields: FieldMap) {
+        fields = Object.assign({}, fields, {
+            id          : { type: String, readonly: true },
+            createdOn   : { type: Date, readonly: true },
+            updatedOn   : { type: Date }
+        });
+        this[symbols.dbSchema] = buildModelSchema(tableName, idGenerator, fields);
+    }
+
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------
     static parse(row: any): any {
