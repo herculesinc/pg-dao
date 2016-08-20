@@ -41,17 +41,7 @@ export class User extends AbstractModel {
 
     @dbField(Array)
     tags: string[];
-    
-    constructor(seed: any) {
-        super(seed);
-        this.username = seed.username;
-        this.password = seed.password;
-        this.profile = seed.profile;
-        this.tags = seed.tags;
-    }
-    
-    // needed because applying decorators removes class names in TS1.7
-    // static get name(): string { return 'User' };
+
 }
 
 @dbModel('tmp_tokens', userIdGenerator)
@@ -60,13 +50,6 @@ export class Token extends AbstractModel {
     @dbField(Number)
     status: number;
     
-    constructor(seed: any) {
-        super(seed);
-        this.status = seed.status;
-    }
-    
-    // needed because applying decorators removes class names in TS1.7
-    // static get name(): string { return 'Token' };
 }
 
 // QUERIES

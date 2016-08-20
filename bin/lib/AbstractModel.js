@@ -26,22 +26,58 @@ exports.symbols = {
 class AbstractModel {
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-    constructor(seed) {
+    constructor(seed, id) {
         if (!seed)
             throw new errors_1.ModelError('Cannot instantiate a model: model seed is undefined');
-        if (!seed.id)
+        if (!seed.id && !id)
             throw new errors_1.ModelError('Cannot instantiate a model: model id is undefined');
-        this.id = seed.id;
-        if (!seed.createdOn) {
-            let timestamp = new Date();
-            this.createdOn = timestamp;
-            this.updatedOn = timestamp;
+        if (seed.id && id)
+            throw new errors_1.ModelError('Cannot instantiate a model: two model IDs provided');
+        const schema = this.constructor[exports.symbols.dbSchema];
+        if (seed instanceof this.constructor || id) {
+            // build or clone the model
+            for (let field of schema.fields.values()) {
+                switch (field.type) {
+                    case Number:
+                    case Boolean:
+                    case String:
+                        this[field.name] = seed[field.name];
+                        break;
+                    case Date:
+                    case Object:
+                    case Array:
+                        this[field.name] = field.clone(seed[field.name]);
+                        break;
+                    default:
+                        throw new errors_1.ModelError('Cannot clone model: field type is invalid');
+                }
+            }
+            if (id) {
+                // make sure to set the ID if it was provided
+                this.id = id;
+                // TODO: convert createdOn and updatedOn to Timestamp type
+                if (!seed.createdOn) {
+                    let timestamp = new Date();
+                    this.createdOn = timestamp;
+                    this.updatedOn = timestamp;
+                }
+                else {
+                    this.createdOn = seed.createdOn instanceof Date ? seed.createdOn : new Date(seed.createdOn);
+                    this.updatedOn = seed.updatedOn instanceof Date ? seed.updatedOn : new Date(seed.updatedOn);
+                }
+            }
         }
         else {
-            this.createdOn = seed.createdOn instanceof Date
-                ? seed.createdOn : new Date(seed.createdOn);
-            this.updatedOn = seed.updatedOn instanceof Date
-                ? seed.updatedOn : new Date(seed.updatedOn);
+            // parse the database row, no cloning of fields needed
+            for (let field of schema.fields.values()) {
+                if (field.secret) {
+                    // TODO: implement lazy decrypting
+                    this[field.name] = util_1.decryptField(seed[field.name], field.secret, field.type);
+                }
+                else {
+                    this[field.name] = seed[field.name];
+                }
+            }
         }
         // set model handler
         this[Model_1.symHandler] = this.constructor;
@@ -59,49 +95,21 @@ class AbstractModel {
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------
     static parse(row) {
-        const schema = this[exports.symbols.dbSchema];
-        if (!schema)
-            throw new errors_1.ModelError('Cannot parse model: model schema is undefined');
-        if (schema.secretFields.size) {
-            const encryptedFields = {};
-            for (let field of schema.secretFields.values()) {
-                encryptedFields[field.name] = util_1.decryptField(row[field.name], field.secret, field.type);
-            }
-            row = Object.assign({}, row, encryptedFields);
-        }
+        if (!row)
+            throw new errors_1.ModelError('Cannot parse model: model row is undefined');
         return new this(row);
     }
     static build(id, attributes) {
-        if (attributes.id)
-            throw new errors_1.ModelError('Cannot build a mode: model attributes contain id property');
-        return new this(Object.assign({ id: id }, attributes));
+        if (!attributes)
+            throw new errors_1.ModelError('Cannot build a mode: attributes are undefined');
+        return new this(attributes, id);
     }
     static clone(model) {
-        if (model == undefined)
+        if (!model)
             throw new errors_1.ModelError('Cannot clone model: source model is undefined');
         if (model.constructor !== this)
             throw new errors_1.ModelError('Cannot clone model: source model has a wrong constructor');
-        const schema = this[exports.symbols.dbSchema];
-        if (!schema)
-            throw new errors_1.ModelError('Cannot clone model: model schema is undefined');
-        const seed = {};
-        for (let field of schema.fields.values()) {
-            switch (field.type) {
-                case Number:
-                case Boolean:
-                case String:
-                    seed[field.name] = model[field.name];
-                    break;
-                case Date:
-                case Object:
-                case Array:
-                    seed[field.name] = field.clone(model[field.name]);
-                    break;
-                default:
-                    throw new errors_1.ModelError('Cannot clone model: field type is invalid');
-            }
-        }
-        return new this(seed);
+        return new this(model);
     }
     static infuse(target, source) {
         if (target == undefined || source == undefined)
