@@ -20,7 +20,7 @@ function dbModel(table, idGenerator) {
     return function (classConstructor) {
         const schemaMap = classConstructor.prototype[AbstractModel_1.symbols.dbFields];
         const fields = Object.assign({}, schemaMap.get(AbstractModel_1.AbstractModel.name), schemaMap.get(classConstructor.name));
-        classConstructor[AbstractModel_1.symbols.dbSchema] = schema_1.buildModelSchema(table, idGenerator, fields);
+        classConstructor[AbstractModel_1.symbols.dbSchema] = new schema_1.DbSchema(table, idGenerator, fields);
     };
 }
 exports.dbModel = dbModel;

@@ -4,18 +4,12 @@ import { IdGenerator } from './MOdel';
 import { ModelError } from './errors';
 import { 
 	Cloner, cloneObject, cloneArray, cloneDate,
-	Comparator, areObjectsEqual, areArraysEqual, areDatesEqual 
+	Comparator, areObjectsEqual, areArraysEqual, areDatesEqual,
+	camelToSnake
 } from './util';
 
 // INTERFACES
 // ================================================================================================
-export interface DbSchema {
-	tableName	: string;
-	idGenerator	: IdGenerator;
-	fields		: Map<string, DbField>;
-	secretFields: Map<string, DbField>;
-}
-
 export interface FieldHandler {
     clone       : Cloner<any>;
     areEqual    : Comparator;
@@ -32,55 +26,67 @@ export interface DbFieldConfig {
 	handler?	: FieldHandler;
 }
 
-// PUBLIC FUNCTIONS
+// SCHEMA
 // ================================================================================================
-export function buildModelSchema(table: string, idGenerator: IdGenerator, fields: FieldMap ): DbSchema {
-	// validate table name
-	if (!table) throw new ModelError('Cannot build model schema: table name is undefined');
-	if (table.trim() === '') throw new ModelError('Cannot build model schema: table name is invalid');
+export class DbSchema {
+	table		: string;
+	idGenerator	: IdGenerator;
+	fields		: DbField[];
 
-	// vlaidate ID Generator
-	if (!idGenerator) throw new ModelError('Cannot build model schema: ID Generator is undefined');
-	if (typeof idGenerator.getNextId !== 'function')
-		throw new ModelError('Cannot build model schema: ID Generator is invalid');
+	fieldMap	: Map<string, DbField>;
 
-	// validate and build filed maps
-	if (!fields) throw new ModelError('Cannot build model schema: fields are undefined');
+	constructor(table: string, idGenerator: IdGenerator, fields: FieldMap) {
+		// validate and set table name
+		if (!table) throw new ModelError('Cannot build model schema: table name is undefined');
+		if (table.trim() === '') throw new ModelError('Cannot build model schema: table name is invalid');
+		this.table = table;
 
-	const fieldMap: Map<string, DbField> = new Map();
-	const secretFieldMap: Map<string, DbField> = new Map();
-	for (let fieldName in fields) {
-		let config = fields[fieldName];
-		if (!config) throw new ModelError(`Cannot build model schema: definition for field '${fieldName}' is undefined`);
-		let field = (config instanceof DbField)
-			? config
-			: new DbField(fieldName, config.type, config.readonly, config.secret, config.handler);
+		// vlaidate and set ID Generator
+		if (!idGenerator) throw new ModelError('Cannot build model schema: ID Generator is undefined');
+		if (typeof idGenerator.getNextId !== 'function')
+			throw new ModelError('Cannot build model schema: ID Generator is invalid');
+		this.idGenerator = idGenerator;
 
-		fieldMap.set(fieldName, field);
-		if (field.secret) {
-			secretFieldMap.set(fieldName, field);
+		// validate and set fields
+		if (!fields) throw new ModelError('Cannot build model schema: fields are undefined');
+		this.fields = [];
+		this.fieldMap = new Map();
+
+		const fieldList: DbField[] = [];
+		for (let fieldName in fields) {
+			let config = fields[fieldName];
+			if (!config) throw new ModelError(`Cannot build model schema: definition for field '${fieldName}' is undefined`);
+			let field = (config instanceof DbField)
+				? config
+				: new DbField(fieldName, config.type, config.readonly, config.secret, config.handler);
+
+			this.fields.push(field);
+			this.fieldMap.set(field.name, field);
 		}
 	}
 
-	// build and return the schema
-	return {
-		tableName	: table,
-		idGenerator	: idGenerator,
-		fields		: fieldMap,
-		secretFields: secretFieldMap
-	};
+	hasField(fieldName: string): boolean {
+		return this.fieldMap.has(fieldName);
+	}
+
+	getField(fieldName: string): DbField {
+		return this.fieldMap.get(fieldName);
+	}
 }
 
 // FIELD
 // ================================================================================================
 export class DbField {
 	name		: string;
+	snakeName	: string;
 	type		: any;
 	readonly	: boolean;
 	secret?		: string;
 	clone?		: Cloner<any>;
 	areEqual?	: Comparator;
-	
+	setter		: string;
+	getter		: string;
+
 	constructor(name: string, type: any, readonly: boolean, secret: string, handler: FieldHandler) {
 
 		// set the type
@@ -90,6 +96,7 @@ export class DbField {
 		// validate and set name
 		if (typeof name !== 'string') throw new ModelError('Database field name must be a string');
 		this.name = name;
+		this.snakeName = camelToSnake(this.name);
 		
 		// validate and set secret
 		if (secret) {
@@ -133,6 +140,10 @@ export class DbField {
         	default:
             	throw new ModelError(`Invalid field type in model schema`);
     	}
+
+		// set getter and setter strings
+		this.getter = `${this.snakeName} AS "${this.name}"`;
+		this.setter = `${this.snakeName}={{${this.name}}}`;
 	}
 }
 

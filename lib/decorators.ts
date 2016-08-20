@@ -3,7 +3,7 @@
 import { AbstractModel, symbols } from './AbstractModel';
 import { IdGenerator } from './Model'
 import { ModelError } from './errors';
-import { DbField, FieldHandler, buildModelSchema } from './schema';
+import { DbSchema, DbField, FieldHandler } from './schema';
 
 // INTERFACES
 // ================================================================================================
@@ -29,7 +29,7 @@ export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator
         const schemaMap: Map<string, any> = classConstructor.prototype[symbols.dbFields];
         const fields = Object.assign({},
             schemaMap.get(AbstractModel.name), schemaMap.get(classConstructor.name));
-        classConstructor[symbols.dbSchema] = buildModelSchema(table, idGenerator, fields);
+        classConstructor[symbols.dbSchema] = new DbSchema(table, idGenerator, fields);
     }
 }
 

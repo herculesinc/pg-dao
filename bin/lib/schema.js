@@ -1,45 +1,47 @@
 "use strict";
 const errors_1 = require('./errors');
 const util_1 = require('./util');
-// PUBLIC FUNCTIONS
+// SCHEMA
 // ================================================================================================
-function buildModelSchema(table, idGenerator, fields) {
-    // validate table name
-    if (!table)
-        throw new errors_1.ModelError('Cannot build model schema: table name is undefined');
-    if (table.trim() === '')
-        throw new errors_1.ModelError('Cannot build model schema: table name is invalid');
-    // vlaidate ID Generator
-    if (!idGenerator)
-        throw new errors_1.ModelError('Cannot build model schema: ID Generator is undefined');
-    if (typeof idGenerator.getNextId !== 'function')
-        throw new errors_1.ModelError('Cannot build model schema: ID Generator is invalid');
-    // validate and build filed maps
-    if (!fields)
-        throw new errors_1.ModelError('Cannot build model schema: fields are undefined');
-    const fieldMap = new Map();
-    const secretFieldMap = new Map();
-    for (let fieldName in fields) {
-        let config = fields[fieldName];
-        if (!config)
-            throw new errors_1.ModelError(`Cannot build model schema: definition for field '${fieldName}' is undefined`);
-        let field = (config instanceof DbField)
-            ? config
-            : new DbField(fieldName, config.type, config.readonly, config.secret, config.handler);
-        fieldMap.set(fieldName, field);
-        if (field.secret) {
-            secretFieldMap.set(fieldName, field);
+class DbSchema {
+    constructor(table, idGenerator, fields) {
+        // validate and set table name
+        if (!table)
+            throw new errors_1.ModelError('Cannot build model schema: table name is undefined');
+        if (table.trim() === '')
+            throw new errors_1.ModelError('Cannot build model schema: table name is invalid');
+        this.table = table;
+        // vlaidate and set ID Generator
+        if (!idGenerator)
+            throw new errors_1.ModelError('Cannot build model schema: ID Generator is undefined');
+        if (typeof idGenerator.getNextId !== 'function')
+            throw new errors_1.ModelError('Cannot build model schema: ID Generator is invalid');
+        this.idGenerator = idGenerator;
+        // validate and set fields
+        if (!fields)
+            throw new errors_1.ModelError('Cannot build model schema: fields are undefined');
+        this.fields = [];
+        this.fieldMap = new Map();
+        const fieldList = [];
+        for (let fieldName in fields) {
+            let config = fields[fieldName];
+            if (!config)
+                throw new errors_1.ModelError(`Cannot build model schema: definition for field '${fieldName}' is undefined`);
+            let field = (config instanceof DbField)
+                ? config
+                : new DbField(fieldName, config.type, config.readonly, config.secret, config.handler);
+            this.fields.push(field);
+            this.fieldMap.set(field.name, field);
         }
     }
-    // build and return the schema
-    return {
-        tableName: table,
-        idGenerator: idGenerator,
-        fields: fieldMap,
-        secretFields: secretFieldMap
-    };
+    hasField(fieldName) {
+        return this.fieldMap.has(fieldName);
+    }
+    getField(fieldName) {
+        return this.fieldMap.get(fieldName);
+    }
 }
-exports.buildModelSchema = buildModelSchema;
+exports.DbSchema = DbSchema;
 // FIELD
 // ================================================================================================
 class DbField {
@@ -52,6 +54,7 @@ class DbField {
         if (typeof name !== 'string')
             throw new errors_1.ModelError('Database field name must be a string');
         this.name = name;
+        this.snakeName = util_1.camelToSnake(this.name);
         // validate and set secret
         if (secret) {
             if (typeof secret !== 'string')
@@ -90,6 +93,9 @@ class DbField {
             default:
                 throw new errors_1.ModelError(`Invalid field type in model schema`);
         }
+        // set getter and setter strings
+        this.getter = `${this.snakeName} AS "${this.name}"`;
+        this.setter = `${this.snakeName}={{${this.name}}}`;
     }
 }
 exports.DbField = DbField;

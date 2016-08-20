@@ -17,11 +17,11 @@ describe('Models: Definition', function () {
 		
 		assert.strictEqual(User.name, 'User');
 		
-        assert.strictEqual(dbSchema.tableName, 'tmp_users');
-        assert.strictEqual(dbSchema.fields.has('id'), true);
-		assert.strictEqual(dbSchema.fields.has('createdOn'), true);
-		assert.strictEqual(dbSchema.fields.has('updatedOn'), true);
-		assert.strictEqual(dbSchema.fields.has('username'), true);
+        assert.strictEqual(dbSchema.table, 'tmp_users');
+        assert.strictEqual(dbSchema.hasField('id'), true);
+		assert.strictEqual(dbSchema.hasField('createdOn'), true);
+		assert.strictEqual(dbSchema.hasField('updatedOn'), true);
+		assert.strictEqual(dbSchema.hasField('username'), true);
     });
 	
 	it('Token model should be defined correctly', function () {
@@ -29,11 +29,11 @@ describe('Models: Definition', function () {
 		
 		assert.strictEqual(Token.name, 'Token');
 		
-        assert.strictEqual(dbSchema.tableName, 'tmp_tokens');
-		assert.strictEqual(dbSchema.fields.has('id'), true);
-		assert.strictEqual(dbSchema.fields.has('createdOn'), true);
-		assert.strictEqual(dbSchema.fields.has('updatedOn'), true);
-		assert.strictEqual(dbSchema.fields.has('status'), true);
+        assert.strictEqual(dbSchema.table, 'tmp_tokens');
+		assert.strictEqual(dbSchema.hasField('id'), true);
+		assert.strictEqual(dbSchema.hasField('createdOn'), true);
+		assert.strictEqual(dbSchema.hasField('updatedOn'), true);
+		assert.strictEqual(dbSchema.hasField('status'), true);
     });
 });
 

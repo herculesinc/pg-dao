@@ -2,11 +2,11 @@
 // ================================================================================================
 import { Query, QueryMask } from 'pg-io';
 import { Model, ModelQuery, ModelHandler, symHandler, IdGenerator } from './Model';
-import { DbSchema, DbField, buildModelSchema, FieldMap } from './schema';
+import { DbSchema, DbField, FieldMap } from './schema';
 import { dbField } from './decorators'
 import { AbstractActionQuery, AbstractModelQuery } from './queries';
 import { ModelError, ModelQueryError } from './errors';
-import { camelToSnake, encryptField, decryptField } from './util'
+import { encryptField, decryptField } from './util'
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -60,7 +60,7 @@ export class AbstractModel implements Model {
 
         if (seed instanceof this.constructor || id) {
             // build or clone the model
-            for (let field of schema.fields.values()) {
+            for (let field of schema.fields) {
                 switch (field.type) {
                     case Number: case Boolean: case String:
                         this[field.name] = seed[field.name];
@@ -91,7 +91,7 @@ export class AbstractModel implements Model {
         }
         else {
             // parse the database row, no cloning of fields needed
-            for (let field of schema.fields.values()) {
+            for (let field of schema.fields) {
                 if (field.secret) {
                     // TODO: implement lazy decrypting
                     this[field.name] = decryptField(seed[field.name], field.secret, field.type);
@@ -114,7 +114,7 @@ export class AbstractModel implements Model {
             createdOn   : { type: Date, readonly: true },
             updatedOn   : { type: Date }
         });
-        this[symbols.dbSchema] = buildModelSchema(tableName, idGenerator, fields);
+        this[symbols.dbSchema] = new DbSchema(tableName, idGenerator, fields);
     }
 
     // MODEL HANDLER METHODS
@@ -149,7 +149,7 @@ export class AbstractModel implements Model {
         const schema: DbSchema = this[symbols.dbSchema];
         if (!schema) throw new ModelError('Cannot infuse source into target: model schema is undefined')
         
-        for (let field of schema.fields.values()) {
+        for (let field of schema.fields) {
             if (field.readonly) continue;
             switch (field.type) {
                 case Number: case Boolean: case String:
@@ -171,7 +171,7 @@ export class AbstractModel implements Model {
 
         const changes: string[] = [];
         const schema: DbSchema = this[symbols.dbSchema];
-        for (let field of schema.fields.values()) {
+        for (let field of schema.fields) {
             if (field.readonly) continue;
             switch (field.type) {
                 case Number: case Boolean: case String:
@@ -198,7 +198,7 @@ export class AbstractModel implements Model {
             throw new ModelError('Cannot compare models: model constructors do not match');
         
         const schema: DbSchema = this[symbols.dbSchema];
-        for (let field of schema.fields.values()) {
+        for (let field of schema.fields) {
             if (field.readonly) continue;
             switch (field.type) {
                 case Number: case Boolean: case String:
@@ -228,7 +228,7 @@ export class AbstractModel implements Model {
         else if (original && !current) {
             let qDeleteModel: DeleteQueryConstructor = this[symbols.deleteQuery];
             if (!qDeleteModel) {
-                qDeleteModel = buildDeleteQuery(schema.tableName);
+                qDeleteModel = buildDeleteQuery(schema.table);
                 this[symbols.deleteQuery] = qDeleteModel;   
             }
             queries.push(new qDeleteModel(original));
@@ -276,11 +276,11 @@ export class AbstractModel implements Model {
 function buildFetchQuery(schema: DbSchema, handler: ModelHandler<any>): FetchQueryConstructor {
     if (!schema) throw new ModelError('Cannot build a fetch query: model schema is undefined');
     
-    const fields: string[] = [];
-    for (let field of schema.fields.values()) {
-        fields.push(`${camelToSnake(field.name)} AS "${field.name}"`);
+    const fieldGetters: string[] = [];
+    for (let field of schema.fields) {
+        fieldGetters.push(field.getter);
     }
-    const querySpec = `SELECT ${fields.join(',')} FROM ${schema.tableName}`;
+    const querySpec = `SELECT ${fieldGetters.join(',')} FROM ${schema.table}`;
     
     return class extends AbstractModelQuery<any>{
         constructor(selector: any, mask: QueryMask, name: string, forUpdate: boolean) {
@@ -288,15 +288,16 @@ function buildFetchQuery(schema: DbSchema, handler: ModelHandler<any>): FetchQue
             
             const criteria: string[] = [];
             for (let filter in selector) {
-                if (!schema.fields.has(filter)) {
+                let field = schema.getField(filter);
+                if (!field) {
                     throw new ModelQueryError('Cannot build a fetch query: model selector and schema are incompatible');
                 }
 
                 if (selector[filter] && Array.isArray(selector[filter])) {
-                    criteria.push(`${camelToSnake(filter)} IN ([[${filter}]])`);
+                    criteria.push(`${field.snakeName} IN ([[${filter}]])`);
                 }
                 else {
-                    criteria.push(`${camelToSnake(filter)}={{${filter}}}`);
+                    criteria.push(`${field.snakeName}={{${filter}}}`);
                 }
             }
             
@@ -312,21 +313,25 @@ function buildInsertQuery(schema: DbSchema): InsertQueryConstructor {
     
     const fields: string[] = [];
     const params: string[] = [];
+    const secretFields: DbField[] = [];
 
-    for (let field of schema.fields.values()) {
-        fields.push(camelToSnake(field.name));
+    for (let field of schema.fields) {
+        fields.push(field.snakeName);
         params.push(`{{${field.name}}}`);
+        if (field.secret) {
+            secretFields.push(field);
+        }
     }
-    const queryText = `INSERT INTO ${schema.tableName} (${fields.join(',')}) VALUES (${params.join(',')});`;
+    const queryText = `INSERT INTO ${schema.table} (${fields.join(',')}) VALUES (${params.join(',')});`;
     
     return class extends AbstractActionQuery {
         constructor(model: Model) {
             super(`qInsert${model[symHandler].name}Model`, model);
             this.text = queryText;
 
-            if (schema.secretFields.size) {
+            if (secretFields.length) {
                 const encryptedFields: any = {};
-                for (let field of schema.secretFields.values()) {
+                for (let field of secretFields) {
                     encryptedFields[field.name] = encryptField(model[field.name], field.secret);
                 }
                 this.params = Object.assign({}, model, encryptedFields);
@@ -338,16 +343,7 @@ function buildInsertQuery(schema: DbSchema): InsertQueryConstructor {
 function buildUpdateQuery(schema: DbSchema): UpdateQueryConstructor {
     if (!schema) throw new ModelError('Cannot build an update query: model schema is undefined');
     
-    const fieldMap: Map<string, { name: string, setter: string, secret: string}> = new Map();
-    for (let field of schema.fields.values()) {
-        if (field.readonly) continue;
-        fieldMap.set(field.name, {
-            name    : field.name,
-            setter  : `${camelToSnake(field.name)}={{${field.name}}}`,
-            secret  : field.secret
-        });
-    }
-    const queryBase = `UPDATE ${schema.tableName} SET `;
+    const queryBase = `UPDATE ${schema.table} SET `;
     
     return class extends AbstractActionQuery {
         constructor(model: Model, changes: string[]) {
@@ -357,7 +353,7 @@ function buildUpdateQuery(schema: DbSchema): UpdateQueryConstructor {
             const encryptedFields: any = {};
             const fieldSetters: string[] = [];
             for (let changedField of changes) {
-                let field = fieldMap.get(changedField);
+                let field = schema.getField(changedField);
                 if (!field) throw new ModelQueryError(`Cannot create model query: field '${changedField}' cannot be updated`);
                 fieldSetters.push(field.setter);
 
