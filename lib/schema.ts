@@ -52,7 +52,21 @@ export class DbSchema {
 		this.fields = [];
 		this.fieldMap = new Map();
 
-		const fieldList: DbField[] = [];
+		// set the ID field
+		const idField = new DbField('id', String, true, undefined, undefined);
+		this.fields.push(idField);
+		this.fieldMap.set(idField.name, idField);
+
+		// set createdOn and updatedOn field
+		const createdOnField = new DbField('createdOn', Date, true, undefined, undefined);
+		this.fields.push(createdOnField);
+		this.fieldMap.set(createdOnField.name, createdOnField);
+
+		const updatedOnField = new DbField('updatedOn', Date, false, undefined, undefined);
+		this.fields.push(updatedOnField);
+		this.fieldMap.set(updatedOnField.name, updatedOnField);
+
+		// set all other model fields
 		for (let fieldName in fields) {
 			let config = fields[fieldName];
 			if (!config) throw new ModelError(`Cannot build model schema: definition for field '${fieldName}' is undefined`);
@@ -63,6 +77,7 @@ export class DbSchema {
 			this.fields.push(field);
 			this.fieldMap.set(field.name, field);
 		}
+
 	}
 
 	hasField(fieldName: string): boolean {

@@ -19,8 +19,8 @@ function dbModel(table, idGenerator) {
         throw new errors_1.ModelError('Cannot build model schema: ID Generator is invalid');
     return function (classConstructor) {
         const schemaMap = classConstructor.prototype[AbstractModel_1.symbols.dbFields];
-        const fields = Object.assign({}, schemaMap.get(AbstractModel_1.AbstractModel.name), schemaMap.get(classConstructor.name));
-        classConstructor[AbstractModel_1.symbols.dbSchema] = new schema_1.DbSchema(table, idGenerator, fields);
+        const fields = schemaMap.get(classConstructor.name);
+        classConstructor.setSchema(table, idGenerator, fields);
     };
 }
 exports.dbModel = dbModel;

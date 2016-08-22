@@ -40,14 +40,10 @@ interface DeleteQueryConstructor {
 // ABSTRACT MODEL CLASS DEFINITION
 // ================================================================================================
 export class AbstractModel implements Model {
-    @dbField(String, { readonly: true })
-    id: string;
-    
-    @dbField(Date, { readonly: true })
-    createdOn: Date;
-    
-    @dbField(Date)
-    updatedOn: Date;
+
+    id          : string;    
+    createdOn   : Date;
+    updatedOn   : Date;
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
@@ -109,11 +105,6 @@ export class AbstractModel implements Model {
     // SCHEMA SETTER
     // --------------------------------------------------------------------------------------------
     static setSchema(tableName: string, idGenerator: IdGenerator, fields: FieldMap) {
-        fields = Object.assign({}, fields, {
-            id          : { type: String, readonly: true },
-            createdOn   : { type: Date, readonly: true },
-            updatedOn   : { type: Date }
-        });
         this[symbols.dbSchema] = new DbSchema(tableName, idGenerator, fields);
     }
 

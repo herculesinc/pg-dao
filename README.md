@@ -23,8 +23,9 @@ Since pg-dao is ES6-centric, many examples below utilize ES6 syntax. Some exampl
 $ npm install --save pg-dao
 ```
 
-## Example
+## Examples
 
+### Executing Queries
 ```JavaScript
 import { Database } from 'pg-dao';
 
@@ -53,6 +54,39 @@ db.connect().then((dao) => {
         })
         // commit transaction and release the connection back to the pool
         .then(() => dao.close('commit'));
+});
+```
+
+### Updating Models
+```TypeScript
+import { Database, AbstractModel, PgIdGenerator, dbModel, dbField } from 'pg-dao';
+
+// Define a simple model backed by the users table in the database
+@dbModel('users', new PgIdGenerator('users_id_seq'))
+export class User extends AbstractModel {
+    
+    // username field is expected to be a string
+    @dbField(String)
+    username: string;
+    
+    // password field will be encrypted
+    @dbField(String, { secret: 'secret' })
+    password: string;
+}
+
+// create a database object
+const db = new Database({ /* database options */ });
+
+// connect to the database and start a transaction
+db.connect({ startTransaction: true }).then((dao) => {
+
+    // fetch a user model from the database
+    return dao.fetchOne(User, { id: '1'}, true).then((user) => {
+        // update the model
+        user.password = 'some new password';
+    })
+    // commit transaction and release the connection back to the pool
+    .then(() => dao.close('commit'));
 });
 ```
 
@@ -480,12 +514,6 @@ export class User extends AbstractModel {
 
     @dbField(String, { secret: 'my secret' })
     password: string;
-
-    constructor(seed: any) {
-        super(seed);
-        this.username = seed.username;
-        this.password = seed.password;
-    }
 }
 ```
 
@@ -503,12 +531,6 @@ export class User extends AbstractModel {
     @dbField(String, { secret: 'my secret' })
     password: string;
 
-    constructor(seed: any) {
-        super(seed);
-        this.username = seed.username;
-        this.password = seed.password;
-    }
-    
     static getFetchAllQuery(selector: any, forUpdate = false, name?: string) {
         
         if ('conversationId' in selector) {
@@ -531,9 +553,9 @@ export class User extends AbstractModel {
 
 Using `AbstractModel` (as opposed to defining model handler from scratch) does impose a few limitations:
 
-  * The underlying table must have `id`, `created_on`, and `updated_on` fields. `id` must be a primary key and can be either varchar or bigint. The other two fields must be dates
+  * The underlying table must have `id`, `created_on`, and `updated_on` fields. `id` must be a primary key and can be either varchar or bigint. The other two fields must be dates. These fields (in camelCase) will be added to all abstract models automatically.
   * All model properties must be in camelCase while all database fields must be in snake_case. `AbstractModel` assumes this conventions and queries generated automatically will have syntax errors if this convention is not adhered to
-  * All models of the same type must be stored in a single table (models spanning multiple tables are not possible). For example, for the User model above, the model is stored in a single table called `users`
+  * If you decide to override model constructor, the constructor signature must be `constructor(seed: any, id?: string)`, and the first call inside the constructor must be `super(seed, id)`
 
 #### Model Decorators
 pg-dao provides two decorators which can be used to define a model: `@dbModel` and `@dbField`.
@@ -567,11 +589,8 @@ Defining models using TypeScript decorators is super convinient, but if you are 
 import { AbstractModel, PgIdGenerator } from 'pg-dao';
 
 class User extends AbstractModel {    
-    constructor(seed: any) {
-        super(seed);
-        this.username = seed.username;
-        this.password = seed.password;
-    }
+    // nothing to do here, unless you need to override the constructor 
+    // or other handler methods
 }
 
 // no need to set id, createdOn, updatedOn fields - they will be set automatically

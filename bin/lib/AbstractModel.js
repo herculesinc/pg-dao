@@ -1,13 +1,6 @@
 "use strict";
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 const Model_1 = require('./Model');
 const schema_1 = require('./schema');
-const decorators_1 = require('./decorators');
 const queries_1 = require('./queries');
 const errors_1 = require('./errors');
 const util_1 = require('./util');
@@ -85,11 +78,6 @@ class AbstractModel {
     // SCHEMA SETTER
     // --------------------------------------------------------------------------------------------
     static setSchema(tableName, idGenerator, fields) {
-        fields = Object.assign({}, fields, {
-            id: { type: String, readonly: true },
-            createdOn: { type: Date, readonly: true },
-            updatedOn: { type: Date }
-        });
         this[exports.symbols.dbSchema] = new schema_1.DbSchema(tableName, idGenerator, fields);
     }
     // MODEL HANDLER METHODS
@@ -253,15 +241,6 @@ class AbstractModel {
         return schema.idGenerator;
     }
 }
-__decorate([
-    decorators_1.dbField(String, { readonly: true })
-], AbstractModel.prototype, "id", void 0);
-__decorate([
-    decorators_1.dbField(Date, { readonly: true })
-], AbstractModel.prototype, "createdOn", void 0);
-__decorate([
-    decorators_1.dbField(Date)
-], AbstractModel.prototype, "updatedOn", void 0);
 exports.AbstractModel = AbstractModel;
 // QUERY BUILDERS
 // ================================================================================================

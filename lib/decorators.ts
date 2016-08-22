@@ -1,9 +1,9 @@
 // IMPORTS 
 // ================================================================================================
-import { AbstractModel, symbols } from './AbstractModel';
+import { symbols } from './AbstractModel';
 import { IdGenerator } from './Model'
 import { ModelError } from './errors';
-import { DbSchema, DbField, FieldHandler } from './schema';
+import { DbField, FieldHandler } from './schema';
 
 // INTERFACES
 // ================================================================================================
@@ -27,9 +27,8 @@ export function dbModel(table: string, idGenerator: IdGenerator): ClassDecorator
         
     return function (classConstructor: any) {
         const schemaMap: Map<string, any> = classConstructor.prototype[symbols.dbFields];
-        const fields = Object.assign({},
-            schemaMap.get(AbstractModel.name), schemaMap.get(classConstructor.name));
-        classConstructor[symbols.dbSchema] = new DbSchema(table, idGenerator, fields);
+        const fields = schemaMap.get(classConstructor.name);
+        classConstructor.setSchema(table, idGenerator, fields);
     }
 }
 
