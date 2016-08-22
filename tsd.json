@@ -10,6 +10,12 @@
     },
     "mocha/mocha.d.ts": {
       "commit": "3b0f362204ea965952dafdb682a5274d527ef9d0"
+    },
+    "assertion-error/assertion-error.d.ts": {
+      "commit": "55c3e254e151847b8d37ca09b1a566ad4a48a66a"
+    },
+    "chai/chai.d.ts": {
+      "commit": "55c3e254e151847b8d37ca09b1a566ad4a48a66a"
     }
   }
 }
