@@ -27,13 +27,20 @@ namespace Profile {
     }
 }
 
-@dbModel('tmp_users', userIdGenerator)
+export const initConst: any = {
+    userTableName: 'tmp_users',
+    userTableSecret: 'secret',
+    tokensTableName: 'tmp_tokens',
+
+};
+
+@dbModel(initConst.userTableName, userIdGenerator)
 export class User extends AbstractModel {
     
     @dbField(String)
     username: string;
     
-    @dbField(String, { secret: 'secret' })
+    @dbField(String, { secret: initConst.userTableSecret })
     password: string;
 
     @dbField(Object, { handler: Profile })
@@ -44,12 +51,11 @@ export class User extends AbstractModel {
 
 }
 
-@dbModel('tmp_tokens', userIdGenerator)
+@dbModel(initConst.tokensTableName, userIdGenerator)
 export class Token extends AbstractModel {
     
     @dbField(Number)
     status: number;
-    
 }
 
 // QUERIES
