@@ -30,7 +30,28 @@ namespace Profile {
 export const initConst: any = {
     userTableName: 'tmp_users',
     userTableSecret: 'secret',
-    tokensTableName: 'tmp_tokens'
+    tokensTableName: 'tmp_tokens',
+    user1: {
+        id: '1',
+        username: 'Irakliy',
+        password: 'KpEHgJcsvbg8AtQ=',
+        location: {city: 'San Diego'},
+        tags: ['tag5', 'tag6']
+    },
+    user2: {
+        id: '2',
+        username: 'Yason',
+        password: 'KpEHgJcsvbg5BtA=',
+        location: {city: 'Portland'},
+        tags: ['tag3', 'tag4']
+    },
+    user3: {
+        id: '3',
+        username: 'George',
+        password: 'KpEHgJcsvbg8AtQ=',
+        location: {city: 'San Diego'},
+        tags: ['tag5', 'tag6']
+    }
 };
 
 @dbModel(initConst.userTableName, userIdGenerator)
@@ -95,6 +116,8 @@ export class qFetchUsersByIdList implements ModelQuery<User> {
 // DATABASE PRIMING
 // ================================================================================================
 export function prepareDatabase(dao: Dao): Promise<any> {
+    let users = [initConst.user1, initConst.user2, initConst.user3];
+
     return dao.execute([
         { 
             text: `DROP TABLE IF EXISTS tmp_users;` 
@@ -102,9 +125,17 @@ export function prepareDatabase(dao: Dao): Promise<any> {
         {
             text: `SELECT * INTO TEMPORARY tmp_users
                 FROM (VALUES 
-		            (1::bigint, 'Irakliy'::VARCHAR, 'KpEHgJcsvbg8AtQ='::VARCHAR, '{"city": "Los Angeles"}'::jsonb, '["tag1", "tag2"]'::jsonb, now()::timestamptz, now()::timestamptz),
-		            (2::bigint, 'Yason'::VARCHAR, 	'KpEHgJcsvbg5BtA='::VARCHAR, '{"city": "Portland"}'::jsonb,    '["tag3", "tag4"]'::jsonb, now()::timestamptz, now()::timestamptz),
-		            (3::bigint, 'George'::VARCHAR,  'KpEHgJcsvbg8AtQ='::VARCHAR, '{"city": "San Diego"}'::jsonb,   '["tag5", "tag6"]'::jsonb, now()::timestamptz, now()::timestamptz)
+                    ${users.map(user => {
+                        return `(
+                            '${user.id}'::bigint, 
+                            '${user.username}'::VARCHAR,  
+                            '${user.password}'::VARCHAR, 
+                            '${JSON.stringify(user.location)}'::jsonb,   
+                            '${JSON.stringify(user.tags)}'::jsonb, 
+                            now()::timestamptz, 
+                            now()::timestamptz
+                        )`;
+                    })}
 	            ) AS q (id, username, password, profile, tags, created_on, updated_on);`
         },
         {
