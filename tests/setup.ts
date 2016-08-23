@@ -30,8 +30,7 @@ namespace Profile {
 export const initConst: any = {
     userTableName: 'tmp_users',
     userTableSecret: 'secret',
-    tokensTableName: 'tmp_tokens',
-
+    tokensTableName: 'tmp_tokens'
 };
 
 @dbModel(initConst.userTableName, userIdGenerator)
