@@ -26,7 +26,7 @@ const dbOptions = {
 const sessionOpts = {
     logQueryText    : true,
     startTransaction: false
-}
+};
 
 // SETUP
 // ================================================================================================
