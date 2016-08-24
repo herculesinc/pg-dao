@@ -242,6 +242,7 @@ export class Dao extends Session {
         for (let [ original, current, updates ] of changes) {            
             if (this.options.manageUpdatedOn && original && current) {
                 current.updatedOn = timestamp;
+                updates = [...updates, 'updatedOn'];
             }
             const handler: ModelHandler<any> = current ? current[symHandler] : original[symHandler];
             queries = queries.concat(handler.getSyncQueries(original, current, updates)); 
