@@ -102,10 +102,21 @@ export class AbstractModel implements Model {
         this[symHandler] = this.constructor;
     }
   
-    // SCHEMA SETTER
+    // SCHEMA METHODS
     // --------------------------------------------------------------------------------------------
     static setSchema(tableName: string, idGenerator: IdGenerator, fields: FieldMap) {
         this[symbols.dbSchema] = new DbSchema(tableName, idGenerator, fields);
+    }
+
+    static getFieldSelectors(): string[] {
+        const schema: DbSchema = this[symbols.dbSchema];
+        const fieldSelectors: string[] = [];
+
+        for (let field of schema.fields) {
+            fieldSelectors.push(field.getter);
+        }
+
+        return fieldSelectors;
     }
 
     // MODEL HANDLER METHODS

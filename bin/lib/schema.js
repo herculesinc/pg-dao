@@ -105,7 +105,7 @@ class DbField {
                 throw new errors_1.ModelError(`Invalid field type in model schema`);
         }
         // set getter and setter strings
-        this.getter = `${this.snakeName} AS "${this.name}"`;
+        this.getter = this.snakeName === this.name ? this.name : `${this.snakeName} AS "${this.name}"`;
         this.setter = `${this.snakeName}={{${this.name}}}`;
     }
 }

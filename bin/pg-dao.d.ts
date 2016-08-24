@@ -109,7 +109,18 @@ declare module "pg-dao" {
         updatedOn   : Date;
         createdOn   : Date;
     }
-    
+
+    export interface FieldMap {
+	    [name: string]: FieldConfig;
+    }
+
+    export interface FieldConfig {
+        type		: any;
+        readonly?	: boolean;
+        secret?		: string;
+        handler?	: FieldHandler;
+    }
+
     export class AbstractModel implements Model {
         id          : string;
         updatedOn   : Date;
@@ -132,6 +143,9 @@ declare module "pg-dao" {
         static getFetchAllQuery(selector: any, forUpdate: boolean, name?: string)   : ModelQuery<any>;
 
         static getIdGenerator(): IdGenerator;
+
+        static setSchema(tableName: string, idGenerator: IdGenerator, fields: FieldMap);
+        static getFieldSelectors(): string[];
     }
     
     // DECORATORS
@@ -146,7 +160,6 @@ declare module "pg-dao" {
     }
 
     export interface FieldHandler {
-        parse?      : (row: any) => any;
         clone       : (value: any) => any;
         areEqual    : (value1: any, value2: any) => boolean;
     }

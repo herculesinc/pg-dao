@@ -75,10 +75,18 @@ class AbstractModel {
         // set model handler
         this[Model_1.symHandler] = this.constructor;
     }
-    // SCHEMA SETTER
+    // SCHEMA METHODS
     // --------------------------------------------------------------------------------------------
     static setSchema(tableName, idGenerator, fields) {
         this[exports.symbols.dbSchema] = new schema_1.DbSchema(tableName, idGenerator, fields);
+    }
+    static getFieldSelectors() {
+        const schema = this[exports.symbols.dbSchema];
+        const fieldSelectors = [];
+        for (let field of schema.fields) {
+            fieldSelectors.push(field.getter);
+        }
+        return fieldSelectors;
     }
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------

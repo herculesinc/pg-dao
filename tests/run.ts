@@ -39,6 +39,8 @@ async function runTests() {
     const dao: Dao = (await database.connect(sessionOpts)) as any;
     await prepareDatabase(dao);
 
+    console.log('Field selectors: ' + User.getFieldSelectors());
+
     try {
         await dao.startTransaction();
 
