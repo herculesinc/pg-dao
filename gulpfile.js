@@ -43,7 +43,7 @@ gulp.task('test', ['build'], function () {
     }
 
     return gulp.src( [ `./bin/tests/**/${section}.*.spec.js` ], { read: false } )
-        .pipe( mocha( { timeout: 25000, bail: false } ) )
+        .pipe( mocha( { timeout: 5000, bail: false } ) )
         .on( 'error', err => {
             if ( err && ( !err.message || !err.message.match( /failed/ ) ) ) {
                 gutil.log( gutil.colors.red( JSON.stringify( err, null, 2 ) ) );

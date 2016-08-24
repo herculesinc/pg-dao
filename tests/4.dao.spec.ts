@@ -26,14 +26,18 @@ let user: User, otherUser: User, users: Array<User>;
 let error: Error;
 let query: ModelQuery<any>;
 let seed1: any, seed2: any;
+let ids: Array<number>;
+let sIds: Array<string>;
 
 describe('DAO;', () => {
+    before(() => {
+        database = new pg.Database(settings);
+    });
+
     beforeEach(done => {
         user1 = initConst.user1;
         user2 = initConst.user2;
         user3 = initConst.user3;
-
-        database = new pg.Database(settings);
 
         connect = database.connect()
             .then(result => {
@@ -60,9 +64,13 @@ describe('DAO;', () => {
     });
 
     afterEach(done => {
-        dao.close(dao.isSynchronized ? 'commit' : 'rollback')
-            .then(done)
-            .catch(done);
+        if (dao.isActive) {
+            dao.close(dao.isSynchronized ? 'commit' : 'rollback')
+                .then(done)
+                .catch(done);
+        } else {
+            done();
+        }
     });
 
     describe('DAO: Fetching a Single Model', () => {
@@ -416,7 +424,9 @@ describe('DAO;', () => {
 
         describe('Fetching multiple models should add them to the store', () => {
             beforeEach(done => {
-                query = new qFetchUsersByIdList([Number(user1.id), Number(user2.id)]);
+                sIds = [user1.id, user2.id];
+                ids = sIds.map(Number);
+                query = new qFetchUsersByIdList(ids);
 
                 dao.execute(query)
                     .then(result => {
@@ -431,8 +441,8 @@ describe('DAO;', () => {
             });
 
             it('should return users with expected id', () => {
-                expect([user1.id, user2.id]).to.include(users[0].id);
-                expect([user1.id, user2.id]).to.include(users[1].id);
+                expect(sIds).to.include(users[0].id);
+                expect(sIds).to.include(users[1].id);
             });
 
             it('dao should have both user models', () => {
@@ -452,7 +462,9 @@ describe('DAO;', () => {
 
         describe('Fetching multiple locked models should make them mutable', () => {
             beforeEach(done => {
-                query = new qFetchUsersByIdList([Number(user1.id), Number(user2.id)], true);
+                sIds = [user1.id, user2.id];
+                ids = sIds.map(Number);
+                query = new qFetchUsersByIdList(ids, true);
 
                 dao.execute(query)
                     .then(result => {
@@ -467,8 +479,8 @@ describe('DAO;', () => {
             });
 
             it('should return users with expected id', () => {
-                expect([user1.id, user2.id]).to.include(users[0].id);
-                expect([user1.id, user2.id]).to.include(users[1].id);
+                expect(sIds).to.include(users[0].id);
+                expect(sIds).to.include(users[1].id);
             });
 
             it('dao should have both user models', () => {
@@ -656,7 +668,8 @@ describe('DAO;', () => {
             });
 
             it('should add models to the database', done => {
-                dao.execute(new qFetchUsersByIdList([Number(seed1.id), Number(seed2.id)]))
+                ids = [Number(seed1.id), Number(seed2.id)];
+                dao.execute(new qFetchUsersByIdList(ids))
                     .then(dbUsers => {
                         expect(dbUsers.length).to.equal(2);
                         expect(dbUsers[0]).to.deep.equal(user);
@@ -776,7 +789,8 @@ describe('DAO;', () => {
 
         describe('Deleting multiple models should remove them from the database', () => {
             beforeEach(done => {
-                query = new qFetchUsersByIdList([Number(user1.id), Number(user2.id), Number(user3.id)], true);
+                ids = [Number(user1.id), Number(user2.id), Number(user3.id)];
+                query = new qFetchUsersByIdList(ids, true);
 
                 dao.execute(query)
                     .then(result => {
@@ -884,207 +898,310 @@ describe('DAO;', () => {
     });
 
     describe('DAO: Updating Models', () => {
-        
-    });
-});
-/*
+        describe('Updating a model should update it in the database', () => {
+            beforeEach(done => {
+                query = new qFetchUserById(user1.id, true);
 
-// UPDATING TESTS
-// ================================================================================================
-describe('', () => {
-
-    it('Updating a model should update it in the database', () => {
-        const database: Database = new pg.Database(settings);
-        return database.connect().then((dao) => {
-            return prepareDatabase(dao).then(() => {
-                var query1 = new qFetchUserById(1, true);
-                return dao.execute(query1).then((user) => {
-
-                    user.username = 'Test';
-                    user.tags[0] = 'testing';
-                    assert.strictEqual(dao.isSynchronized, false);
-                    assert.strictEqual(dao.hasModel(user), true);
-                    assert.strictEqual(dao.isDestroyed(user), false);
-                    assert.strictEqual(dao.isNew(user), false);
-                    assert.strictEqual(dao.isModified(user), true);
-
-                    return dao.sync().then(() => {
-                        assert.strictEqual(dao.hasModel(user), true);
-                        assert.strictEqual(dao.isSynchronized, true);
-
-                        var query2 = new qFetchUserById(1);
-                        return dao.execute(query2).then((newUser) => {
-                            assert.deepEqual(newUser, user);
-                            assert.strictEqual(newUser.username, 'Test');
-                            assert.deepEqual(newUser.tags, ['testing', 'tag2']);
-                        });
-                    });
-                });
-            }).then(() => dao.close());
-        });
-    });
-
-    it('Updating a model should change updatedOn date', () => {
-        const database: Database = new pg.Database(settings);
-        return database.connect().then((dao) => {
-            return prepareDatabase(dao).then(() => {
-                const query1 = new qFetchUserById(1, true);
-                return dao.execute(query1).then((user) => {
-                    const originalUpdatedOn = user.updatedOn;
-                    user.username = 'Test';
-                    return dao.sync().then(() => {
-                        if (pg.defaults.session.manageUpdatedOn) {
-                            assert.ok(originalUpdatedOn.valueOf() < user.updatedOn.valueOf());
-                        }
-                        else {
-                            assert.strictEqual(originalUpdatedOn.valueOf(), user.updatedOn.valueOf());
-                        }
-                    });
-                });
-            }).then(() => dao.close());
-        });
-    });
-
-    it('Multiple changes should be persisted in the database', () => {
-        const database: Database = new pg.Database(settings);
-        return database.connect().then((dao) => {
-            return prepareDatabase(dao).then(() => {
-                var query1 = new qFetchUsersByIdList([1, 2, 3], true);
-                return dao.execute(query1).then((users) => {
-                    dao.destroy(users[0])
-                    dao.destroy(users[2]);
-
-                    var user = User.parse({
-                        id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date()
-                    });
-                    dao.insert(user);
-
-                    users[1].username = 'Test';
-
-                    return dao.sync().then(() => {
-                        var query2 = new qFetchUsersByIdList([1, 2, 3, 4, 5]);
-                        return dao.execute(query2).then((users2) => {
-                            assert.strictEqual(users2.length, 2);
-                            assert.strictEqual(users2[0].username, 'Test');
-                            assert.strictEqual(users2[1].username, 'Katie');
-                        });
-                    });
-                });
-            }).then(() => dao.close());
-        });
-    });
-
-    it('Syncing changes to immutable model should throw an error', () => {
-        const database: Database = new pg.Database(settings);
-        return database.connect().then((dao) => {
-            return prepareDatabase(dao).then(() => {
-                var query = new qFetchUserById(1);
-                return dao.execute(query).then((user) => {
-                    user.username = 'Test123';
-                    return dao.sync()
-                        .then(() => {
-                            if (pg.defaults.session.validateImmutability) {
-                                assert.fail();
-                            }
-                            else {
-                                return dao.close();
-                            }
-                        })
-                        .catch((reason) => {
-                            assert.ok(reason instanceof Error);
-                            assert.strictEqual(reason instanceof assert.AssertionError, false);
-                        });
-                });
-            });
-        });
-    });
-});
-
-
-// LIFECYCLE TESTS
-// ================================================================================================
-describe('DAO: Lifecycle Tests', () => {
-
-    it('Starting a transaction should put Dao in transaction state', () => {
-        const database: Database = new pg.Database(settings);
-        return database.connect().then((dao) => {
-            return prepareDatabase(dao).then(() => {
-
-                assert.strictEqual(dao.isActive, true);
-                assert.strictEqual(dao.inTransaction, false);
-                assert.strictEqual(dao.isSynchronized, true);
-
-                return dao.startTransaction()
-                    .then(() => {
-                        assert.strictEqual(dao.isActive, true);
-                        assert.strictEqual(dao.inTransaction, true);
-                        assert.strictEqual(dao.isSynchronized, true);
-                    });
-            }).then(() => dao.close('rollback'));
-        });
-    });
-
-    it('Closing an uncommitted Dao should throw an error', () => {
-        const database: Database = new pg.Database(settings);
-        return database.connect().then((dao) => {
-            return prepareDatabase(dao).then(() => {
-                return dao.startTransaction().then(() => {
-                    return dao.close()
-                        .then(() => {
-                            assert.fail();
-                        })
-                        .catch((error) => {
-                            assert.strictEqual(dao.isActive, false);
-                            assert.strictEqual(dao.inTransaction, false);
-                            assert.strictEqual(dao.isSynchronized, true);
-                            assert.strictEqual(database.getPoolState().size, 1);
-                            assert.strictEqual(database.getPoolState().available, 1);
-                        });
-                });
-            });
-        });
-    });
-
-    it('Closing Dao with commiting should put Dao in syncrhonized state', () => {
-
-        const database: Database = new pg.Database(settings);
-
-        assert.strictEqual(database.getPoolState().size, 0);
-        assert.strictEqual(database.getPoolState().available, 0);
-
-        return database.connect().then((dao) => {
-            return prepareDatabase(dao).then(() => {
-
-                assert.strictEqual(dao.isActive, true);
-                assert.strictEqual(dao.inTransaction, false);
-                assert.strictEqual(dao.isSynchronized, true);
-
-                return dao.startTransaction().then(() => {
-                    assert.strictEqual(dao.isActive, true);
-                    assert.strictEqual(dao.inTransaction, true);
-                    assert.strictEqual(dao.isSynchronized, true);
-
-                    var query1 = new qFetchUserById(1, true);
-                    return dao.execute(query1).then((user) => {
+                dao.execute(query)
+                    .then(result => {
+                        user = result;
 
                         user.username = 'Test';
+                        user.tags[0] = 'testing';
 
-                        assert.strictEqual(dao.isActive, true);
-                        assert.strictEqual(dao.inTransaction, true);
-                        assert.strictEqual(dao.isSynchronized, false);
+                        expect(dao.isSynchronized).to.be.false;
 
-                        return dao.close('commit').then(() => {
-                            assert.strictEqual(dao.isActive, false);
-                            assert.strictEqual(dao.inTransaction, false);
-                            assert.strictEqual(dao.isSynchronized, true);
+                        return dao.sync();
+                    })
+                    .then(done)
+                    .catch(done);
+            });
 
-                            assert.strictEqual(database.getPoolState().size, 1);
-                            assert.strictEqual(database.getPoolState().available, 1);
-                        });
+            it('dao should be synchronized', () => {
+                expect(dao.isSynchronized).to.be.true;
+            });
+
+            it('dao should have user model', () => {
+                expect(dao.hasModel(user)).to.be.true;
+            });
+
+            it('should update model in the database', done => {
+                dao.execute(query)
+                    .then(dbUser => {
+                        expect(dbUser).to.exist;
+                        expect(dbUser.id).to.equal(user1.id);
+                        expect(dbUser.username).to.equal('Test');
+                        expect(dbUser.tags).to.deep.equal(['testing', 'tag6']);
+                        done();
+                    })
+                    .catch(done);
+            });
+        });
+
+        describe('Updating a model should change updatedOn date', () => {
+            let originalUpdatedOn: number;
+            let timeout: number = 100;
+
+            beforeEach(done => {
+                query = new qFetchUserById(user1.id, true);
+
+                dao.execute(query)
+                    .then(result => {
+                        user = result;
+                        originalUpdatedOn = user.updatedOn.valueOf();
+
+                        query = new qFetchUserById(user1.id);
+                    })
+                    .then(() => {
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                user.username = 'Test';
+
+                                expect(dao.isSynchronized).to.be.false;
+
+                                resolve();
+                            }, timeout);
+                        })
+                    })
+                    .then(dao.sync.bind(dao))
+                    .then(done)
+                    .catch(done);
+            });
+
+            it('dao should be synchronized', () => {
+                expect(dao.isSynchronized).to.be.true;
+            });
+
+            it('dao should have user model', () => {
+                expect(dao.hasModel(user)).to.be.true;
+            });
+
+            it('should update model in the database', done => {
+                dao.execute(query)
+                    .then(dbUser => {
+                        expect(dbUser).to.exist;
+                        expect(dbUser.id).to.equal(user1.id);
+                        expect(dbUser.username).to.equal('Test');
+                        expect(dbUser.tags).to.deep.equal(user1.tags);
+                        done();
+                    })
+                    .catch(done);
+            });
+
+            it('should update updatedOn field', done => {
+                dao.execute(query)
+                    .then(dbUser => {
+                        if (pg.defaults.session.manageUpdatedOn) {
+                            expect(dbUser.updatedOn.valueOf()).to.be.above(originalUpdatedOn);
+                            expect(dbUser.updatedOn.valueOf() - originalUpdatedOn).to.be.at.least(timeout);
+                        } else {
+                            expect(dbUser.updatedOn.valueOf()).to.equal(originalUpdatedOn);
+                        }
+                        done();
+                    })
+                    .catch(done);
+            });
+        });
+
+        describe('Multiple changes should be persisted in the database', () => {
+            beforeEach(done => {
+                sIds = [user1.id, user2.id, user3.id];
+                ids = sIds.map(Number);
+                query = new qFetchUsersByIdList(ids, true);
+
+                dao.execute(query)
+                    .then(result => {
+                        users = result;
+
+                        dao.destroy(users[0]);
+                        dao.destroy(users[2]);
+
+                        user = User.parse(seed1);
+
+                        dao.insert(user);
+
+                        users[1].username = 'Test';
+
+                        expect(dao.isSynchronized).to.be.false;
+
+                        return dao.sync();
+                    })
+                    .then(done)
+                    .catch(done);
+            });
+
+            it('dao should be synchronized', () => {
+                expect(dao.isSynchronized).to.be.true;
+            });
+
+            it('dao should not have deleted models', () => {
+                expect(dao.hasModel(users[0])).to.be.false;
+                expect(dao.hasModel(users[2])).to.be.false;
+            });
+
+            it('dao should have updated and inserted models', () => {
+                expect(dao.hasModel(users[1])).to.be.true;
+                expect(dao.hasModel(user)).to.be.true;
+            });
+
+            it('should return only updated and inserted but not deleted', done => {
+                sIds = [user1.id, user2.id, user3.id, seed1.id, seed2.id];
+                ids = sIds.map(Number);
+                query = new qFetchUsersByIdList(ids);
+
+                dao.execute(query)
+                    .then(dbUsers => {
+                        expect(dbUsers.length).to.equal(2);
+
+                        expect([user2.id, seed1.id]).to.include(dbUsers[0].id);
+                        expect([user2.id, seed1.id]).to.include(dbUsers[1].id);
+
+                        expect(dbUsers[0].username).to.equal('Test');
+                        expect(dbUsers[1].username).to.equal(seed1.username);
+                        done();
+                    })
+                    .catch(done);
+            });
+        });
+
+        // ERRORS
+        describe('Syncing changes to immutable model should throw an error', () => {
+            beforeEach(done => {
+                query = new qFetchUserById(user1.id);
+
+                dao.execute(query)
+                    .then(result => {
+                        user = result;
+                        user.username = 'Test123';
+
+                        return dao.sync();
+                    })
+                    .then(() => {
+                        done('should throw an error');
+                    })
+                    .catch(err => {
+                        error = err;
+                        done();
                     });
-                });
+            });
+
+            it('error should be instance of SyncError', () => {
+                expect(error).to.be.instanceof(SyncError);
+            });
+
+            it('should return \'Change to immutable model detected\' message', () => {
+                expect(error.message).to.equal('Change to immutable model detected');
+            });
+        });
+    });
+
+    describe('DAO: Lifecycle Tests', () => {
+
+        it('dao should be active before start transaction', () => {
+            expect(dao.isActive).to.be.true;
+        });
+
+        it('dao should be synchronized before start transaction', () => {
+            expect(dao.isSynchronized).to.be.true;
+        });
+
+        it('dao should not be under transaction before start transaction', () => {
+            expect(dao.inTransaction).to.be.false;
+        });
+
+        describe('Starting a transaction should put Dao in transaction state', () => {
+            beforeEach(done => {
+                dao.startTransaction()
+                    .then(done)
+                    .catch(done);
+            });
+
+            it('dao should be active after start transaction', () => {
+                expect(dao.isActive).to.be.true;
+            });
+
+            it('dao should be synchronized after start transaction', () => {
+                expect(dao.isSynchronized).to.be.true;
+            });
+
+            it('dao should be under transaction after start transaction', () => {
+                expect(dao.inTransaction).to.be.true;
+            });
+        });
+
+        describe('Closing Dao with commiting should put Dao in synchronized state', () => {
+            beforeEach(done => {
+                query = new qFetchUserById(user1.id, true);
+
+                dao.startTransaction()
+                    .then(() => {
+                        return dao.execute(query);
+                    })
+                    .then(result => {
+                        user = result;
+                        user.username = 'Test';
+                    })
+                    .then(dao.close.bind(dao, 'commit'))
+                    .then(done)
+                    .catch(done);
+            });
+
+            it('dao should not be active', () => {
+                expect(dao.isActive).to.be.false;
+            });
+
+            it('dao should be synchronized', () => {
+                expect(dao.isSynchronized).to.be.true;
+            });
+
+            it('dao should not be under transaction', () => {
+                expect(dao.inTransaction).to.be.false;
+            });
+
+            it('database should have expected properties', () => {
+                expect(database.getPoolState().size).to.equal(1);
+                expect(database.getPoolState().available).to.equal(1);
+            });
+        });
+
+        // ERRORS
+        describe('Closing an uncommitted Dao should throw an error', () => {
+            beforeEach(done => {
+                dao.startTransaction()
+                    .then(dao.close.bind(dao))
+                    .then(() => {
+                        done('should throw an error');
+                    })
+                    .catch(err => {
+                        error = err;
+                        done();
+                    });
+            });
+
+            it('database should have expected properties', () => {
+                expect(database.getPoolState().size).to.equal(1);
+                expect(database.getPoolState().available).to.equal(1);
+            });
+
+            it('dao should not be active', () => {
+                expect(dao.isActive).to.be.false;
+            });
+
+            it('dao should be synchronized', () => {
+                expect(dao.isSynchronized).to.be.true;
+            });
+
+            it('dao should not be under transaction', () => {
+                expect(dao.inTransaction).to.be.false;
+            });
+
+            it('error should be instance ofError', () => {
+                expect(error).to.be.instanceof(Error);
+            });
+
+            it('should return \'Uncommitted transaction detected while closing the session\' message', () => {
+                expect(error.message).to.equal('Uncommitted transaction detected while closing the session');
             });
         });
     });
 });
-*/
