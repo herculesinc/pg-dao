@@ -100,6 +100,8 @@ declare module "pg-dao" {
         isDestroyed(model: Model)           : boolean;
         isModified(model: Model)            : boolean;
         isMutable(model: Model)             : boolean;
+
+        getChanges(model: Model)            : string[];
     }
 
     // MODEL DEFINITIONS

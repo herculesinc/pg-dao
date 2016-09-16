@@ -147,6 +147,16 @@ class Store {
     isMutable(model) {
         return (this.has(model, true) && model[symbols.mutable]);
     }
+    getModelChanges(model) {
+        this.has(model, true);
+        if (model[symbols.destroyed])
+            return undefined;
+        const original = model[symbols.original];
+        if (!original)
+            return undefined;
+        const handler = model[Model_1.symHandler];
+        return handler.compare(original, model);
+    }
     // STORE STATE METHODS
     // --------------------------------------------------------------------------------------------
     get hasChanges() {

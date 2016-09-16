@@ -195,6 +195,7 @@ class Dao extends pg_io_1.Session {
     isDestroyed(model) { return this.store.isDestroyed(model); }
     isModified(model) { return this.store.isModified(model); }
     isMutable(model) { return this.store.isMutable(model); }
+    getChanges(model) { return this.store.getModelChanges(model); }
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     getModelSyncQueries(changes, commit = false) {

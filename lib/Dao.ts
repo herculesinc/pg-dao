@@ -232,6 +232,8 @@ export class Dao extends Session {
     isDestroyed(model: Model)   : boolean { return this.store.isDestroyed(model); }
     isModified(model: Model)    : boolean { return this.store.isModified(model); }
     isMutable(model: Model)     : boolean { return this.store.isMutable(model); }
+
+    getChanges(model: Model)    : string[] { return this.store.getModelChanges(model); }
     
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------

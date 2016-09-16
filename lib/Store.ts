@@ -190,6 +190,17 @@ export class Store {
         return (this.has(model, true) && model[symbols.mutable]);
     }
 
+    getModelChanges(model: Model): string[] {
+        this.has(model, true);
+        if (model[symbols.destroyed]) return undefined;
+
+        const original: Model = model[symbols.original];
+        if (!original) return undefined;
+
+        const handler: ModelHandler<any> = model[symHandler];
+        return handler.compare(original, model);
+    }
+
     // STORE STATE METHODS
     // --------------------------------------------------------------------------------------------
     get hasChanges(): boolean {
@@ -214,7 +225,7 @@ export class Store {
         for (let [ handler, modelMap ] of this.cache) {
             for (let [ id, model ] of modelMap) {
                 if (model[symbols.mutable]) {
-                    let original = model[symbols.original];
+                    let original: Model = model[symbols.original];
                     if (model[symbols.destroyed]) {
                         syncInfo.push([ original, undefined, undefined ]);
                     }
@@ -231,8 +242,8 @@ export class Store {
                     }
                 }
                 else if (this.options.validateImmutability) {
-                    const original = model[symbols.original];
-                    const current = model[symbols.destroyed] ? undefined : model;
+                    const original: Model = model[symbols.original];
+                    const current: Model = model[symbols.destroyed] ? undefined : model;
                     if (!handler.areEqual(original, current)) {
                         throw new SyncError('Change to immutable model detected');
                     }
