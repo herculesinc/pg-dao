@@ -114,8 +114,19 @@ class Store {
     }
     // STATE CHECK METHODS
     // --------------------------------------------------------------------------------------------
+    get(handler, id) {
+        if (!Model_1.isModelHandler(handler))
+            throw new errors_1.ModelError('The model handler is invalid');
+        const modelMap = this.cache.get(handler);
+        if (modelMap) {
+            const model = modelMap.get(id);
+            if (!model[symbols.destroyed]) {
+                return model;
+            }
+        }
+    }
     has(model, errorOnAbsent = false) {
-        if (Model_1.isModel(model) === false)
+        if (!Model_1.isModel(model))
             throw new errors_1.ModelError('The model is invalid');
         const modelMap = this.cache.get(model[Model_1.symHandler]);
         const storeModel = modelMap ? modelMap.get(model.id) : undefined;

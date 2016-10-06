@@ -226,7 +226,20 @@ export class Dao extends Session {
         return this.store.clean(model); 
     }
 
-    hasModel(model: Model)      : boolean { return this.store.has(model); }
+    load<T extends Model>(handler: ModelHandler<T>, seed: any): T {
+        if(!this.isActive) {
+            throw new ConnectionError('Cannot load a model: session has already been closed');
+        }
+        return this.store.load(handler, [seed], false)[0] as T;
+    }
+
+    hasModel(model: Model): boolean { return this.store.has(model); }
+    getModel<T extends Model>(handler: ModelHandler<T>, id: string): T {
+        if(!this.isActive) {
+            throw new ConnectionError('Cannot get a model: session has already been closed');
+        }
+        return this.store.get(handler, id);
+    }
 
     isNew(model: Model)         : boolean { return this.store.isNew(model); }
     isDestroyed(model: Model)   : boolean { return this.store.isDestroyed(model); }
@@ -234,7 +247,7 @@ export class Dao extends Session {
     isMutable(model: Model)     : boolean { return this.store.isMutable(model); }
 
     getChanges(model: Model)    : string[] { return this.store.getModelChanges(model); }
-    
+
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     getModelSyncQueries(changes: SyncInfo[], commit = false) {

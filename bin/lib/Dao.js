@@ -190,7 +190,19 @@ class Dao extends pg_io_1.Session {
         }
         return this.store.clean(model);
     }
+    load(handler, seed) {
+        if (!this.isActive) {
+            throw new pg_io_2.ConnectionError('Cannot load a model: session has already been closed');
+        }
+        return this.store.load(handler, [seed], false)[0];
+    }
     hasModel(model) { return this.store.has(model); }
+    getModel(handler, id) {
+        if (!this.isActive) {
+            throw new pg_io_2.ConnectionError('Cannot get a model: session has already been closed');
+        }
+        return this.store.get(handler, id);
+    }
     isNew(model) { return this.store.isNew(model); }
     isDestroyed(model) { return this.store.isDestroyed(model); }
     isModified(model) { return this.store.isModified(model); }

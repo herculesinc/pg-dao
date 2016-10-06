@@ -89,12 +89,14 @@ declare module "pg-dao" {
         fetchAll<T extends Model>(handler: ModelHandler<T>, selector: any, forUpdate?: boolean): Promise<T[]>;
 
         create<T extends Model>(handler: ModelHandler<T>, attributes: any): Promise<T>;
-        
+        load<T extends Model>(handler: ModelHandler<T>, seed: any): T;
+
         insert<T extends Model>(model: T)   : T;
         destroy<T extends Model>(model: T)  : T;
         clean<T extends Model>(model: T)    : T;
 
-        hasModel(model: Model)              : boolean;
+        hasModel(model: Model): boolean;
+        getModel<T extends Model>(handler: ModelHandler<T>, id: string): T;
 
         isNew(model: Model)                 : boolean;
         isDestroyed(model: Model)           : boolean;
