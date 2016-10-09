@@ -12,7 +12,8 @@ exports.symbols = {
     insertQuery: Symbol(),
     deleteQuery: Symbol(),
     dbFields: Symbol(),
-    dbSchema: Symbol()
+    dbSchema: Symbol(),
+    selectorString: Symbol()
 };
 // ABSTRACT MODEL CLASS DEFINITION
 // ================================================================================================
@@ -87,6 +88,14 @@ class AbstractModel {
             fieldSelectors.push(field.getter);
         }
         return fieldSelectors;
+    }
+    static getFieldSelectorString() {
+        let selectors = this[exports.symbols.selectorString];
+        if (!selectors) {
+            selectors = this.getFieldSelectors().join(', ');
+            this[exports.symbols.selectorString] = selectors;
+        }
+        return selectors;
     }
     // MODEL HANDLER METHODS
     // --------------------------------------------------------------------------------------------

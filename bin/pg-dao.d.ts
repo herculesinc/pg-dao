@@ -150,6 +150,7 @@ declare module "pg-dao" {
 
         static setSchema(tableName: string, idGenerator: IdGenerator, fields: FieldMap);
         static getFieldSelectors(): string[];
+        static getFieldSelectorString(): string;
     }
     
     // DECORATORS

@@ -16,7 +16,8 @@ export const symbols = {
 	insertQuery     : Symbol(),
 	deleteQuery     : Symbol(),
     dbFields        : Symbol(),
-    dbSchema        : Symbol()
+    dbSchema        : Symbol(),
+    selectorString  : Symbol()
 };
 
 // INTERFACES
@@ -117,6 +118,15 @@ export class AbstractModel implements Model {
         }
 
         return fieldSelectors;
+    }
+
+    static getFieldSelectorString(): string {
+        let selectors: string = this[symbols.selectorString];
+        if (!selectors) {
+            selectors = this.getFieldSelectors().join(', ');
+            this[symbols.selectorString] = selectors;
+        }
+        return selectors;
     }
 
     // MODEL HANDLER METHODS

@@ -40,6 +40,7 @@ async function runTests() {
     await prepareDatabase(dao);
 
     console.log('Field selectors: ' + User.getFieldSelectors());
+    console.log('Field selector string: ' + User.getFieldSelectorString());
 
     try {
         await dao.startTransaction();
