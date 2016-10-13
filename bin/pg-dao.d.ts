@@ -142,9 +142,9 @@ declare module "pg-dao" {
         static compare(original: AbstractModel, current: AbstractModel) : string[];
         static areEqual(model1: AbstractModel, model2: AbstractModel)   : boolean;
 
-        static getSyncQueries(original: AbstractModel, current: AbstractModel)      : Query[];
-        static getFetchOneQuery(selector: any, forUpdate: boolean, name?: string)   : ModelQuery<any>;
-        static getFetchAllQuery(selector: any, forUpdate: boolean, name?: string)   : ModelQuery<any>;
+        static getSyncQueries(original: AbstractModel, current: AbstractModel, changes?: string[]): Query[];
+        static getFetchOneQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
+        static getFetchAllQuery(selector: any, forUpdate: boolean, name?: string): ModelQuery<any>;
 
         static getIdGenerator(): IdGenerator;
 

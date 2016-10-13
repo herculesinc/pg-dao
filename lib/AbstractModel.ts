@@ -89,7 +89,9 @@ export class AbstractModel implements Model {
         else {
             // parse the database row, no cloning of fields needed
             for (let field of schema.fields) {
-                if (field.secret) {
+                // check if the field needs to be decrypted;
+                // TODO: non-string fields should throw errors but allowed for now to enable instantiation of models from cached data
+                if (field.secret && typeof seed[field.name] === 'string') {
                     // TODO: implement lazy decrypting
                     this[field.name] = decryptField(seed[field.name], field.secret, field.type);
                 }
@@ -281,6 +283,18 @@ export class AbstractModel implements Model {
         const schema: DbSchema = this[symbols.dbSchema];
         return schema.idGenerator;
     }
+
+    // OVERRIDEN OBJECT METHODS
+    // --------------------------------------------------------------------------------------------
+    /*
+    toJSON(): any {
+        const retval = {};
+        const schema: DbSchema = this[symbols.dbSchema];
+        for (let field of schema.fields) {
+            retval[field.name] = this[field.name];
+        }
+    }
+    */
 }
 
 // QUERY BUILDERS
