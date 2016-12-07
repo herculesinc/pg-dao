@@ -118,7 +118,7 @@ class Dao extends pg_io_1.Session {
         this.logger && this.logger.debug('Preparing to close session; checking for changes');
         const start = process.hrtime();
         try {
-            var changes = this.store.getChanges();
+            const changes = this.store.getChanges();
             if (!changes.length) {
                 this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
                 return super.close(action);
@@ -128,17 +128,19 @@ class Dao extends pg_io_1.Session {
                 if (action !== 'commit') {
                     throw new errors_1.SyncError('Unsynchronized models detected during session close');
                 }
-                var syncQueries = this.getModelSyncQueries(changes, true);
+                const syncQueries = this.getModelSyncQueries(changes, true);
+                this.logger && this.logger.debug('Committing transaction and closing the session');
+                const syncPromise = this.execute(syncQueries).then(() => {
+                    this.store.clear();
+                    this.releaseConnection();
+                });
+                this.closing = true;
+                return syncPromise;
             }
         }
         catch (error) {
             return this.rollbackAndRelease(error);
         }
-        this.logger && this.logger.debug('Committing transaction and closing the session');
-        return this.execute(syncQueries).then(() => {
-            this.store.clear();
-            this.releaseConnection();
-        });
     }
     processQueryResult(query, result) {
         if (Model_1.isModelQuery(query)) {

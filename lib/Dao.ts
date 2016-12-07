@@ -144,7 +144,7 @@ export class Dao extends Session {
         this.logger && this.logger.debug('Preparing to close session; checking for changes');
         const start = process.hrtime();
         try {
-            var changes = this.store.getChanges();
+            const changes = this.store.getChanges();
             if (!changes.length) {
                 this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
                 return super.close(action);
@@ -154,18 +154,21 @@ export class Dao extends Session {
                 if (action !== 'commit') {
                     throw new SyncError('Unsynchronized models detected during session close');
                 }
-                var syncQueries = this.getModelSyncQueries(changes, true);
+                const syncQueries = this.getModelSyncQueries(changes, true);
+
+                this.logger && this.logger.debug('Committing transaction and closing the session');        
+                const syncPromise = this.execute(syncQueries).then(() => {
+                    this.store.clear();
+                    this.releaseConnection();
+                });
+
+                this.closing = true;
+                return syncPromise;                
             }
         }
         catch (error) {
             return this.rollbackAndRelease(error);
         }
-        
-        this.logger && this.logger.debug('Committing transaction and closing the session');        
-        return this.execute(syncQueries).then(() => {
-            this.store.clear();
-            this.releaseConnection();
-        });
 	}
     
 	protected processQueryResult(query: Query, result: DbQueryResult): any[] {

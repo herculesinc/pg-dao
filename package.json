@@ -1,6 +1,6 @@
 {
   "name": "pg-dao",
-  "version": "0.7.7",
+  "version": "0.8.0",
   "description": "Promise-based data access layer for PostgreSQL written in TypeScript",
   "keywords": [
     "pg",
@@ -23,13 +23,13 @@
     "email": "irakliy81@live.com"
   },
   "engines": {
-    "node": "6.4.x"
+    "node": "6.9.x"
   },
   "dependencies": {
-    "pg-io": "0.7.3"
+    "pg-io": "0.7.5"
   },
   "devDependencies": {
-    "chai": "^3.5.0",
+    "chai": "3.5.x",
     "del": "2.2.x",
     "gulp": "3.9.x",
     "gulp-mocha": "2.2.x",
