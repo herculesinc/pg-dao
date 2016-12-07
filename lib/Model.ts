@@ -11,8 +11,8 @@ export const symHandler = Symbol();
 // ================================================================================================
 export interface Model {
     id          : string;
-    updatedOn   : Date;
-    createdOn   : Date;
+    updatedOn   : number;
+    createdOn   : number;
 }
 
 export interface ModelHandler<T extends Model> extends ResultHandler<T> {

@@ -1,6 +1,7 @@
 "use strict";
 const Model_1 = require('./Model');
 const schema_1 = require('./schema');
+const types_1 = require('./types');
 const queries_1 = require('./queries');
 const errors_1 = require('./errors');
 const util_1 = require('./util');
@@ -33,8 +34,9 @@ class AbstractModel {
             for (let field of schema.fields) {
                 switch (field.type) {
                     case Number:
-                    case Boolean:
                     case String:
+                    case types_1.Timestamp:
+                    case Boolean:
                         this[field.name] = seed[field.name];
                         break;
                     case Date:
@@ -51,26 +53,30 @@ class AbstractModel {
                 this.id = id;
                 // TODO: convert createdOn and updatedOn to Timestamp type
                 if (!seed.createdOn) {
-                    let timestamp = new Date();
+                    let timestamp = Date.now();
                     this.createdOn = timestamp;
                     this.updatedOn = timestamp;
                 }
                 else {
-                    this.createdOn = seed.createdOn instanceof Date ? seed.createdOn : new Date(seed.createdOn);
-                    this.updatedOn = seed.updatedOn instanceof Date ? seed.updatedOn : new Date(seed.updatedOn);
+                    this.createdOn = seed.createdOn;
+                    this.updatedOn = seed.updatedOn;
                 }
             }
         }
         else {
             // parse the database row, no cloning of fields needed
             for (let field of schema.fields) {
-                // check if the field needs to be decrypted;
-                // TODO: non-string fields should throw errors but allowed for now to enable instantiation of models from cached data
-                if (field.secret && typeof seed[field.name] === 'string') {
+                if (field.secret) {
+                    // process encrypted field, can be only string, object, or array type
                     // TODO: implement lazy decrypting
                     this[field.name] = util_1.decryptField(seed[field.name], field.secret, field.type);
                 }
+                else if (field.type === types_1.Timestamp) {
+                    // if this is a timestamp field, make sure it is converted to number
+                    this[field.name] = types_1.Timestamp.parse(seed[field.name]);
+                }
                 else {
+                    // otherwise, just copy the field value
                     this[field.name] = seed[field.name];
                 }
             }
@@ -133,8 +139,9 @@ class AbstractModel {
                 continue;
             switch (field.type) {
                 case Number:
-                case Boolean:
                 case String:
+                case types_1.Timestamp:
+                case Boolean:
                     target[field.name] = source[field.name];
                     break;
                 case Date:
@@ -159,8 +166,9 @@ class AbstractModel {
                 continue;
             switch (field.type) {
                 case Number:
-                case Boolean:
                 case String:
+                case types_1.Timestamp:
+                case Boolean:
                     if (original[field.name] != current[field.name]) {
                         changes.push(field.name);
                     }
@@ -191,8 +199,9 @@ class AbstractModel {
                 continue;
             switch (field.type) {
                 case Number:
-                case Boolean:
                 case String:
+                case types_1.Timestamp:
+                case Boolean:
                     if (model1[field.name] != model2[field.name])
                         return false;
                     break;

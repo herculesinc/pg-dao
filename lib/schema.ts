@@ -1,6 +1,7 @@
 // IMPORTS 
 // ================================================================================================
-import { IdGenerator } from './MOdel';
+import { IdGenerator } from './Model';
+import { Timestamp } from './types';
 import { ModelError } from './errors';
 import { 
 	Cloner, cloneObject, cloneArray, cloneDate,
@@ -58,11 +59,11 @@ export class DbSchema {
 		this.fieldMap.set(idField.name, idField);
 
 		// set createdOn and updatedOn field
-		const createdOnField = new DbField('createdOn', Date, true, undefined, undefined);
+		const createdOnField = new DbField('createdOn', Timestamp, true, undefined, undefined);
 		this.fields.push(createdOnField);
 		this.fieldMap.set(createdOnField.name, createdOnField);
 
-		const updatedOnField = new DbField('updatedOn', Date, false, undefined, undefined);
+		const updatedOnField = new DbField('updatedOn', Timestamp, false, undefined, undefined);
 		this.fields.push(updatedOnField);
 		this.fieldMap.set(updatedOnField.name, updatedOnField);
 
@@ -127,9 +128,9 @@ export class DbField {
 
 		// validate type and set coloner and comparator, when needed
     	switch (this.type) {
-        	case Number: case Boolean: case String:	
+        	case Number: case String: case Timestamp: case Boolean:	
 				if (handler)
-					throw new ModelError('Cannot specify a field handler for Number, Boolean, or String field');
+					throw new ModelError('Cannot specify a field handler for Number, Boolean, Timestamp, or String field');
             	break;
 
 			case Date:

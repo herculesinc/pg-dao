@@ -3,6 +3,7 @@
 import { Query, QueryMask } from 'pg-io';
 import { Model, ModelQuery, ModelHandler, symHandler, IdGenerator } from './Model';
 import { DbSchema, DbField, FieldMap } from './schema';
+import { Timestamp } from './types';
 import { dbField } from './decorators'
 import { AbstractActionQuery, AbstractModelQuery } from './queries';
 import { ModelError, ModelQueryError } from './errors';
@@ -43,8 +44,8 @@ interface DeleteQueryConstructor {
 export class AbstractModel implements Model {
 
     id          : string;    
-    createdOn   : Date;
-    updatedOn   : Date;
+    createdOn   : number;
+    updatedOn   : number;
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
@@ -59,7 +60,7 @@ export class AbstractModel implements Model {
             // build or clone the model
             for (let field of schema.fields) {
                 switch (field.type) {
-                    case Number: case Boolean: case String:
+                    case Number: case String: case Timestamp: case Boolean:
                         this[field.name] = seed[field.name];
                         break;
                     case Date: case Object: case Array:
@@ -76,28 +77,32 @@ export class AbstractModel implements Model {
 
                 // TODO: convert createdOn and updatedOn to Timestamp type
                 if (!seed.createdOn) {
-                    let timestamp = new Date();
+                    let timestamp = Date.now();
                     this.createdOn = timestamp;
                     this.updatedOn = timestamp;
                 }
                 else {
-                    this.createdOn = seed.createdOn instanceof Date ? seed.createdOn : new Date(seed.createdOn);
-                    this.updatedOn = seed.updatedOn instanceof Date ? seed.updatedOn : new Date(seed.updatedOn);
+                    this.createdOn = seed.createdOn;
+                    this.updatedOn = seed.updatedOn;
                 }
             }
         }
         else {
             // parse the database row, no cloning of fields needed
             for (let field of schema.fields) {
-                // check if the field needs to be decrypted;
-                // TODO: non-string fields should throw errors but allowed for now to enable instantiation of models from cached data
-                if (field.secret && typeof seed[field.name] === 'string') {
+                if (field.secret) {
+                    // process encrypted field, can be only string, object, or array type
                     // TODO: implement lazy decrypting
                     this[field.name] = decryptField(seed[field.name], field.secret, field.type);
                 }
+                else if (field.type === Timestamp) {
+                    // if this is a timestamp field, make sure it is converted to number
+                    this[field.name] = Timestamp.parse(seed[field.name]); 
+                }
                 else {
+                    // otherwise, just copy the field value
                     this[field.name] = seed[field.name];
-                }             
+                }
             }
         }
 
@@ -166,7 +171,7 @@ export class AbstractModel implements Model {
         for (let field of schema.fields) {
             if (field.readonly) continue;
             switch (field.type) {
-                case Number: case Boolean: case String:
+                case Number: case String: case Timestamp: case Boolean:
                     target[field.name] = source[field.name];
                     break;
                 case Date: case Object: case Array:
@@ -188,7 +193,7 @@ export class AbstractModel implements Model {
         for (let field of schema.fields) {
             if (field.readonly) continue;
             switch (field.type) {
-                case Number: case Boolean: case String:
+                case Number: case String: case Timestamp: case Boolean:
                     if (original[field.name] != current[field.name]) {
                         changes.push(field.name);
                     }
@@ -215,7 +220,7 @@ export class AbstractModel implements Model {
         for (let field of schema.fields) {
             if (field.readonly) continue;
             switch (field.type) {
-                case Number: case Boolean: case String:
+                case Number: case String: case Timestamp: case Boolean:
                     if (model1[field.name] != model2[field.name]) return false;
                     break;
                 case Date: case Object: case Array:

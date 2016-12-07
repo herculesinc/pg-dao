@@ -132,8 +132,8 @@ export function prepareDatabase(dao: Dao): Promise<any> {
                             '${user.password}'::VARCHAR, 
                             '${JSON.stringify(user.location)}'::jsonb,   
                             '${JSON.stringify(user.tags)}'::jsonb, 
-                            now()::timestamptz, 
-                            now()::timestamptz
+                            (extract(epoch from now()) * 1000)::bigint, 
+                            (extract(epoch from now()) * 1000)::bigint
                         )`;
                     })}
 	            ) AS q (id, username, password, profile, tags, created_on, updated_on);`

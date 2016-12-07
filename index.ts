@@ -25,6 +25,7 @@ pg.defaults.session.manageUpdatedOn         = true;
 // ================================================================================================
 export { Database, defaults, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
 export { ModelError, ModelQueryError, StoreError, SyncError } from './lib/errors';
+export { Timestamp } from './lib/types';
 export { AbstractModel } from './lib/AbstractModel';
 export { dbModel, dbField } from './lib/decorators';
 export { PgIdGenerator } from './lib/Model';

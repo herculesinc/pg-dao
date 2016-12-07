@@ -213,11 +213,10 @@ class Dao extends pg_io_1.Session {
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     getModelSyncQueries(changes, commit = false) {
-        const timestamp = new Date();
         let queries = [];
         for (let [original, current, updates] of changes) {
             if (this.options.manageUpdatedOn && original && current) {
-                current.updatedOn = timestamp;
+                current.updatedOn = Date.now();
                 updates.push('updatedOn');
             }
             const handler = current ? current[Model_1.symHandler] : original[Model_1.symHandler];

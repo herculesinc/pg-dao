@@ -17,8 +17,8 @@ let original: User, current: User, fields: Array<string>;
 describe('Store;', () => {
     beforeEach(() => {
         store = new Store(defaults.session);
-        seed = { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() };
-        seedAlt = { id: '1', username: 'Yason', createdOn: new Date(), updatedOn: new Date() };
+        seed = { id: '1', username: 'Irakliy', createdOn: Date.now(), updatedOn: Date.now() };
+        seedAlt = { id: '1', username: 'Yason', createdOn: Date.now(), updatedOn: Date.now() };
     });
 
     describe('Store: Initialization;', () => {
@@ -851,14 +851,14 @@ describe('Store;', () => {
         describe('Multiple cycles of changes and syncing should execute correctly;', () => {
             beforeEach(() => {
                 seeds = [
-                    { id: '1', username: 'Irakliy', createdOn: new Date(), updatedOn: new Date() },
-                    { id: '2', username: 'Yason', createdOn: new Date(), updatedOn: new Date() },
-                    { id: '3', username: 'George', createdOn: new Date(), updatedOn: new Date() }
+                    { id: '1', username: 'Irakliy', createdOn: Date.now(), updatedOn: Date.now() },
+                    { id: '2', username: 'Yason', createdOn: Date.now(), updatedOn: Date.now() },
+                    { id: '3', username: 'George', createdOn: Date.now(), updatedOn: Date.now() }
                 ];
 
                 newSeeds = [
-                    { id: '4', username: 'Katie', createdOn: new Date(), updatedOn: new Date() },
-                    { id: '5', username: 'Mark', createdOn: new Date(), updatedOn: new Date() }
+                    { id: '4', username: 'Katie', createdOn: Date.now(), updatedOn: Date.now() },
+                    { id: '5', username: 'Mark', createdOn: Date.now(), updatedOn: Date.now() }
                 ];
 
                 users = store.load(User, seeds, true);

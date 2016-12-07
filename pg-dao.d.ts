@@ -9,6 +9,7 @@
     export interface DatabaseOptions {
         name?           : string;
         pool?           : PoolOptions;
+        session?        : DaoOptions;
         connection      : ConnectionSettings;
     }
 
@@ -106,12 +107,19 @@
         getChanges(model: Model)            : string[];
     }
 
+    // CUSTOM TYPES
+    // --------------------------------------------------------------------------------------------
+    export type Timestamp = number;
+    export namespace Timestamp {
+        export function parse(value: any): Timestamp;
+    }
+
     // MODEL DEFINITIONS
     // --------------------------------------------------------------------------------------------
     export interface Model {
         id          : string;
-        updatedOn   : Date;
-        createdOn   : Date;
+        updatedOn   : number;
+        createdOn   : number;
     }
 
     export interface FieldMap {
@@ -127,8 +135,8 @@
 
     export class AbstractModel implements Model {
         id          : string;
-        updatedOn   : Date;
-        createdOn   : Date;
+        updatedOn   : number;
+        createdOn   : number;
         
         constructor(seed: any, id?: string);
         
@@ -288,14 +296,9 @@
     // LOGGER
     // --------------------------------------------------------------------------------------------
     export interface Logger {
-        debug(message: string);
-        info(message: string);
-        warn(message: string);
-
-        error(error: Error);
-
-        log(event: string, properties?: { [key: string]: any });
-        track(metric: string, value: number);
-        trace(service: string, command: string, time: number, success?: boolean);
+        debug(message: string, source?: string);
+        info(message: string, source?: string);
+        warn(message: string, source?: string);
+        trace(source: string, command: string, time: number, success?: boolean);
     }
 }

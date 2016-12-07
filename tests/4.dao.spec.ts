@@ -52,14 +52,14 @@ describe('DAO;', () => {
         seed1 = {
             id       : '4',
             username : 'Katie',
-            createdOn: new Date(),
-            updatedOn: new Date()
+            createdOn: Date.now(),
+            updatedOn: Date.now()
         };
         seed2 = {
             id       : '5',
             username : 'Mark',
-            createdOn: new Date(),
-            updatedOn: new Date()
+            createdOn: Date.now(),
+            updatedOn: Date.now()
         };
     });
 
@@ -583,12 +583,12 @@ describe('DAO;', () => {
             });
 
             it('should return createdOn field', () => {
-                expect(user.createdOn).to.be.an.instanceof(Date);
+                expect(user.createdOn).to.be.a('number');
                 expect(user.createdOn).to.exist
             });
 
             it('should return updatedOn field', () => {
-                expect(user.updatedOn).to.be.an.instanceof(Date);
+                expect(user.updatedOn).to.be.a('number');
                 expect(user.updatedOn).to.exist
             });
         });

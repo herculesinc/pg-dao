@@ -1,4 +1,5 @@
 "use strict";
+const types_1 = require('./types');
 const errors_1 = require('./errors');
 const util_1 = require('./util');
 // SCHEMA
@@ -27,10 +28,10 @@ class DbSchema {
         this.fields.push(idField);
         this.fieldMap.set(idField.name, idField);
         // set createdOn and updatedOn field
-        const createdOnField = new DbField('createdOn', Date, true, undefined, undefined);
+        const createdOnField = new DbField('createdOn', types_1.Timestamp, true, undefined, undefined);
         this.fields.push(createdOnField);
         this.fieldMap.set(createdOnField.name, createdOnField);
-        const updatedOnField = new DbField('updatedOn', Date, false, undefined, undefined);
+        const updatedOnField = new DbField('updatedOn', types_1.Timestamp, false, undefined, undefined);
         this.fields.push(updatedOnField);
         this.fieldMap.set(updatedOnField.name, updatedOnField);
         // set all other model fields
@@ -80,10 +81,11 @@ class DbField {
         // validate type and set coloner and comparator, when needed
         switch (this.type) {
             case Number:
-            case Boolean:
             case String:
+            case types_1.Timestamp:
+            case Boolean:
                 if (handler)
-                    throw new errors_1.ModelError('Cannot specify a field handler for Number, Boolean, or String field');
+                    throw new errors_1.ModelError('Cannot specify a field handler for Number, Boolean, Timestamp, or String field');
                 break;
             case Date:
                 if (handler)

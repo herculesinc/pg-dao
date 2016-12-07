@@ -254,12 +254,10 @@ export class Dao extends Session {
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
     getModelSyncQueries(changes: SyncInfo[], commit = false) {
-        const timestamp = new Date();
-        
         let queries: Query[] = [];
         for (let [ original, current, updates ] of changes) {            
             if (this.options.manageUpdatedOn && original && current) {
-                current.updatedOn = timestamp;
+                current.updatedOn = Date.now();
                 updates.push('updatedOn');
             }
             const handler: ModelHandler<any> = current ? current[symHandler] : original[symHandler];
