@@ -85,16 +85,16 @@ class Dao extends pg_io_1.Session {
         if (this.isActive === false) {
             return Promise.reject(new pg_io_2.ConnectionError('Cannot sync: session has already been closed'));
         }
-        this.logger && this.logger.debug('Preparing to sync; checking for changes');
+        this.logger && this.logger.debug('Preparing to sync; checking for changes', this.dbName);
         const start = process.hrtime();
         try {
             var changes = this.store.getChanges();
             if (!changes.length) {
-                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
+                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`, this.dbName);
                 return Promise.resolve();
             }
             else {
-                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`, this.dbName);
                 var syncQueries = this.getModelSyncQueries(changes);
             }
         }
@@ -103,7 +103,7 @@ class Dao extends pg_io_1.Session {
         }
         return this.execute(syncQueries).then(() => {
             this.store.applyChanges(changes);
-            this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
+            this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`, this.dbName);
         });
     }
     // OVERRIDEN SESSION METHODS
@@ -115,21 +115,21 @@ class Dao extends pg_io_1.Session {
         // delegate rollbacks to the super
         if (action === 'rollback')
             return super.close(action);
-        this.logger && this.logger.debug('Preparing to close session; checking for changes');
+        this.logger && this.logger.debug('Preparing to close session; checking for changes', this.dbName);
         const start = process.hrtime();
         try {
             const changes = this.store.getChanges();
             if (!changes.length) {
-                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
+                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`, this.dbName);
                 return super.close(action);
             }
             else {
-                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`, this.dbName);
                 if (action !== 'commit') {
                     throw new errors_1.SyncError('Unsynchronized models detected during session close');
                 }
                 const syncQueries = this.getModelSyncQueries(changes, true);
-                this.logger && this.logger.debug('Committing transaction and closing the session');
+                this.logger && this.logger.debug('Committing transaction and closing the session', this.dbName);
                 const syncPromise = this.execute(syncQueries).then(() => {
                     this.store.clear();
                     this.releaseConnection();
@@ -158,7 +158,7 @@ class Dao extends pg_io_1.Session {
             throw Promise.reject(new pg_io_2.ConnectionError('Cannot create a model: session has already been closed'));
         }
         const start = process.hrtime();
-        this.logger && this.logger.debug(`Creating a new ${handler.name || 'Unnamed'} model`);
+        this.logger && this.logger.debug(`Creating a new ${handler.name || 'Unnamed'} model`, this.dbName);
         if (!Model_1.isModelHandler(handler)) {
             return Promise.reject(new errors_1.ModelError('Cannot create a model: model handler is invalid'));
         }
@@ -168,7 +168,7 @@ class Dao extends pg_io_1.Session {
         }
         return idGenerator.getNextId(this).then((nextId) => {
             const model = handler.build(nextId, attributes);
-            this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`);
+            this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`, this.dbName);
             return model;
         });
     }

@@ -108,16 +108,16 @@ export class Dao extends Session {
             return Promise.reject(new ConnectionError('Cannot sync: session has already been closed'));
         }
 
-        this.logger && this.logger.debug('Preparing to sync; checking for changes');
+        this.logger && this.logger.debug('Preparing to sync; checking for changes', this.dbName);
         const start = process.hrtime();
         try {
             var changes = this.store.getChanges();
             if (!changes.length) {
-                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
+                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`, this.dbName);
                 return Promise.resolve();
             }
             else {
-                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`, this.dbName);
                 var syncQueries = this.getModelSyncQueries(changes);
             }
         }
@@ -127,7 +127,7 @@ export class Dao extends Session {
 
         return this.execute(syncQueries).then(() => {
             this.store.applyChanges(changes);
-            this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`);
+            this.logger && this.logger.debug(`Synchronized ${changes.length} changes in ${since(start)} ms`, this.dbName);
         })
     }
         
@@ -141,22 +141,22 @@ export class Dao extends Session {
         // delegate rollbacks to the super
         if (action === 'rollback') return super.close(action);
 
-        this.logger && this.logger.debug('Preparing to close session; checking for changes');
+        this.logger && this.logger.debug('Preparing to close session; checking for changes', this.dbName);
         const start = process.hrtime();
         try {
             const changes = this.store.getChanges();
             if (!changes.length) {
-                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`);
+                this.logger && this.logger.debug(`No changes detected in ${since(start)} ms`, this.dbName);
                 return super.close(action);
             }
             else {
-                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`);
+                this.logger && this.logger.debug(`Found ${changes.length} changes in ${since(start)} ms`, this.dbName);
                 if (action !== 'commit') {
                     throw new SyncError('Unsynchronized models detected during session close');
                 }
                 const syncQueries = this.getModelSyncQueries(changes, true);
 
-                this.logger && this.logger.debug('Committing transaction and closing the session');        
+                this.logger && this.logger.debug('Committing transaction and closing the session', this.dbName);        
                 const syncPromise = this.execute(syncQueries).then(() => {
                     this.store.clear();
                     this.releaseConnection();
@@ -189,7 +189,7 @@ export class Dao extends Session {
         }
         
         const start = process.hrtime();
-        this.logger && this.logger.debug(`Creating a new ${handler.name || 'Unnamed'} model`);
+        this.logger && this.logger.debug(`Creating a new ${handler.name || 'Unnamed'} model`, this.dbName);
         if (!isModelHandler(handler)) {
             return Promise.reject(new ModelError('Cannot create a model: model handler is invalid'));
         }
@@ -201,7 +201,7 @@ export class Dao extends Session {
             
         return idGenerator.getNextId(this).then((nextId) => {
             const model = handler.build(nextId, attributes);
-            this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`);
+            this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`, this.dbName);
             return model;
         });
     }
