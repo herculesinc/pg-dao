@@ -75,7 +75,8 @@ class Store {
         if (Model_1.isModelHandler(handler) === false)
             throw new errors_1.ModelError('Cannot load a model: model handler is invalid');
         const modelMap = this.getModelMap(handler, true);
-        const models = rows.map((row) => {
+        const models = [];
+        for (let row of rows) {
             const model = handler.parse(row);
             if (this.options.validateHandlerOutput && Model_1.isModel(model) === false)
                 throw new errors_1.ModelError('Cannot load a model: the model is invalid');
@@ -92,7 +93,7 @@ class Store {
                 handler.infuse(storeModel, model);
                 storeModel[symbols.mutable] = mutable;
                 storeModel[symbols.original] = model;
-                return storeModel;
+                models.push(storeModel);
             }
             else {
                 if (mutable || this.options.validateImmutability) {
@@ -104,9 +105,9 @@ class Store {
                 model[symbols.mutable] = mutable;
                 model[symbols.destroyed] = false;
                 modelMap.set(model.id, model);
-                return model;
+                models.push(model);
             }
-        });
+        }
         return models;
     }
     clear() {

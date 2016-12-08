@@ -84,12 +84,13 @@ export class qFetchUserById implements ModelQuery<User> {
     text    : string;
     handler : ModelHandler<User> = User;
     mask    : 'object' = 'object';
+    mode    : 'array' = 'array';
     mutable : boolean;
 
     constructor(userId: number, lock = false) {
         this.mutable = lock;
         this.text = `
-            SELECT id, username, password, profile, tags, created_on AS "createdOn", updated_on AS "updatedOn"
+            SELECT ${User.getFieldSelectorString()}
             FROM tmp_users WHERE id = ${userId};`;
     }
 
@@ -100,12 +101,13 @@ export class qFetchUsersByIdList implements ModelQuery<User> {
     text    : string;
     handler : ModelHandler<User> = User;
     mask    : 'list' = 'list';
+    mode    : 'array' = 'array';
     mutable : boolean;
 
     constructor(userIdList: number[], lock = false) {
         this.mutable = lock;
         this.text = `
-            SELECT id, username, password, profile, tags, created_on AS "createdOn", updated_on AS "updatedOn"
+            SELECT ${User.getFieldSelectorString()}
             FROM tmp_users WHERE id in (${userIdList.join(',') })
             ORDER BY id;`;
     }

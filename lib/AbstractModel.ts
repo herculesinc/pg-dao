@@ -49,60 +49,41 @@ export class AbstractModel implements Model {
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-    constructor(seed: any, id?: string) {
+    protected constructor(seed: any, deepCopy = false) {
         if (!seed) throw new ModelError('Cannot instantiate a model: model seed is undefined');
-        if (!seed.id && !id) throw new ModelError('Cannot instantiate a model: model id is undefined');
-        if (seed.id && id) throw new ModelError('Cannot instantiate a model: two model IDs provided');
-
         const schema: DbSchema = this.constructor[symbols.dbSchema];
 
-        if (seed instanceof this.constructor || id) {
-            // build or clone the model
-            for (let field of schema.fields) {
-                switch (field.type) {
-                    case Number: case String: case Timestamp: case Boolean:
-                        this[field.name] = seed[field.name];
-                        break;
-                    case Date: case Object: case Array:
-                        this[field.name] = field.clone(seed[field.name]);
-                        break;
-                    default:
-                        throw new ModelError('Cannot clone model: field type is invalid')
-                }
-            }
-
-            if (id) {
-                // make sure to set the ID if it was provided
-                this.id = id;
-
-                // TODO: convert createdOn and updatedOn to Timestamp type
-                if (!seed.createdOn) {
-                    let timestamp = Date.now();
-                    this.createdOn = timestamp;
-                    this.updatedOn = timestamp;
-                }
-                else {
-                    this.createdOn = seed.createdOn;
-                    this.updatedOn = seed.updatedOn;
-                }
-            }
-        }
-        else {
-            // parse the database row, no cloning of fields needed
-            for (let field of schema.fields) {
+        if (Array.isArray(seed)) {  // seed is a database row
+            // no cloning of fields needed, but must decrypt secret fields and parse timestamps
+            for (let i = 0; i < schema.fields.length; i++) {
+                let field = schema.fields[i];
                 if (field.secret) {
                     // process encrypted field, can be only string, object, or array type
                     // TODO: implement lazy decrypting
-                    this[field.name] = decryptField(seed[field.name], field.secret, field.type);
+                    this[field.name] = decryptField(seed[i], field.secret, field.type);
                 }
                 else if (field.type === Timestamp) {
                     // if this is a timestamp field, make sure it is converted to number
-                    this[field.name] = Timestamp.parse(seed[field.name]); 
+                    this[field.name] = Timestamp.parse(seed[i]); 
                 }
                 else {
                     // otherwise, just copy the field value
-                    this[field.name] = seed[field.name];
+                    this[field.name] = seed[i];
                 }
+            }
+        }
+        else if (deepCopy) {
+            // use deep copy for object and array fields
+            for (let field of schema.fields) {
+                this[field.name] = (field.type === Object || field.type === Array || field.type === Date)
+                    ? field.clone(seed[field.name])
+                    : seed[field.name];
+            }
+        }
+        else {
+            // use shallow copy for all fields
+            for (let field of schema.fields) {
+                this[field.name] = seed[field.name];
             }
         }
 
@@ -145,14 +126,22 @@ export class AbstractModel implements Model {
     
     static build(id: string, attributes: any): any {
         if (!attributes) throw new ModelError('Cannot build a mode: attributes are undefined');
-        return new this(attributes, id);
+
+        const timestamp = Date.now();
+        const seed = Object.assign({
+            id          : id,
+            createdOn   : timestamp,
+            updatedOn   : timestamp
+        }, attributes);
+
+        return new this(seed, true);
     }
 
     static clone(model: Model): any {
         if (!model) throw new ModelError('Cannot clone model: source model is undefined');
         if (model.constructor !== this)
             throw new ModelError('Cannot clone model: source model has a wrong constructor');
-        return new this(model);
+        return new this(model, true);
     }
     
     static infuse(target: Model, source: Model) {

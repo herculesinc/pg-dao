@@ -23,6 +23,7 @@ export class AbstractModelQuery<T extends Model> implements ModelQuery<T>{
 	
 	name	: string;
     mask	: QueryMask;
+	mode	: 'array';
     mutable	: boolean;
     handler	: ModelHandler<any>;
     text	: string;
@@ -30,6 +31,7 @@ export class AbstractModelQuery<T extends Model> implements ModelQuery<T>{
     
 	constructor(handler: ModelHandler<T>, mask: QueryMask, mutable?: boolean) {
 		this.name		= this.constructor.name;
+		this.mode		= 'array';
 		this.handler 	= handler;	
 		this.mask 		= mask;
 		this.mutable 	= typeof mutable === 'boolean' ? mutable : false;

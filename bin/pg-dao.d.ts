@@ -138,13 +138,13 @@ declare module "pg-dao" {
         updatedOn   : number;
         createdOn   : number;
         
-        constructor(seed: any, id?: string);
+        protected constructor(seed: any, deepCopy?: boolean);
         
         static name: string;
 
         static parse(row: any)                      : any;
         static build(id: string, attributes: any)   : any;
-        static clone(seed: any)                     : any;
+        static clone(model: Model)                  : any;
         static infuse(target: Model, source: Model) : void;
 
         static compare(original: AbstractModel, current: AbstractModel) : string[];
@@ -215,6 +215,7 @@ declare module "pg-dao" {
     // QUERY DEFINITIONS
     // --------------------------------------------------------------------------------------------
     export type QueryMask = 'list' | 'object';
+    export type QueryMode = 'object' | 'array';
 
     export interface QuerySpec {
         text    : string;
@@ -227,17 +228,16 @@ declare module "pg-dao" {
 
     export interface ResultQuery<T> extends Query {
         mask    : QueryMask;
+        mode?   : QueryMode;
         handler?: ResultHandler<T>;
     }
 
-    export interface SingleResultQuery<T> extends Query {
+    export interface SingleResultQuery<T> extends ResultQuery<T> {
         mask    : 'object';
-        handler?: ResultHandler<T>;
     }
 
-    export interface ListResultQuery<T> extends Query {
+    export interface ListResultQuery<T> extends ResultQuery<T> {
         mask    : 'list';
-        handler?: ResultHandler<T>;
     }
 
     export class AbstractActionQuery implements Query {
@@ -249,22 +249,26 @@ declare module "pg-dao" {
     }
 
     export interface ModelQuery<T extends Model> extends ResultQuery<T> {
+        mode    : 'array';
         handler : ModelHandler<T>;
         mutable?: boolean;
     }
 
     export interface SingleModelQuery<T extends Model> extends SingleResultQuery<T> {
+        mode    : 'array';
         handler : ModelHandler<T>;
         mutable?: boolean;
     }
 
     export interface ListModelQuery<T extends Model> extends ListResultQuery<T> {
+        mode    : 'array';
         handler : ModelHandler<T>;
         mutable?: boolean;
     }
 
     export class AbstractModelQuery<T extends Model> implements ModelQuery<T> {
         name    : string;
+        mode    : 'array';
         mask    : QueryMask;
         mutable : boolean;
         handler : ModelHandler<any>;

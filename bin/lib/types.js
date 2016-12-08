@@ -1,12 +1,17 @@
 "use strict";
+// IMPORTS
+// ================================================================================================
+const errors_1 = require("./errors");
 var Timestamp;
 (function (Timestamp) {
     function parse(value) {
+        if (value === null || value === undefined)
+            return undefined;
         if (Number.isInteger(value))
             return value;
         const ts = Number.parseInt(value, 10);
         if (!Number.isInteger(ts))
-            throw new TypeError(`Cannot parse a timestamp: value ${value} is invalid`);
+            throw new errors_1.ModelError(`Cannot parse a timestamp: value ${value} is invalid`);
         return ts;
     }
     Timestamp.parse = parse;

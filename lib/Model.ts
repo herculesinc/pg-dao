@@ -33,16 +33,19 @@ export interface ModelHandler<T extends Model> extends ResultHandler<T> {
 }
 
 export interface ModelQuery<T extends Model> extends ResultQuery<T> {
+    mode    : 'array',
     handler : ModelHandler<T>;
     mutable?: boolean;
 };
 
 export interface SingleModelQuery<T extends Model> extends SingleResultQuery<T> {
+    mode    : 'array';
     handler : ModelHandler<T>;
     mutable?: boolean;
 }
 
 export interface ListModelQuery<T extends Model> extends ListResultQuery<T> {
+    mode    : 'array';
     handler : ModelHandler<T>;
     mutable?: boolean;
 }

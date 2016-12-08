@@ -13,6 +13,7 @@ exports.AbstractActionQuery = AbstractActionQuery;
 class AbstractModelQuery {
     constructor(handler, mask, mutable) {
         this.name = this.constructor.name;
+        this.mode = 'array';
         this.handler = handler;
         this.mask = mask;
         this.mutable = typeof mutable === 'boolean' ? mutable : false;
