@@ -1135,7 +1135,7 @@ describe('DAO;', () => {
 
                 dao.startTransaction()
                     .then(() => {
-                        return dao.execute(query);
+                        return dao.execute(query) as Promise<User>;
                     })
                     .then(result => {
                         user = result;

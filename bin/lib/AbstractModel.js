@@ -1,10 +1,10 @@
 "use strict";
-const Model_1 = require('./Model');
-const schema_1 = require('./schema');
-const types_1 = require('./types');
-const queries_1 = require('./queries');
-const errors_1 = require('./errors');
-const util_1 = require('./util');
+const Model_1 = require("./Model");
+const schema_1 = require("./schema");
+const types_1 = require("./types");
+const queries_1 = require("./queries");
+const errors_1 = require("./errors");
+const util_1 = require("./util");
 // MODULE VARIABLES
 // ================================================================================================
 exports.symbols = {
@@ -300,8 +300,7 @@ function buildFetchQuery(schema, handler) {
             this.text = querySpec + ` WHERE ${criteria.join(' AND ')} ${forUpdate ? 'FOR UPDATE' : ''};`;
             this.params = selector;
         }
-    }
-    ;
+    };
 }
 function buildInsertQuery(schema) {
     if (!schema)
@@ -329,8 +328,7 @@ function buildInsertQuery(schema) {
                 this.params = Object.assign({}, model, encryptedFields);
             }
         }
-    }
-    ;
+    };
 }
 function buildUpdateQuery(schema) {
     if (!schema)
@@ -357,8 +355,7 @@ function buildUpdateQuery(schema) {
                 this.params = Object.assign({}, model, encryptedFields);
             }
         }
-    }
-    ;
+    };
 }
 function buildDeleteQuery(table) {
     if (table == undefined || table.trim() === '')
@@ -368,7 +365,6 @@ function buildDeleteQuery(table) {
             super(`qDelete${model[Model_1.symHandler].name}Model`);
             this.text = `DELETE FROM ${table} WHERE id = '${model.id}';`;
         }
-    }
-    ;
+    };
 }
 //# sourceMappingURL=AbstractModel.js.map

@@ -1,7 +1,7 @@
 "use strict";
-const types_1 = require('./types');
-const errors_1 = require('./errors');
-const util_1 = require('./util');
+const types_1 = require("./types");
+const errors_1 = require("./errors");
+const util_1 = require("./util");
 // SCHEMA
 // ================================================================================================
 class DbSchema {

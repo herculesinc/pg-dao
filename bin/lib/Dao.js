@@ -1,11 +1,11 @@
 "use strict";
 // IMPORTS
 // ================================================================================================
-const pg_io_1 = require('pg-io');
-const Store_1 = require('./Store');
-const Model_1 = require('./Model');
-const errors_1 = require('./errors');
-const pg_io_2 = require('pg-io');
+const pg_io_1 = require("pg-io");
+const Store_1 = require("./Store");
+const Model_1 = require("./Model");
+const errors_1 = require("./errors");
+const pg_io_2 = require("pg-io");
 // MODULE VARIABLES
 // ================================================================================================
 const since = pg_io_1.util.since;

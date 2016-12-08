@@ -1,7 +1,7 @@
 "use strict";
 // IMPORTS
 // ================================================================================================
-const pg_io_1 = require('pg-io');
+const pg_io_1 = require("pg-io");
 class ModelError extends pg_io_1.PgError {
     constructor(messageOrCause, cause) {
         super(messageOrCause, cause);

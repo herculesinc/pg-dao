@@ -1,9 +1,9 @@
 "use strict";
 // IMPORTS
 // ================================================================================================
-const crypto = require('crypto');
-const pg_io_1 = require('pg-io');
-const errors_1 = require('./errors');
+const crypto = require("crypto");
+const pg_io_1 = require("pg-io");
+const errors_1 = require("./errors");
 // MODULE VARIABLES
 // ================================================================================================
 const camelPattern = /([A-Z]+)/g;
