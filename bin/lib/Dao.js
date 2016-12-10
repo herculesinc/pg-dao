@@ -44,7 +44,7 @@ class Dao extends pg_io_1.Session {
         if (!Model_1.isModelQuery(query)) {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch a model: fetch query is not a model query`));
         }
-        if (query.mask !== 'object') {
+        if (query.mask !== 'single') {
             return Promise.reject(new errors_1.ModelQueryError(`Cannot fetch a model: fetch query is not a single result query`));
         }
         if (query.mutable !== forUpdate) {

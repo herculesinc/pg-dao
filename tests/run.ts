@@ -50,7 +50,7 @@ async function runTests() {
         console.log(JSON.stringify(user));
         user.password = 'password467';
 
-        const row = await dao.execute({ text: 'SELECT * FROM tmp_users WHERE id = 1', mask: 'object'});
+        const row = await dao.execute({ text: 'SELECT * FROM tmp_users WHERE id = 1', mask: 'single'});
         console.log(JSON.stringify(row));
 
         await dao.close('commit');

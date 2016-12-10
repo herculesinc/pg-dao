@@ -33,7 +33,7 @@ class PgIdGenerator {
         this.idSequenceQuery = {
             name: 'qGetNextId:' + idSequence,
             text: `SELECT nextval('${idSequence}'::regclass) AS id;`,
-            mask: 'object',
+            mask: 'single',
             handler: {
                 parse: (row) => row.id
             }

@@ -55,7 +55,7 @@ export class Dao extends Session {
             return Promise.reject(new ModelQueryError(`Cannot fetch a model: fetch query is not a model query`));
         }
             
-        if (query.mask !== 'object') {
+        if (query.mask !== 'single') {
             return Promise.reject(new ModelQueryError(`Cannot fetch a model: fetch query is not a single result query`));
         }
             

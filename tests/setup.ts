@@ -83,7 +83,7 @@ export class Token extends AbstractModel {
 export class qFetchUserById implements ModelQuery<User> {
     text    : string;
     handler : ModelHandler<User> = User;
-    mask    : 'object' = 'object';
+    mask    : 'single' = 'single';
     mode    : 'array' = 'array';
     mutable : boolean;
 

@@ -236,7 +236,7 @@ class AbstractModel {
             this[exports.symbols.fetchQuery] = qFetchQuery;
         }
         name = name || `qFetchOne${this.name}Model`;
-        return new qFetchQuery(selector, 'object', name, forUpdate);
+        return new qFetchQuery(selector, 'single', name, forUpdate);
     }
     static getFetchAllQuery(selector, forUpdate = false, name) {
         let qFetchQuery = this[exports.symbols.fetchQuery];

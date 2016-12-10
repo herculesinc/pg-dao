@@ -24,7 +24,7 @@ export const symbols = {
 // INTERFACES
 // ================================================================================================
 interface FetchQueryConstructor {
-    new(selector: any, mask: string, name: string, forUpdate: boolean): ModelQuery<any>;
+    new(selector: any, mask: QueryMask, name: string, forUpdate: boolean): ModelQuery<any>;
 }
 
 interface InsertQueryConstructor {
@@ -260,7 +260,7 @@ export class AbstractModel implements Model {
             this[symbols.fetchQuery] = qFetchQuery;
         }
         name = name || `qFetchOne${this.name}Model`;
-        return new qFetchQuery(selector, 'object', name, forUpdate);
+        return new qFetchQuery(selector, 'single', name, forUpdate);
     }
     
     static getFetchAllQuery(selector: any, forUpdate = false, name?: string): ModelQuery<any> {
