@@ -59,9 +59,9 @@ db.connect().then((dao) => {
 
 ### Updating Models
 ```TypeScript
-import { Database, AbstractModel, PgIdGenerator, dbModel, dbField } from 'pg-dao';
+import { Database, Dao, AbstractModel, PgIdGenerator, dbModel, dbField } from 'pg-dao';
 
-// Define a simple model backed by the users table in the database
+// Define a simple model backed by the 'users' table in the database
 @dbModel('users', new PgIdGenerator('users_id_seq'))
 export class User extends AbstractModel {
     
@@ -77,17 +77,34 @@ export class User extends AbstractModel {
 // create a database object
 const db = new Database({ /* database options */ });
 
-// connect to the database and start a transaction
-db.connect({ startTransaction: true }).then((dao) => {
+// define a function to update a model
+async function updatePassowrd(userId: string, newPassword: string) {
+    let dao: Dao;
 
-    // fetch a user model from the database
-    return dao.fetchOne(User, { id: '1'}, true).then((user) => {
+    try {
+        // connect to the database and start a transaction
+        dao = await db.connect({ startTransaction: true });
+
+        // fetch a user model from the database, and lock it for edit
+        const user = await dao.fetchOne(User, { id: userId }, true);
+
         // update the model
-        user.password = 'some new password';
-    })
-    // commit transaction and release the connection back to the pool
-    .then(() => dao.close('commit'));
-});
+        user.password = newPassword;
+
+        // commit transaction and release the connection back to the pool
+        await dao.close('commit');
+    }
+    catch(error) {
+        // log error somewhere
+        
+        // then make sure connection is closed
+        if (dao && dao.isActive) {
+            await dao.close(dao.inTransaction ? 'rollback' : undefined);
+        }
+
+        // maybe re-throw the error
+    }
+}
 ```
 
 ## API Reference
@@ -102,10 +119,18 @@ Complete public API definitions can be found in [pg-dao.d.ts]( https://github.co
     - [Retrieving Models](#retrieving-models)
     - [Modifying and Syncing Models](#modifying-and-syncing-models)
   * [Errors](#errors)
-  
-# API
 
-**Please note that some interfaces have changed signficantly between 0.6 and 0.7 releases of pg-dao.**
+## Breaking Changes
+
+### v0.7
+* Refactored most interfaces
+
+### v0.8
+* Query `mask` values have been redefined: `object` value has been replaced with `single`
+* Model timestamps (`createdOn` and `updatedOn`) have been changed from dates to numbers
+* Model constructor has been updated: the meaning of the second parameter has been changed
+
+# API
 
 ## Obtaining Database Connection
 
@@ -117,33 +142,32 @@ const db = new Database(options, logger?);
 where `options` should have the following form:
 ```TypeScript
 {
-    name?             : string;   // defaults to 'database', used for logging
-    pool?: {                      // optional connection pool settings
-        maxSize?      : number;   // defaults to 20   
-        idleTimeout?  : number;   // defaults to 30000 milliseconds
-        reapInterval? : number;   // defaults to 1000 milliseconds
+    name?               : string;   // defaults to 'database', used for logging
+    pool?: {                        // optional connection pool settings
+        maxSize?        : number;   // defaults to 20   
+        idleTimeout?    : number;   // defaults to 30000 milliseconds
+        reapInterval?   : number;   // defaults to 1000 milliseconds
     };
-    connection: {                 // required connection settings
-        host          : string;
-        port?         : number;   // optional, default 5432
-        user          : string;
-        password      : string;
-        database      : string;
-    }
+    connection: {                   // required connection settings
+        host            : string;
+        port?           : number;   // optional, default 5432
+        user            : string;
+        password        : string;
+        database        : string;
+    };
+    session?: {                       // optional default session options
+      startTransaction? : boolean;    // defaults to false
+      logQueryText?     : boolean;    // defaults to false
+    };
 }
 ```
 and, if provided, `logger` must comply with the following interface:
 ```TypeScript
 interface Logger {
-    debug(message: string);
-    info(message: string);
-    warn(message: string);
-
-    error(error: Error);
-
-    log(event: string, properties?: { [key: string]: any });
-    track(metric: string, value: number);
-    trace(service: string, command: string, time: number, success?: boolean);
+    debug(message: string, source?: string);
+    info(message: string, source?: string);
+    warn(message: string, source?: string);
+    trace(source: string, command: string, time: number, success?: boolean);
 }
 ```
 
@@ -281,24 +305,25 @@ A query object passed to the execute method should have the following form:
 ```TypeScript
 {
     text    : string;
-    mask?   : 'list' | 'object';
+    mask?   : 'list' | 'single';
+    mode?   : 'object' | 'array';
     name?   : string;
     params? : any;
     handler?: ResultHandler;
 }
 ```
 
-The only required property for a query is `text`, however, the behavior of the `execute()` method is directly controlled by other query properties. The behaviors are as follows:
 
-  * If only `text` property is provided: query will be executed against the database but no results will be returned to the user (even for SELECT statements). This is suitable for executing most INSERT, UPDATE, and DELETE commands
-  * `mask` property is provided: query will be executed and the results will be returned to the user. This is suitable for executing most SELECT commands. `mask` property can have one of the following values:
-    - 'list' - an array of rows retrieved from the database will be returned to the user (or `[]` if no rows were returned)
-    - 'object' - first row retrieved from the database will be returned to the user (or `undefined` if no rows were returned)
-  * `name` property is provided: when `execute()` is called with an array of queries, the returned map of results will be indexed by query name. The following caveats apply:
-    - For queries which don't have a `name` property, the results will be held under the `undefined` key
-    - If several executed queries have the same name, an array of results will be stored under the key for that name
-  * `params` - query will be parametrized with the provided object (more info below)
-  * `handler` - query results will be parsed using custom logic (more info below)
+The only required property for a query is `text`, however, the behavior of the `execute()` method is directly controlled by other query properties. The meaning of the properties is as follows:
+
+| Property | Type    | Description |
+| -------  | ------- | ----------- |
+| text     | string  | SQL code to be executed against the database |
+| mask     | enum?   | Optional result mask; can be one of the following values: [`list`, `single`]. If `mask` is not provided, no results will be returned to the caller (even for SELECT statements).<br/><br/>When `mask=list`,  an array of rows retrieved from the database will be returned to the caller (or [] if no rows were returned).<br/><br/>When `mask=single`, first row retrieved from the database will be returned to the caller (or `undefined` if no rows were returned). |
+| mode     | enum?   | Optional row mode; can be one of the following values: [`object`, `array`]; default is `object`.<br/><br/>When `mode=object`, each row will be returned as an object with property keys being field names.<br/><br/>When `mode=array` each row will be returned as an array of values (without the field names). |
+| name     | string? | Optional query name; used for logging. Also, when `execute()` is called with an array of queries, the returned map of results will be indexed by query name. For queries which don't have a name, the results will be held under the `undefined` key. If several executed queries have the same name, an array of results will be stored under the key for that name |
+| params   | object? | Optional parameters to apply to to the query (see [parameterized queries](#parameterized-queries)) 
+| handler  | ResultHandler? | Optional result handler to apply custom parsing logic (see [result parsing](#result-parsing) ) | 
 
 A few examples of executing different queries:
 
@@ -321,7 +346,7 @@ dao.execute(query2).then((result) => {
 
 var query3 = {
 	text: 'SELECT * FROM users WHERE id = 1;',
-	mask: 'object'
+	mask: 'single'
 };
 dao.execute(query3).then((result) => {
   // result is a single user object
@@ -347,7 +372,7 @@ var query4 = {
 
 var query5 = {
 	text: 'SELECT * FROM users WHERE id = 1;',
-	mask: 'object',
+	mask: 'single',
 	name: 'q2'
 };
 
@@ -360,7 +385,7 @@ dao.execute([query4, query5]).then((result) => {
   var user2 = result.get(query5.name);
 });
 ```
-### Parametrized Queries
+### Parameterized Queries
 
 Queries can be parametrized using named parameters. Parameters must be enclosed in `{{}}` brackets and `params` object should be provided with parameter values. 
 
@@ -463,11 +488,13 @@ Any object can be a model as long as the object has the following properties:
 ```TypeScript
 {
   id       : string,       // unique identifier for the model
-  createdOn: Date,         // date on which the model was created
-  updatedOn: Date          // date on which the model was last updated
+  createdOn: number,       // Unix timestamp of when the model was created
+  updatedOn: number        // Unix timestamp of when the model was last updated
   [handler]: ModelHandler  // handler for the model (described below)
 }
 ```
+Please note that `createdOn` and `updatedOn` timestamps are in milliseconds, and therefore, must be stored in the database as 64-bit integers.
+
 ModelHandler is an object which provides services needed by DAO to work with the model. Model handler must have the following form:
 
 ```TypeScript
@@ -553,9 +580,9 @@ export class User extends AbstractModel {
 
 Using `AbstractModel` (as opposed to defining model handler from scratch) does impose a few limitations:
 
-  * The underlying table must have `id`, `created_on`, and `updated_on` fields. `id` must be a primary key and can be either varchar or bigint. The other two fields must be dates. These fields (in camelCase) will be added to all abstract models automatically.
+  * The underlying table must have `id`, `created_on`, and `updated_on` fields. `id` must be a primary key and can be either varchar or bigint. The other two fields must be bigints. These fields (in camelCase) will be added to all abstract models automatically.
   * All model properties must be in camelCase while all database fields must be in snake_case. `AbstractModel` assumes this conventions and queries generated automatically will have syntax errors if this convention is not adhered to
-  * If you decide to override model constructor, the constructor signature must be `constructor(seed: any, id?: string)`, and the first call inside the constructor must be `super(seed, id)`
+  * If you decide to override model constructor, the constructor signature must be `constructor(seed: any, deepCopy?: boolean)`, and the first call inside the constructor must be `super(seed, deepCopy)`
 
 #### Model Decorators
 pg-dao provides two decorators which can be used to define a model: `@dbModel` and `@dbField`.
@@ -565,7 +592,7 @@ As the name implies, `@dbModel` defines parameters for the entire model. The two
   * __idGenerator__ - the ID Generator class which can be used by the model to generate unique IDs
 
 `@dbField` decorator must be attached to each model field. Any property not decorated with `@dbField` will not be synced with the database. The following paramters can be specified for the `@dbField` decorator:
-  * __fieldType__ - specifies the type of the field. This parameter is required. Currently allowed field types are: `Number`, `Boolean`, `String`, `Date`, `Object`, and `Array`
+  * __fieldType__ - specifies the type of the field. This parameter is required. Currently allowed field types are: `Number`, `Boolean`, `String`, `Timestamp`, `Date`, `Object`, and `Array`
   * __fieldOptions__ - optional paramter to specify additional options for the field. Currently, the following options are supported:
     - __readonly__ - a boolean flag which specifies if the field is read-only. Read-only fields are assumed to never change, and will not be synced with the database
     - __secret__ - if specified, the filed values are assumed to be encryped in the stabases with the specified `secret`. pg-dao will decrypt the values upon retrieval from the database, and will encrypt them back upon syncing with the database. Currently, encryption is supported only for `String`, `Object`, and `Array` fields. The corresponding field in the database must be able to store string values
@@ -607,14 +634,20 @@ The above will create a fully functional User model.
 Retrieving models from the database can be done via the regular `dao.execute()` method or via specialized `fetchOne()` and `fetchAll()` methods. 
 
 #### Retrieving via execute()
-The main difference from executing regular queries is that model queries should have `ModelHandler` specified for the `handler` property and can have an additional `mutable` property to specify whether retrieved models can be updated. For example, given the User model defined above, a query to retrieve a single user by ID would look like this:
+The main difference from executing regular queries is that model queries should have `ModelHandler` specified for the `handler` property and can have an additional `mutable` property to specify whether retrieved models can be updated.
+
+If you are using `AbstractModel` as a base for your models, the `mode` of the model queries must be set to `array` as `AbastractModel` expects all models read from the database to be in array form.
+
+
+For example, given the User model defined above, a query to retrieve a single user by ID would look like this:
 
 ```JavaScript
 var userId = '1';
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId};`,
-  mask: 'object',
+  mask: 'single',
+  mode: 'array',
   handler: User,
   mutable: false
 };
@@ -632,6 +665,7 @@ var qFetchUsersByIdList = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id IN (${userIdList.join(',')});`,
   mask: 'list',
+  mode: 'array',
   handler: User,
   mutable: false
 };
@@ -648,7 +682,8 @@ var userId = '1';
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId};`,
-  mask: 'object',
+  mask: 'single',
+  mode: 'array',
   handler: User,
   mutable: false
 };
@@ -669,7 +704,8 @@ var userId = '1';
 var qFetchUserById = {
   text: `SELECT id, username, created_on AS "createdOn", updated_on AS "updatedOn"
           FROM users WHERE id = ${userId} FOR UPDATE;`,
-  mask: 'object',
+  mask: 'single',
+  mode: 'array',
   handler: User,
   mutable: true
 };
@@ -723,7 +759,7 @@ For the User model defiend above, the fetch methods can be used as follows:
 
 Internally, DAO fetch methods call model handler's get fetch query methods (`getFetchOneQuery()` and `getFetchAllQuery()`) and execute returned queries using `dao.execute()` method. So, any custom fetch queries defined for the model will automatically work in these methods too.
 
-When working with models derived from `AbstractModel`, keep in mind that `FOR UPDATE` statement will be added to all automatically generated fetch queries when `forUpdate` parameter is set to true for `getFetchOneQuery()` and `getFetchAllQuery()` methods.
+When working with models derived from `AbstractModel`, keep in mind that `FOR UPDATE` statement will be added to all automatically generated fetch queries when `forUpdate` parameter is set to true for `getFetchOneQuery()` and `getFetchAllQuery()` methods. Also, the `mode` for all fetch queries used with `AbstractModel` must be `array` as `AbstractModel` expects rows read from the database to be in array form.
 
 ### Modifying and Syncing Models
 
