@@ -275,7 +275,7 @@
         text    : string;
         params  : any;
     
-        constructor(handler: ModelHandler<T>, mask: string, mutable?: boolean);
+        constructor(handler: ModelHandler<T>, mask: QueryMask, mutable?: boolean);
     }
     
     // ERROR CLASSES

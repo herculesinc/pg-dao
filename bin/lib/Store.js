@@ -121,7 +121,7 @@ class Store {
         const modelMap = this.cache.get(handler);
         if (modelMap) {
             const model = modelMap.get(id);
-            if (!model[symbols.destroyed]) {
+            if (model && !model[symbols.destroyed]) {
                 return model;
             }
         }
