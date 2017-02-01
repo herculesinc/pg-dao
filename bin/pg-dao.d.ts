@@ -16,6 +16,7 @@ declare module "pg-dao" {
     export interface ConnectionSettings {
         host            : string;
         port?           : number;
+        ssl?            : boolean;
         user            : string;
         password        : string;
         database        : string;

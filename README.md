@@ -151,6 +151,7 @@ where `options` should have the following form:
     connection: {                   // required connection settings
         host            : string;
         port?           : number;   // optional, default 5432
+        ssl?            : boolean;  // optional, default false
         user            : string;
         password        : string;
         database        : string;
