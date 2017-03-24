@@ -74,7 +74,7 @@ describe('DAO;', () => {
     });
 
     describe('DAO: Fetching a Single Model', () => {
-        describe('Fetching a single model should added it to the store', () => {
+        describe('Fetching a single model should add it to the store', () => {
             beforeEach(done => {
                 dao.fetchOne(User, {id: user1.id})
                     .then(result => {
@@ -362,7 +362,7 @@ describe('DAO;', () => {
     });
 
     describe('DAO: Fetching Models via execute() method', () => {
-        describe('Fetching a single model should added it to the store', () => {
+        describe('Fetching a single model should add it to the store', () => {
             beforeEach(done => {
                 query = new qFetchUserById(user1.id);
 

@@ -1,4 +1,8 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+// IMPORTS 
+// ================================================================================================
+const pg_io_1 = require("pg-io");
 const types_1 = require("./types");
 const errors_1 = require("./errors");
 const util_1 = require("./util");
@@ -74,7 +78,7 @@ class DbField {
             if (this.type !== String && this.type !== Object && this.type !== Array) {
                 throw new errors_1.ModelError('Only string or JSON fields can be encrypted with a secret');
             }
-            this.secret = secret;
+            this.secretKey = pg_io_1.defaults.crypto.secretToKey(secret);
         }
         // set readonly
         this.readonly = typeof readonly === 'boolean' ? readonly : false;

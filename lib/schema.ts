@@ -1,5 +1,6 @@
 // IMPORTS 
 // ================================================================================================
+import { defaults } from 'pg-io';
 import { IdGenerator } from './Model';
 import { Timestamp } from './types';
 import { ModelError } from './errors';
@@ -97,7 +98,7 @@ export class DbField {
 	snakeName	: string;
 	type		: any;
 	readonly	: boolean;
-	secret?		: string;
+	secretKey?	: Buffer;
 	clone?		: Cloner<any>;
 	areEqual?	: Comparator;
 	setter		: string;
@@ -120,7 +121,7 @@ export class DbField {
 			if (this.type !== String && this.type !== Object && this.type !== Array) {
 				throw new ModelError('Only string or JSON fields can be encrypted with a secret');
 			}
-			this.secret = secret;
+			this.secretKey = defaults.crypto.secretToKey(secret);
 		}
 		
 		// set readonly

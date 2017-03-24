@@ -2,9 +2,11 @@
 // ================================================================================================
 import * as pg from 'pg-io';
 
+import { defaults } from './lib/defaults';
 import { Dao } from './lib/Dao'
 import { symHandler } from './lib/Model';
 import { symbols as modelSymbols } from './lib/AbstractModel';
+import * as util from './lib/util';
 
 // GLOBALS
 // ================================================================================================
@@ -14,16 +16,12 @@ export const symbols = {
 };
 
 // set session constructor
-pg.defaults.SessionCtr = Dao;
-
-// set extended defaults
-pg.defaults.session.validateImmutability    = true;
-pg.defaults.session.validateHandlerOutput   = true;
-pg.defaults.session.manageUpdatedOn         = true;
+defaults.SessionCtr = Dao;
 
 // RE-EXPORTS
 // ================================================================================================
-export { Database, defaults, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
+export { defaults };
+export { Database, PgError, ConnectionError, TransactionError, QueryError, ParseError } from 'pg-io';
 export { ModelError, ModelQueryError, StoreError, SyncError } from './lib/errors';
 export { Timestamp } from './lib/types';
 export { AbstractModel } from './lib/AbstractModel';

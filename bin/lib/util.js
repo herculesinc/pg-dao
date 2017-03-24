@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 // IMPORTS
 // ================================================================================================
 const crypto = require("crypto");
@@ -7,7 +8,11 @@ const errors_1 = require("./errors");
 // MODULE VARIABLES
 // ================================================================================================
 const camelPattern = /([A-Z]+)/g;
-const cryptoAlgorithm = 'aes-256-ctr';
+const KEY_LENGTH = 16;
+const KEY_DIGEST = 'sha256';
+const KEY_ITERATIONS = 100000;
+const ENCRYPT_IV_LENGTH = 16;
+const ENCRTYPT_ALGORITHM = 'aes-128-ctr';
 // CASE CONVERTERS
 // ================================================================================================
 function camelToSnake(camel) {
@@ -163,47 +168,36 @@ function cloneDate(date) {
 exports.cloneDate = cloneDate;
 // CRYPTO
 // ================================================================================================
-function encryptField(value, fieldSecret) {
-    if (!value)
-        return undefined;
-    switch (typeof value) {
-        case 'object':
-            var text = JSON.stringify(value);
-            break;
-        case 'string':
-            var text = value;
-            break;
-        default:
-            throw new errors_1.ModelError(`Failed to encrypt a field: value type is not supported`);
-    }
-    const cipher = crypto.createCipher(cryptoAlgorithm, fieldSecret);
-    let encoded = cipher.update(text, 'utf8', 'base64');
-    encoded += cipher.final('base64');
-    return encoded;
+function secretToKey(secret) {
+    if (!secret)
+        throw new TypeError('Secret is undefined');
+    return crypto.pbkdf2Sync(secret, pg_io_1.defaults.crypto.secretSault, KEY_ITERATIONS, KEY_LENGTH, KEY_DIGEST);
 }
-exports.encryptField = encryptField;
-function decryptField(text, fieldSecret, type) {
-    if (!text || text === '')
+exports.secretToKey = secretToKey;
+function encrypt(plaintext, key) {
+    if (!plaintext)
         return undefined;
-    const decipher = crypto.createDecipher(cryptoAlgorithm, fieldSecret);
-    let decoded = decipher.update(text, 'base64', 'utf8');
-    decoded += decipher.final('utf8');
-    switch (type) {
-        case String:
-            return decoded;
-        case Object:
-        case Array:
-            try {
-                return JSON.parse(decoded);
-            }
-            catch (err) {
-                throw new pg_io_1.QueryError(`Failed to decrypt a field: ${err.message}`);
-            }
-        default:
-            throw new errors_1.ModelError('Failed to decrypt a field: field type is invalid');
-    }
+    if (!key)
+        throw new TypeError('Key is undefined');
+    const iv = crypto.randomBytes(ENCRYPT_IV_LENGTH);
+    const cipher = crypto.createCipheriv(ENCRTYPT_ALGORITHM, key, iv);
+    const encrypted = Buffer.concat([iv, cipher.update(plaintext, 'utf8'), cipher.final()]);
+    return encrypted.toString('base64');
 }
-exports.decryptField = decryptField;
+exports.encrypt = encrypt;
+function decrypt(ciphertext, key) {
+    if (!ciphertext)
+        return undefined;
+    if (!key)
+        throw new TypeError('Key is undefined');
+    const encrypted = Buffer.from(ciphertext, 'base64');
+    const iv = Buffer.from(encrypted.slice(0, ENCRYPT_IV_LENGTH));
+    const decipher = crypto.createDecipheriv(ENCRTYPT_ALGORITHM, key, iv);
+    let plaintext = decipher.update(encrypted.slice(ENCRYPT_IV_LENGTH), 'base64', 'utf8');
+    plaintext += decipher.final('utf8');
+    return plaintext;
+}
+exports.decrypt = decrypt;
 // HELPER FUNCTIONS
 // ================================================================================================
 function getKeys(objectA, objectB) {

@@ -3,7 +3,6 @@
 import * as assert from 'assert';
 import { Database } from './../index';
 import { Dao } from './../lib/Dao';
-import { encryptField } from './../lib/util';
 import { User, prepareDatabase, qFetchUserById, qFetchUsersByIdList } from './setup';
 import { MockLogger } from './mocks/Logger';
 

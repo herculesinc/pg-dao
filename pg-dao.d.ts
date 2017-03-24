@@ -33,6 +33,12 @@
         connection      : ConnectionSettings;
         session         : DaoOptions;
         pool            : PoolOptions;
+        crypto: {
+            secretSault : string;
+            secretToKey : (secret: string) => Buffer;
+            encryptor   : (plaintext: string, key: Buffer) => string;
+            decryptor   : (ciphertext: string, key: Buffer) => string;
+        };
     };
 
     export const symbols: {

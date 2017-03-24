@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 // IMPORTS 
 // ================================================================================================
 const AbstractModel_1 = require("./AbstractModel");

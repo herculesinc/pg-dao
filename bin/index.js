@@ -1,7 +1,7 @@
 "use strict";
-// IMPORTS
-// ================================================================================================
-const pg = require("pg-io");
+Object.defineProperty(exports, "__esModule", { value: true });
+const defaults_1 = require("./lib/defaults");
+exports.defaults = defaults_1.defaults;
 const Dao_1 = require("./lib/Dao");
 const Model_1 = require("./lib/Model");
 const AbstractModel_1 = require("./lib/AbstractModel");
@@ -12,16 +12,9 @@ exports.symbols = {
     dbSchema: AbstractModel_1.symbols.dbSchema,
 };
 // set session constructor
-pg.defaults.SessionCtr = Dao_1.Dao;
-// set extended defaults
-pg.defaults.session.validateImmutability = true;
-pg.defaults.session.validateHandlerOutput = true;
-pg.defaults.session.manageUpdatedOn = true;
-// RE-EXPORTS
-// ================================================================================================
+defaults_1.defaults.SessionCtr = Dao_1.Dao;
 var pg_io_1 = require("pg-io");
 exports.Database = pg_io_1.Database;
-exports.defaults = pg_io_1.defaults;
 exports.PgError = pg_io_1.PgError;
 exports.ConnectionError = pg_io_1.ConnectionError;
 exports.TransactionError = pg_io_1.TransactionError;

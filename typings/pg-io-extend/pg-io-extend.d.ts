@@ -4,4 +4,13 @@ declare module "pg-io" {
         validateHandlerOutput?  : boolean;
         manageUpdatedOn?        : boolean;
     }
+
+    export interface Defaults {
+        crypto: {
+            secretSault : string;
+            secretToKey : (secret: string) => Buffer;
+            encryptor   : (plaintext: string, key: Buffer) => string;
+            decryptor   : (ciphertext: string, key: Buffer) => string;
+        };
+    }
 }

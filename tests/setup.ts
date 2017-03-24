@@ -1,10 +1,15 @@
 // IMPORTS
 // ================================================================================================
+import { defaults } from './../lib/defaults';
 import { Query, QueryMask } from 'pg-io';
 import { ModelQuery, PgIdGenerator, ModelHandler } from './../lib/Model';
 import { Dao } from './../lib/Dao';
 import { AbstractModel } from './../lib/AbstractModel';
 import { dbField, dbModel } from './../lib/decorators';
+
+// MODULE VARIBLES
+// ================================================================================================
+const crypto = defaults.crypto; // needed to make sure defaults are loaded
 
 // SETUP
 // ================================================================================================
@@ -34,21 +39,21 @@ export const initConst: any = {
     user1: {
         id: '1',
         username: 'Irakliy',
-        password: 'KpEHgJcsvbg8AtQ=',
+        password: 'Nh8y1GLEH2aBte59rTaa+1sk5sVbh+eUvBCj',
         location: {city: 'San Diego'},
         tags: ['tag5', 'tag6']
     },
     user2: {
         id: '2',
         username: 'Yason',
-        password: 'KpEHgJcsvbg5BtA=',
+        password: 't7gwx+N2r/olgjJllIlCcPP26ZnDICg6TBlk',
         location: {city: 'Portland'},
         tags: ['tag3', 'tag4']
     },
     user3: {
         id: '3',
         username: 'George',
-        password: 'KpEHgJcsvbg8AtQ=',
+        password: '7cgfVu4HgSIXDZnOXHCGILLitApS+kDF2UjE',
         location: {city: 'San Diego'},
         tags: ['tag5', 'tag6']
     }

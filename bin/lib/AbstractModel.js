@@ -1,10 +1,13 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+// IMPORTS 
+// ================================================================================================
+const pg_io_1 = require("pg-io");
 const Model_1 = require("./Model");
 const schema_1 = require("./schema");
 const types_1 = require("./types");
 const queries_1 = require("./queries");
 const errors_1 = require("./errors");
-const util_1 = require("./util");
 // MODULE VARIABLES
 // ================================================================================================
 exports.symbols = {
@@ -29,10 +32,10 @@ class AbstractModel {
             // no cloning of fields needed, but must decrypt secret fields and parse timestamps
             for (let i = 0; i < schema.fields.length; i++) {
                 let field = schema.fields[i];
-                if (field.secret) {
+                if (field.secretKey) {
                     // process encrypted field, can be only string, object, or array type
                     // TODO: implement lazy decrypting
-                    this[field.name] = util_1.decryptField(seed[i], field.secret, field.type);
+                    this[field.name] = decryptField(field, seed[i]);
                 }
                 else if (field.type === types_1.Timestamp) {
                     // if this is a timestamp field, make sure it is converted to number
@@ -294,7 +297,7 @@ function buildInsertQuery(schema) {
     for (let field of schema.fields) {
         fields.push(field.snakeName);
         params.push(`{{${field.name}}}`);
-        if (field.secret) {
+        if (field.secretKey) {
             secretFields.push(field);
         }
     }
@@ -306,7 +309,7 @@ function buildInsertQuery(schema) {
             if (secretFields.length) {
                 const encryptedFields = {};
                 for (let field of secretFields) {
-                    encryptedFields[field.name] = util_1.encryptField(model[field.name], field.secret);
+                    encryptedFields[field.name] = encryptField(field, model[field.name]);
                 }
                 this.params = Object.assign({}, model, encryptedFields);
             }
@@ -328,9 +331,9 @@ function buildUpdateQuery(schema) {
                 if (!field)
                     throw new errors_1.ModelQueryError(`Cannot create model query: field '${changedField}' cannot be updated`);
                 fieldSetters.push(field.setter);
-                if (field.secret) {
+                if (field.secretKey) {
                     hasEncryptedFields = true;
-                    encryptedFields[field.name] = util_1.encryptField(model[field.name], field.secret);
+                    encryptedFields[field.name] = encryptField(model[field.name], field.secretKey);
                 }
             }
             this.text = queryBase + `${fieldSetters.join(',')} WHERE id = '${model.id}';`;
@@ -349,5 +352,48 @@ function buildDeleteQuery(table) {
             this.text = `DELETE FROM ${table} WHERE id = '${model.id}';`;
         }
     };
+}
+// HELPER FUCNTIONS
+// ================================================================================================
+function encryptField(field, value) {
+    if (!value)
+        return undefined;
+    let plaintext;
+    switch (typeof value) {
+        case 'object': {
+            plaintext = JSON.stringify(value);
+            let padding = 16 - plaintext.length;
+            if (padding > 1) {
+                plaintext += ' '.repeat(padding);
+            }
+            break;
+        }
+        case 'string': {
+            plaintext = value;
+            break;
+        }
+        default:
+            throw new errors_1.ModelError(`Failed to encrypt a field: value type is not supported`);
+    }
+    return pg_io_1.defaults.crypto.encryptor(plaintext, field.secretKey);
+}
+function decryptField(field, ciphertext) {
+    if (!ciphertext)
+        return undefined;
+    const plaintext = pg_io_1.defaults.crypto.decryptor(ciphertext, field.secretKey);
+    switch (field.type) {
+        case String:
+            return plaintext;
+        case Object:
+        case Array:
+            try {
+                return JSON.parse(plaintext);
+            }
+            catch (err) {
+                throw new errors_1.ModelError(`Failed to decrypt a field: ${err.message}`);
+            }
+        default:
+            throw new errors_1.ModelError('Failed to decrypt a field: field type is invalid');
+    }
 }
 //# sourceMappingURL=AbstractModel.js.map
