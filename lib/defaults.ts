@@ -13,7 +13,7 @@ defaults.session.manageUpdatedOn         = true;
 
 // set encryptor and decryptor
 defaults.crypto = {
-    secretSault : 'saultPlaceholder',
+    secretSalt  : 'saltPlaceholder',
     secretToKey : util.secretToKey,
     encryptor   : util.encrypt,
     decryptor   : util.decrypt

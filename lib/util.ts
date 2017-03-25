@@ -168,7 +168,7 @@ export function cloneDate(date: Date): Date {
 // ================================================================================================
 export function secretToKey(secret: string): Buffer {
 	if (!secret) throw new TypeError('Secret is undefined');
-	return crypto.pbkdf2Sync(secret, defaults.crypto.secretSault, KEY_ITERATIONS, KEY_LENGTH, KEY_DIGEST);
+	return crypto.pbkdf2Sync(secret, defaults.crypto.secretSalt, KEY_ITERATIONS, KEY_LENGTH, KEY_DIGEST);
 }
 
 export function encrypt(plaintext: string, key: Buffer): string {

@@ -378,7 +378,7 @@ function buildUpdateQuery(schema: DbSchema): UpdateQueryConstructor {
 
                 if (field.secretKey) {
                     hasEncryptedFields = true;
-                    encryptedFields[field.name] = encryptField(model[field.name], field.secretKey);
+                    encryptedFields[field.name] = encryptField(field, model[field.name]);
                 }
             }
 

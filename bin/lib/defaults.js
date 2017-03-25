@@ -13,7 +13,7 @@ pg_io_1.defaults.session.validateHandlerOutput = true;
 pg_io_1.defaults.session.manageUpdatedOn = true;
 // set encryptor and decryptor
 pg_io_1.defaults.crypto = {
-    secretSault: 'saultPlaceholder',
+    secretSalt: 'saltPlaceholder',
     secretToKey: util.secretToKey,
     encryptor: util.encrypt,
     decryptor: util.decrypt

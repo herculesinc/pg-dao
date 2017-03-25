@@ -171,7 +171,7 @@ exports.cloneDate = cloneDate;
 function secretToKey(secret) {
     if (!secret)
         throw new TypeError('Secret is undefined');
-    return crypto.pbkdf2Sync(secret, pg_io_1.defaults.crypto.secretSault, KEY_ITERATIONS, KEY_LENGTH, KEY_DIGEST);
+    return crypto.pbkdf2Sync(secret, pg_io_1.defaults.crypto.secretSalt, KEY_ITERATIONS, KEY_LENGTH, KEY_DIGEST);
 }
 exports.secretToKey = secretToKey;
 function encrypt(plaintext, key) {

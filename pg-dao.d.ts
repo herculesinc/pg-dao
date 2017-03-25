@@ -34,7 +34,7 @@
         session         : DaoOptions;
         pool            : PoolOptions;
         crypto: {
-            secretSault : string;
+            secretSalt  : string;
             secretToKey : (secret: string) => Buffer;
             encryptor   : (plaintext: string, key: Buffer) => string;
             decryptor   : (ciphertext: string, key: Buffer) => string;

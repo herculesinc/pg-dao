@@ -52,6 +52,7 @@ describe('DAO;', () => {
         seed1 = {
             id       : '4',
             username : 'Katie',
+            password : 'password345',
             createdOn: Date.now(),
             updatedOn: Date.now()
         };
@@ -87,6 +88,7 @@ describe('DAO;', () => {
             it('should return correct user', () => {
                 expect(user.id).to.equal(user1.id);
                 expect(user.username).to.equal(user1.username);
+                expect(user.password).to.equal(user1.password_raw);
                 expect(user.tags).to.deep.equal(user1.tags);
             });
 
@@ -637,6 +639,7 @@ describe('DAO;', () => {
                     .then(dbUser => {
                         expect(dbUser).to.deep.equal(user);
                         expect(dbUser.id).to.equal(seed1.id);
+                        expect(dbUser.password).to.equal(seed1.password);
                         done();
                     })
                     .catch(done);

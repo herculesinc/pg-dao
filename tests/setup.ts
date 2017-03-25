@@ -37,25 +37,28 @@ export const initConst: any = {
     userTableSecret: 'secret',
     tokensTableName: 'tmp_tokens',
     user1: {
-        id: '1',
-        username: 'Irakliy',
-        password: 'Nh8y1GLEH2aBte59rTaa+1sk5sVbh+eUvBCj',
-        location: {city: 'San Diego'},
-        tags: ['tag5', 'tag6']
+        id          : '1',
+        username    : 'Irakliy',
+        password    : 'rl4TKtn+A+WnTkyU1mO1Klkc9bJ4rb96hX9R',
+        location    : {city: 'San Diego'},
+        tags        : ['tag5', 'tag6'],
+        password_raw: 'password123'
     },
     user2: {
         id: '2',
-        username: 'Yason',
-        password: 't7gwx+N2r/olgjJllIlCcPP26ZnDICg6TBlk',
-        location: {city: 'Portland'},
-        tags: ['tag3', 'tag4']
+        username    : 'Yason',
+        password    : 'jW4FQSSMMxMTZ/M7r0IhizeAgPsulxEjvZhj',
+        location    : {city: 'Portland'},
+        tags        : ['tag3', 'tag4'],
+        password_raw: 'password234'
     },
     user3: {
         id: '3',
-        username: 'George',
-        password: '7cgfVu4HgSIXDZnOXHCGILLitApS+kDF2UjE',
-        location: {city: 'San Diego'},
-        tags: ['tag5', 'tag6']
+        username    : 'George',
+        password    : '0BL71rdt5tecFh8puczt9TBFnLh4V76Rq2qz',
+        location    : {city: 'San Diego'},
+        tags        : ['tag5', 'tag6'],
+        password_raw: 'password123'
     }
 };
 
