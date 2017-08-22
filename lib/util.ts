@@ -67,7 +67,9 @@ export function areObjectsEqual(valueA: any, valueB: any, parents?: WeakSet<any>
 				areEqual = areObjectsEqual(valueAi, valueBi , parents);
 				if (!areEqual) break;
 			}
-			
+
+			parents.delete(valueA);
+			parents.delete(valueB);
 			return areEqual;
 		default:
 			return false;
@@ -142,6 +144,7 @@ export function cloneObject(source: any, parents?: WeakSet<any>): any {
 				}
 			}
 			
+			parents.delete(source);
 			return clone;
 		default:
 			return undefined;

@@ -31,7 +31,7 @@ let sIds: Array<string>;
 
 describe('DAO;', () => {
     before(() => {
-        database = new pg.Database(settings);
+        database = new pg.Database(settings) as any;
     });
 
     beforeEach(done => {

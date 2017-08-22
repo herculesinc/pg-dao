@@ -61,6 +61,8 @@ function areObjectsEqual(valueA, valueB, parents) {
                 if (!areEqual)
                     break;
             }
+            parents.delete(valueA);
+            parents.delete(valueB);
             return areEqual;
         default:
             return false;
@@ -142,6 +144,7 @@ function cloneObject(source, parents) {
                     clone[key] = cloneObject(value, parents);
                 }
             }
+            parents.delete(source);
             return clone;
         default:
             return undefined;
