@@ -28,7 +28,7 @@ class AbstractModel {
         if (!seed)
             throw new errors_1.ModelError('Cannot instantiate a model: model seed is undefined');
         const schema = this.constructor[exports.symbols.dbSchema];
-        if (Array.isArray(seed)) {
+        if (Array.isArray(seed)) { // seed is a database row
             // no cloning of fields needed, but must decrypt secret fields and parse timestamps
             for (let i = 0; i < schema.fields.length; i++) {
                 let field = schema.fields[i];

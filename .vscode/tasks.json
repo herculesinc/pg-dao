@@ -1,45 +1,38 @@
 {
-    "version": "0.1.0",
-    "command": "gulp",
-    "isShellCommand": true,
-    "args": [
-        "--no-color"
-    ],
+    "version": "2.0.0",
     "tasks": [
         {
-            "taskName": "clean",
-            "args": [],
-            "isBuildCommand": false,
-            "isTestCommand": false,
-            "isWatching": false,
-            "showOutput": "silent"
+            "type": "gulp",
+            "task": "clean",
+            "presentation": {
+                "reveal": "silent"
+            }
         },
         {
-            "taskName": "build",
-            "args": [],
-            "isBuildCommand": true,
-            "isTestCommand": false,
-            "isWatching": false,
-            "problemMatcher": ["$tsc"],
-            "showOutput": "silent"
+            "type": "gulp",
+            "task": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": ["$tsc"]
         },
         {
-            "taskName": "test",
-            "args": [],
-            "isBuildCommand": false,
-            "isTestCommand": true,
-            "isWatching": false,
-            "problemMatcher": ["$tsc"],
-            "showOutput": "always"
+            "type": "gulp",
+            "task": "test",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": ["$tsc"]
         },
         {
-            "taskName": "publish",
-            "args": [],
-            "isBuildCommand": false,
-            "isTestCommand": false,
-            "isWatching": false,
-            "problemMatcher": ["$tsc"],
-            "showOutput": "always"
+            "type": "gulp",
+            "task": "publish",
+            "problemMatcher": ["$tsc"]
         }
     ]
 }

@@ -7,17 +7,15 @@
 			"request": "launch",
 			"program": "${workspaceRoot}/bin/tests/run.js",
 			"stopOnEntry": false,
-			"args": [],
-			"cwd": "${workspaceRoot}",
+			"cwd": "${workspaceRoot}/bin",
 			"preLaunchTask": "build",
-			"runtimeExecutable": null,
 			"runtimeArgs": ["--nolazy"],
             "env": {
                 "NODE_ENV": "development"
             },
-            "externalConsole": true,
+			"console": "externalTerminal",
             "sourceMaps": true,
-            "outDir": "${workspaceRoot}/bin"
+            "outFiles": ["${workspaceRoot}/bin/**/*.js"]
 		}
 	]
 }

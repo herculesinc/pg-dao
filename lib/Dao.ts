@@ -198,12 +198,19 @@ export class Dao extends Session {
         if (!idGenerator) {
             return Promise.reject(new ModelError('Cannot create a model: model id generator is undefined'));
         }
-            
-        return idGenerator.getNextId(this).then((nextId) => {
-            const model = handler.build(nextId, attributes);
+
+        if (attributes.id) {
+            const model = handler.build(attributes.id, attributes);
             this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`, this.dbName);
-            return model;
-        });
+            return Promise.resolve(model);
+        }
+        else {
+            return idGenerator.getNextId(this).then((nextId) => {
+                const model = handler.build(nextId, attributes);
+                this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`, this.dbName);
+                return model;
+            });
+        }
     }
     
     // STORE PASS THROUGH METHODS
