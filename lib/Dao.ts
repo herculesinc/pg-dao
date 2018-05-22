@@ -183,7 +183,7 @@ export class Dao extends Session {
     
     // CREATE METHODS
     // --------------------------------------------------------------------------------------------
-    create<T extends Model>(handler: ModelHandler<T>, attributes: any): Promise<T> {
+    create<T extends Model>(handler: ModelHandler<T>, attributes: any, modelId?: string): Promise<T> {
         if(!this.isActive) {
             throw Promise.reject(new ConnectionError('Cannot create a model: session has already been closed'));
         }
@@ -199,8 +199,8 @@ export class Dao extends Session {
             return Promise.reject(new ModelError('Cannot create a model: model id generator is undefined'));
         }
 
-        if (attributes.id) {
-            const model = handler.build(attributes.id, attributes);
+        if (modelId) {
+            const model = handler.build(modelId, attributes);
             this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`, this.dbName);
             return Promise.resolve(model);
         }

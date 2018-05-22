@@ -154,7 +154,7 @@ class Dao extends pg_io_1.Session {
     }
     // CREATE METHODS
     // --------------------------------------------------------------------------------------------
-    create(handler, attributes) {
+    create(handler, attributes, modelId) {
         if (!this.isActive) {
             throw Promise.reject(new pg_io_2.ConnectionError('Cannot create a model: session has already been closed'));
         }
@@ -167,8 +167,8 @@ class Dao extends pg_io_1.Session {
         if (!idGenerator) {
             return Promise.reject(new errors_1.ModelError('Cannot create a model: model id generator is undefined'));
         }
-        if (attributes.id) {
-            const model = handler.build(attributes.id, attributes);
+        if (modelId) {
+            const model = handler.build(modelId, attributes);
             this.logger && this.logger.debug(`New ${handler.name || 'Unnamed'} model created in ${since(start)} ms`, this.dbName);
             return Promise.resolve(model);
         }
